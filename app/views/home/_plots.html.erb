@@ -1,0 +1,107 @@
+<link href="/assets/stylesheets/application.css" rel="stylesheet" type="text/css">
+<%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+
+<h1>Welcome to the Schmid Lab Microbial Growth Model!</h1>
+<p> The model takes plate reader data as input data file(s), in either tab-delimited 
+or 
+comma-separated formats. You may also provide a metadata file(s) 
+containing the metadata associated with each well. Upload your .txt, .csv, or .ascii 
+file, along with an 
+associated metadata file if desired, and then select the charts you would like to 
+generate.</p>
+
+<div class="upload_class">
+<%= form_tag(upload_path, multipart: true) do %>
+<h2>Upload Data and Metadata File(s)</h2>
+  <label for="data_files">Data File:</label>
+  <%= file_field_tag 'data_files[]', multiple: true %>
+
+  <label for="mapping_files">Mapping File:</label>
+  <%= file_field_tag 'mapping_files[]', multiple: true %>
+
+  <%= submit_tag 'Upload' %>
+
+<% end %>
+</div>
+
+<% if flash[:notice] %>
+  <div class="notice">
+    <%= flash[:notice] %>
+  </div>
+<% end %>
+
+<%= form_tag(generate_charts_path, method: 'post' ) do %>
+  <h2>Select Chart Types</h2>
+<div class="select_class">
+  <label>
+    <%= check_box_tag 'chart_types[]', 'raw_data', @selected_chart_types.include?('raw_data') %>
+    Raw Data Plot (Per Well)
+  </label>
+  <br>
+  <label>
+    <%= check_box_tag 'chart_types[]', 'fit_stats', @selected_chart_types.include?('fit_stats') %>
+    Fit Statistics	
+  </label>
+  <br>
+  <label>
+    <%= check_box_tag 'chart_types[]', 'scatter_plot', @selected_chart_types.include?('scatter_plot') %>
+    Scatter Plot
+  </label>
+  <br>
+  <%= submit_tag 'Generate' %>
+</div>
+<% end %>
+
+<div id="chart-container" class="<%= @selected_chart_types.length == 1 ? 'single-chart' : '' %>">
+<% if @raw_data_png_paths.present? %>
+  <div class="chart">
+    <h3 style="color: #fff;">Raw Data Plots (Per Well)</h3>
+    <% @raw_data_png_paths.each do |png_path| %>
+  <%= image_tag serve_image_path(filename: File.basename(png_path)), class: 'chart-image' %>
+      <br>
+    <% end %>
+  </div>
+<% end %>
+
+<% if @selected_chart_types.include?('fit_stats') %>
+  <div class="fit-stats-chart">
+    <h3 class="fit-stats-title">Fit Statistics</h3>
+    <% @fit_stats_paths.each do |fit_stats_path| %>
+      <table class="fit-stats-table">
+        <% File.foreach(fit_stats_path) do |line| %>
+          <tr>
+            <% line.split("\t").each do |cell| %>
+              <td><%= cell %></td>
+            <% end %>
+          </tr>
+        <% end %>
+      </table>
+    <% end %>
+  </div>
+<% end %>
+
+  <% if @selected_chart_types.include?('scatter_plot') %>
+    <div class="chart">
+      <h3>Scatter Plot</h3>
+      <%= image_tag '/uploads/scatterplot.png', class: 'chart-image' %>
+    </div>
+  <% end %>
+</div>
+
+<style>
+  #chart-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    grid-gap: 20px;
+  }
+  .chart {
+    text-align: center;
+  }
+</style>
+
+<% if @selected_chart_types.include?('fit_stats') %>
+  <% @fit_stats_paths.each do |fit_stats_path| %>
+    <%= fit_stats_path %>
+  <% end %>
+<% end %>
+

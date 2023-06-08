@@ -1,0 +1,842 @@
+{
+  "build": "pyhd8ed1ab_0",
+  "build_number": 0,
+  "channel": "https://conda.anaconda.org/conda-forge/noarch",
+  "constrains": [
+    "ipywidgets =8"
+  ],
+  "depends": [
+    "jupyter_client >=6.1.3,<=7.4.1",
+    "jupyter_core >=4.11.0",
+    "jupyter_server >=1.18,<2",
+    "jupyterlab_server >=2.3.0,<3",
+    "nbclient >=0.4.0,<0.8",
+    "nbconvert >=6.4.5,<8",
+    "python >=3.7",
+    "traitlets >=5.0.3,<6",
+    "websockets >=9"
+  ],
+  "extracted_package_dir": "/hpc/home/hrd11/.conda/pkgs/voila-0.4.0-pyhd8ed1ab_0",
+  "features": "",
+  "files": [
+    "etc/jupyter/jupyter_notebook_config.d/voila.json",
+    "etc/jupyter/jupyter_server_config.d/voila.json",
+    "etc/jupyter/nbconfig/notebook.d/voila.json",
+    "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/install.json",
+    "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/package.json",
+    "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/schemas/@voila-dashboards/jupyterlab-preview/package.json.orig",
+    "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/schemas/@voila-dashboards/jupyterlab-preview/plugin.json",
+    "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/static/643.999197bbd8ad4b2ee222.js",
+    "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/static/97.b47cf72a58e37d0e5332.js",
+    "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/static/remoteEntry.42a1c55007d8b1652540.js",
+    "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/static/style.js",
+    "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/static/third-party-licenses.json",
+    "share/jupyter/nbextensions/voila/extension.js",
+    "share/jupyter/voila/templates/base/404.html",
+    "share/jupyter/voila/templates/base/browser-open.html",
+    "share/jupyter/voila/templates/base/error.html",
+    "share/jupyter/voila/templates/base/jupyter_widgets.html.j2",
+    "share/jupyter/voila/templates/base/log.macro.html.j2",
+    "share/jupyter/voila/templates/base/page.html",
+    "share/jupyter/voila/templates/base/spinner.macro.html.j2",
+    "share/jupyter/voila/templates/base/static/07173fb77d2ee655811499d40c8388e7.woff",
+    "share/jupyter/voila/templates/base/static/07281897a98a61c3733e1670f82a9fd5.woff",
+    "share/jupyter/voila/templates/base/static/1.voila.js",
+    "share/jupyter/voila/templates/base/static/1.voila.js.map",
+    "share/jupyter/voila/templates/base/static/2.voila.js",
+    "share/jupyter/voila/templates/base/static/2.voila.js.map",
+    "share/jupyter/voila/templates/base/static/3d580bd561716bfb1f0b4fdd7063a802.woff",
+    "share/jupyter/voila/templates/base/static/4c74e33b0feb1fdbda49403a5e7ed604.woff",
+    "share/jupyter/voila/templates/base/static/5589d1a8fc62be6613020ef2fa13e410.woff",
+    "share/jupyter/voila/templates/base/static/72815766b08ca24d4d29ad1f5d4ecb45.woff",
+    "share/jupyter/voila/templates/base/static/77dbcee3c3d9a82a0c04a4ae7992b895.woff",
+    "share/jupyter/voila/templates/base/static/7e83626ba8bf2d20dc41565f1e6d0afc.woff",
+    "share/jupyter/voila/templates/base/static/9995de4787f908d8237dba7007f6c3fe.woff",
+    "share/jupyter/voila/templates/base/static/b80e08d5a79acbd1fafb1ca6f3515664.woff",
+    "share/jupyter/voila/templates/base/static/bc3af04f9a671fcabd6498042c57478f.woff",
+    "share/jupyter/voila/templates/base/static/bc42125861bd5bfc8686deeb612dcbb3.woff",
+    "share/jupyter/voila/templates/base/static/c9423d5dc9d82a38ca215f74e9cdd9f2.woff",
+    "share/jupyter/voila/templates/base/static/main.js",
+    "share/jupyter/voila/templates/base/static/require.min.js",
+    "share/jupyter/voila/templates/base/static/voila.js",
+    "share/jupyter/voila/templates/base/static/voila.js.map",
+    "share/jupyter/voila/templates/base/tree.html",
+    "share/jupyter/voila/templates/base/voila_setup.macro.html.j2",
+    "share/jupyter/voila/templates/classic/index.html.j2",
+    "share/jupyter/voila/templates/classic/static/labvariables.css",
+    "share/jupyter/voila/templates/classic/static/materialcolors.css",
+    "share/jupyter/voila/templates/lab/browser-open.html",
+    "share/jupyter/voila/templates/lab/error.html",
+    "share/jupyter/voila/templates/lab/index.html.j2",
+    "share/jupyter/voila/templates/lab/page.html",
+    "share/jupyter/voila/templates/lab/tree.html",
+    "share/jupyter/voila/templates/reveal/index.html.j2",
+    "share/jupyter/voila/templates/reveal/static/labvariables.css",
+    "share/jupyter/voila/templates/reveal/static/materialcolors.css",
+    "lib/python3.8/site-packages/voila-0.4.0.dist-info/INSTALLER",
+    "lib/python3.8/site-packages/voila-0.4.0.dist-info/METADATA",
+    "lib/python3.8/site-packages/voila-0.4.0.dist-info/RECORD",
+    "lib/python3.8/site-packages/voila-0.4.0.dist-info/REQUESTED",
+    "lib/python3.8/site-packages/voila-0.4.0.dist-info/WHEEL",
+    "lib/python3.8/site-packages/voila-0.4.0.dist-info/direct_url.json",
+    "lib/python3.8/site-packages/voila-0.4.0.dist-info/entry_points.txt",
+    "lib/python3.8/site-packages/voila-0.4.0.dist-info/licenses/LICENSE",
+    "lib/python3.8/site-packages/voila/__init__.py",
+    "lib/python3.8/site-packages/voila/__main__.py",
+    "lib/python3.8/site-packages/voila/_version.py",
+    "lib/python3.8/site-packages/voila/app.py",
+    "lib/python3.8/site-packages/voila/configuration.py",
+    "lib/python3.8/site-packages/voila/execute.py",
+    "lib/python3.8/site-packages/voila/exporter.py",
+    "lib/python3.8/site-packages/voila/handler.py",
+    "lib/python3.8/site-packages/voila/labextension/package.json",
+    "lib/python3.8/site-packages/voila/labextension/schemas/@voila-dashboards/jupyterlab-preview/package.json.orig",
+    "lib/python3.8/site-packages/voila/labextension/schemas/@voila-dashboards/jupyterlab-preview/plugin.json",
+    "lib/python3.8/site-packages/voila/labextension/static/643.999197bbd8ad4b2ee222.js",
+    "lib/python3.8/site-packages/voila/labextension/static/97.b47cf72a58e37d0e5332.js",
+    "lib/python3.8/site-packages/voila/labextension/static/remoteEntry.42a1c55007d8b1652540.js",
+    "lib/python3.8/site-packages/voila/labextension/static/style.js",
+    "lib/python3.8/site-packages/voila/labextension/static/third-party-licenses.json",
+    "lib/python3.8/site-packages/voila/notebook_renderer.py",
+    "lib/python3.8/site-packages/voila/paths.py",
+    "lib/python3.8/site-packages/voila/request_info_handler.py",
+    "lib/python3.8/site-packages/voila/server_extension.py",
+    "lib/python3.8/site-packages/voila/shutdown_kernel_handler.py",
+    "lib/python3.8/site-packages/voila/static/extension.js",
+    "lib/python3.8/site-packages/voila/static_file_handler.py",
+    "lib/python3.8/site-packages/voila/treehandler.py",
+    "lib/python3.8/site-packages/voila/utils.py",
+    "lib/python3.8/site-packages/voila/voila_kernel_manager.py",
+    "lib/python3.8/site-packages/voila/__pycache__/__init__.cpython-38.pyc",
+    "lib/python3.8/site-packages/voila/__pycache__/__main__.cpython-38.pyc",
+    "lib/python3.8/site-packages/voila/__pycache__/_version.cpython-38.pyc",
+    "lib/python3.8/site-packages/voila/__pycache__/app.cpython-38.pyc",
+    "lib/python3.8/site-packages/voila/__pycache__/configuration.cpython-38.pyc",
+    "lib/python3.8/site-packages/voila/__pycache__/execute.cpython-38.pyc",
+    "lib/python3.8/site-packages/voila/__pycache__/exporter.cpython-38.pyc",
+    "lib/python3.8/site-packages/voila/__pycache__/handler.cpython-38.pyc",
+    "lib/python3.8/site-packages/voila/__pycache__/notebook_renderer.cpython-38.pyc",
+    "lib/python3.8/site-packages/voila/__pycache__/paths.cpython-38.pyc",
+    "lib/python3.8/site-packages/voila/__pycache__/request_info_handler.cpython-38.pyc",
+    "lib/python3.8/site-packages/voila/__pycache__/server_extension.cpython-38.pyc",
+    "lib/python3.8/site-packages/voila/__pycache__/shutdown_kernel_handler.cpython-38.pyc",
+    "lib/python3.8/site-packages/voila/__pycache__/static_file_handler.cpython-38.pyc",
+    "lib/python3.8/site-packages/voila/__pycache__/treehandler.cpython-38.pyc",
+    "lib/python3.8/site-packages/voila/__pycache__/utils.cpython-38.pyc",
+    "lib/python3.8/site-packages/voila/__pycache__/voila_kernel_manager.cpython-38.pyc",
+    "bin/voila"
+  ],
+  "fn": "voila-0.4.0-pyhd8ed1ab_0.tar.bz2",
+  "license": "BSD-3-Clause",
+  "license_family": "BSD",
+  "link": {
+    "source": "/hpc/home/hrd11/.conda/pkgs/voila-0.4.0-pyhd8ed1ab_0",
+    "type": 1
+  },
+  "md5": "f755ba802b9d766e6728be89a442326a",
+  "name": "voila",
+  "noarch": "python",
+  "package_tarball_full_path": "/hpc/home/hrd11/.conda/pkgs/voila-0.4.0-pyhd8ed1ab_0.tar.bz2",
+  "package_type": "noarch_python",
+  "paths_data": {
+    "paths": [
+      {
+        "_path": "etc/jupyter/jupyter_notebook_config.d/voila.json",
+        "path_type": "hardlink",
+        "sha256": "3d155f3442f981f6642d939602ebbff3494facc031a0de24fc015e205131e624",
+        "sha256_in_prefix": "3d155f3442f981f6642d939602ebbff3494facc031a0de24fc015e205131e624",
+        "size_in_bytes": 99
+      },
+      {
+        "_path": "etc/jupyter/jupyter_server_config.d/voila.json",
+        "path_type": "hardlink",
+        "sha256": "a460a2bb6a4cd1f76c5ed22d3b76cb1064ee24b82c7cf725c12aaf3589ffc584",
+        "sha256_in_prefix": "a460a2bb6a4cd1f76c5ed22d3b76cb1064ee24b82c7cf725c12aaf3589ffc584",
+        "size_in_bytes": 97
+      },
+      {
+        "_path": "etc/jupyter/nbconfig/notebook.d/voila.json",
+        "path_type": "hardlink",
+        "sha256": "abe4780fa6c851d5c2ee7df1655e299513e578089a4df2750d64aac9db1c17f2",
+        "sha256_in_prefix": "abe4780fa6c851d5c2ee7df1655e299513e578089a4df2750d64aac9db1c17f2",
+        "size_in_bytes": 59
+      },
+      {
+        "_path": "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/install.json",
+        "path_type": "hardlink",
+        "sha256": "95b4cf613ab6b99a28ca73e0906b851dc4db983bef4bed94f636e525808cc16e",
+        "sha256_in_prefix": "95b4cf613ab6b99a28ca73e0906b851dc4db983bef4bed94f636e525808cc16e",
+        "size_in_bytes": 171
+      },
+      {
+        "_path": "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/package.json",
+        "path_type": "hardlink",
+        "sha256": "f0c80004e7a8a35515dabb5f33f620eaaa260267a23565cf29ab7d08035acf16",
+        "sha256_in_prefix": "f0c80004e7a8a35515dabb5f33f620eaaa260267a23565cf29ab7d08035acf16",
+        "size_in_bytes": 2819
+      },
+      {
+        "_path": "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/schemas/@voila-dashboards/jupyterlab-preview/package.json.orig",
+        "path_type": "hardlink",
+        "sha256": "480f4a77a10a9a0fc00e15fe22f438e62b70cb30bae56e61358fd49eb3bf9938",
+        "sha256_in_prefix": "480f4a77a10a9a0fc00e15fe22f438e62b70cb30bae56e61358fd49eb3bf9938",
+        "size_in_bytes": 2677
+      },
+      {
+        "_path": "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/schemas/@voila-dashboards/jupyterlab-preview/plugin.json",
+        "path_type": "hardlink",
+        "sha256": "21ea91dc6790eaff96e9a4fffa9b9a2a0564a261c1744e1456f59cc4ebd28aba",
+        "sha256_in_prefix": "21ea91dc6790eaff96e9a4fffa9b9a2a0564a261c1744e1456f59cc4ebd28aba",
+        "size_in_bytes": 466
+      },
+      {
+        "_path": "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/static/643.999197bbd8ad4b2ee222.js",
+        "path_type": "hardlink",
+        "sha256": "999197bbd8ad4b2ee222064462906a234661f86b5f685d941865ebd30033d91b",
+        "sha256_in_prefix": "999197bbd8ad4b2ee222064462906a234661f86b5f685d941865ebd30033d91b",
+        "size_in_bytes": 3546
+      },
+      {
+        "_path": "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/static/97.b47cf72a58e37d0e5332.js",
+        "path_type": "hardlink",
+        "sha256": "b47cf72a58e37d0e5332e04587de61d42042d300a450d62fa72307df1b0dd6ab",
+        "sha256_in_prefix": "b47cf72a58e37d0e5332e04587de61d42042d300a450d62fa72307df1b0dd6ab",
+        "size_in_bytes": 5843
+      },
+      {
+        "_path": "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/static/remoteEntry.42a1c55007d8b1652540.js",
+        "path_type": "hardlink",
+        "sha256": "42a1c55007d8b16525407735604c606692e95f5d53a477d6e58ba6ae6b356df5",
+        "sha256_in_prefix": "42a1c55007d8b16525407735604c606692e95f5d53a477d6e58ba6ae6b356df5",
+        "size_in_bytes": 7566
+      },
+      {
+        "_path": "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/static/style.js",
+        "path_type": "hardlink",
+        "sha256": "666baf3b96824380b07c7af668a57a17350772a2b1aeb656ef6d100dd681ea80",
+        "sha256_in_prefix": "666baf3b96824380b07c7af668a57a17350772a2b1aeb656ef6d100dd681ea80",
+        "size_in_bytes": 179
+      },
+      {
+        "_path": "share/jupyter/labextensions/@voila-dashboards/jupyterlab-preview/static/third-party-licenses.json",
+        "path_type": "hardlink",
+        "sha256": "3ff5632ca092319dec5ee3dc920f1b0f207c5e7f090fb12c888a11aaf48fde1d",
+        "sha256_in_prefix": "3ff5632ca092319dec5ee3dc920f1b0f207c5e7f090fb12c888a11aaf48fde1d",
+        "size_in_bytes": 2452
+      },
+      {
+        "_path": "share/jupyter/nbextensions/voila/extension.js",
+        "path_type": "hardlink",
+        "sha256": "7adf5a08cb7e629d9c47c9b917a06635fc2738708de49387dde602936fe0150b",
+        "sha256_in_prefix": "7adf5a08cb7e629d9c47c9b917a06635fc2738708de49387dde602936fe0150b",
+        "size_in_bytes": 886
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/404.html",
+        "path_type": "hardlink",
+        "sha256": "22aa85045c2e4ea994df71a6b8acb8c4b614e262c06868ad5aea6159e029a746",
+        "sha256_in_prefix": "22aa85045c2e4ea994df71a6b8acb8c4b614e262c06868ad5aea6159e029a746",
+        "size_in_bytes": 149
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/browser-open.html",
+        "path_type": "hardlink",
+        "sha256": "de7fe6054cd53d302d25d7101e6318bc35beb310b28b472784f59e072bf2c9d5",
+        "sha256_in_prefix": "de7fe6054cd53d302d25d7101e6318bc35beb310b28b472784f59e072bf2c9d5",
+        "size_in_bytes": 338
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/error.html",
+        "path_type": "hardlink",
+        "sha256": "20ca1c74ce3545ba8a1b768c007591b9ca17c926387ede6f79183ab3ae83164e",
+        "sha256_in_prefix": "20ca1c74ce3545ba8a1b768c007591b9ca17c926387ede6f79183ab3ae83164e",
+        "size_in_bytes": 327
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/jupyter_widgets.html.j2",
+        "path_type": "hardlink",
+        "sha256": "3dbb1aece621dd42f2c26af055e3e480723a2de2bd205a15f95f799d1fb12835",
+        "sha256_in_prefix": "3dbb1aece621dd42f2c26af055e3e480723a2de2bd205a15f95f799d1fb12835",
+        "size_in_bytes": 114
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/log.macro.html.j2",
+        "path_type": "hardlink",
+        "sha256": "a693e4122cf04ffd4dce9f4ee9171413f448f3467cfc55bb3f6282050bde85ad",
+        "sha256_in_prefix": "a693e4122cf04ffd4dce9f4ee9171413f448f3467cfc55bb3f6282050bde85ad",
+        "size_in_bytes": 1201
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/page.html",
+        "path_type": "hardlink",
+        "sha256": "61ad93cd3be28eba8af91b73e4658971755f479f4ded83308d15a60b338e2f51",
+        "sha256_in_prefix": "61ad93cd3be28eba8af91b73e4658971755f479f4ded83308d15a60b338e2f51",
+        "size_in_bytes": 832
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/spinner.macro.html.j2",
+        "path_type": "hardlink",
+        "sha256": "cb5f8aace1d4c46372e962e2ece7dbd79b4bc578f857408dff488ec99cab9614",
+        "sha256_in_prefix": "cb5f8aace1d4c46372e962e2ece7dbd79b4bc578f857408dff488ec99cab9614",
+        "size_in_bytes": 1694
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/07173fb77d2ee655811499d40c8388e7.woff",
+        "path_type": "hardlink",
+        "sha256": "3de784d07b9fa8f104c10928a878ee879cf3305cae5195cba663c9c2bb0195eb",
+        "sha256_in_prefix": "3de784d07b9fa8f104c10928a878ee879cf3305cae5195cba663c9c2bb0195eb",
+        "size_in_bytes": 40808
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/07281897a98a61c3733e1670f82a9fd5.woff",
+        "path_type": "hardlink",
+        "sha256": "32792104b5ef69eded905b6d1598ed05d8087684d38e7a94d52e3c38ba16f47e",
+        "sha256_in_prefix": "32792104b5ef69eded905b6d1598ed05d8087684d38e7a94d52e3c38ba16f47e",
+        "size_in_bytes": 15944
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/1.voila.js",
+        "path_type": "hardlink",
+        "sha256": "1364845a5e1422141b3e45cf91a5338f4bc9edcf244f2cc42b35316baabdb8f0",
+        "sha256_in_prefix": "1364845a5e1422141b3e45cf91a5338f4bc9edcf244f2cc42b35316baabdb8f0",
+        "size_in_bytes": 433300
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/1.voila.js.map",
+        "path_type": "hardlink",
+        "sha256": "8dde65f1f6552494860a49cab9e7c24e08c2538b1265c19ad671f3eec2fdcb01",
+        "sha256_in_prefix": "8dde65f1f6552494860a49cab9e7c24e08c2538b1265c19ad671f3eec2fdcb01",
+        "size_in_bytes": 1381333
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/2.voila.js",
+        "path_type": "hardlink",
+        "sha256": "f29775f9036d9c4167020ed91f45dd323d49fbbfede1134293cf58e7d4ac8ad1",
+        "sha256_in_prefix": "f29775f9036d9c4167020ed91f45dd323d49fbbfede1134293cf58e7d4ac8ad1",
+        "size_in_bytes": 3399
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/2.voila.js.map",
+        "path_type": "hardlink",
+        "sha256": "76cfa575d81fea0134fbe932c62a75a286272fcba92abaec6177b04bcb155ccd",
+        "sha256_in_prefix": "76cfa575d81fea0134fbe932c62a75a286272fcba92abaec6177b04bcb155ccd",
+        "size_in_bytes": 6685
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/3d580bd561716bfb1f0b4fdd7063a802.woff",
+        "path_type": "hardlink",
+        "sha256": "fc6ddf5df402b263cfb158aed8e89972542c34b719cd87b1db30461985f7bd5b",
+        "sha256_in_prefix": "fc6ddf5df402b263cfb158aed8e89972542c34b719cd87b1db30461985f7bd5b",
+        "size_in_bytes": 14628
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/4c74e33b0feb1fdbda49403a5e7ed604.woff",
+        "path_type": "hardlink",
+        "sha256": "af96f67d7accf5fd2a4a682d0b9f8b339f8ea6fe34c310c1694c8ba7f6ddc96f",
+        "sha256_in_prefix": "af96f67d7accf5fd2a4a682d0b9f8b339f8ea6fe34c310c1694c8ba7f6ddc96f",
+        "size_in_bytes": 11852
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/5589d1a8fc62be6613020ef2fa13e410.woff",
+        "path_type": "hardlink",
+        "sha256": "a009bea404f7a500ded48f8b9ad9cf16e12504b3195dd9e25975289b8256b0f0",
+        "sha256_in_prefix": "a009bea404f7a500ded48f8b9ad9cf16e12504b3195dd9e25975289b8256b0f0",
+        "size_in_bytes": 19360
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/72815766b08ca24d4d29ad1f5d4ecb45.woff",
+        "path_type": "hardlink",
+        "sha256": "c56da8d69f1a0208b8e0703656c3264b6dd748bd452524c82b0385b60f6a68c1",
+        "sha256_in_prefix": "c56da8d69f1a0208b8e0703656c3264b6dd748bd452524c82b0385b60f6a68c1",
+        "size_in_bytes": 17604
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/77dbcee3c3d9a82a0c04a4ae7992b895.woff",
+        "path_type": "hardlink",
+        "sha256": "8ea8dbb1b02e6f730f55b4cb5d413b785b9f5c39807d0a0fa7da206a0824a457",
+        "sha256_in_prefix": "8ea8dbb1b02e6f730f55b4cb5d413b785b9f5c39807d0a0fa7da206a0824a457",
+        "size_in_bytes": 19776
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/7e83626ba8bf2d20dc41565f1e6d0afc.woff",
+        "path_type": "hardlink",
+        "sha256": "355254db9ca10a09a3b5f0929d74eb4670f44fbe864c07526a06213e0a0caf6c",
+        "sha256_in_prefix": "355254db9ca10a09a3b5f0929d74eb4670f44fbe864c07526a06213e0a0caf6c",
+        "size_in_bytes": 20832
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/9995de4787f908d8237dba7007f6c3fe.woff",
+        "path_type": "hardlink",
+        "sha256": "1cb1c39ea642f26a4dfed230b4aea1c3c218689421f6e9c0a7c1811693c4fa07",
+        "sha256_in_prefix": "1cb1c39ea642f26a4dfed230b4aea1c3c218689421f6e9c0a7c1811693c4fa07",
+        "size_in_bytes": 34160
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/b80e08d5a79acbd1fafb1ca6f3515664.woff",
+        "path_type": "hardlink",
+        "sha256": "870673df72e70f87c91a5a317d558c2c3b54392264ad79bbadc6d424ae8765fe",
+        "sha256_in_prefix": "870673df72e70f87c91a5a317d558c2c3b54392264ad79bbadc6d424ae8765fe",
+        "size_in_bytes": 21480
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/bc3af04f9a671fcabd6498042c57478f.woff",
+        "path_type": "hardlink",
+        "sha256": "b418136e3b384baaadecb70bd3c48a8da9825210130b2897db808c44efc883cb",
+        "sha256_in_prefix": "b418136e3b384baaadecb70bd3c48a8da9825210130b2897db808c44efc883cb",
+        "size_in_bytes": 12660
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/bc42125861bd5bfc8686deeb612dcbb3.woff",
+        "path_type": "hardlink",
+        "sha256": "721921bab0d001ebff0206c24cb5de6ca136467bf1843a7aa32030ba061d1e92",
+        "sha256_in_prefix": "721921bab0d001ebff0206c24cb5de6ca136467bf1843a7aa32030ba061d1e92",
+        "size_in_bytes": 22340
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/c9423d5dc9d82a38ca215f74e9cdd9f2.woff",
+        "path_type": "hardlink",
+        "sha256": "88b98cad3688915e50da55553ff6ad185e0dce134b47f176e91b100f8a9b175c",
+        "sha256_in_prefix": "88b98cad3688915e50da55553ff6ad185e0dce134b47f176e91b100f8a9b175c",
+        "size_in_bytes": 34464
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/main.js",
+        "path_type": "hardlink",
+        "sha256": "405b52e3d83653174a9945fe8d71d31ee8149661858a8a6a63f5191e7d608f23",
+        "sha256_in_prefix": "405b52e3d83653174a9945fe8d71d31ee8149661858a8a6a63f5191e7d608f23",
+        "size_in_bytes": 2762
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/require.min.js",
+        "path_type": "hardlink",
+        "sha256": "01ed95cffe1e3dd22ee99c88ff9646b189dbfa6d0994e98a3e3b7a5d9f492640",
+        "sha256_in_prefix": "01ed95cffe1e3dd22ee99c88ff9646b189dbfa6d0994e98a3e3b7a5d9f492640",
+        "size_in_bytes": 17536
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/voila.js",
+        "path_type": "hardlink",
+        "sha256": "9013920d335936573d5e16bb1f503ee613b16e052a5bc1dcb8038dbeb394456f",
+        "sha256_in_prefix": "9013920d335936573d5e16bb1f503ee613b16e052a5bc1dcb8038dbeb394456f",
+        "size_in_bytes": 4349339
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/static/voila.js.map",
+        "path_type": "hardlink",
+        "sha256": "5b0d2f89aeb3cc4ca89552c42e178c0ffe53746adf3b50bd81431a4756db607e",
+        "sha256_in_prefix": "5b0d2f89aeb3cc4ca89552c42e178c0ffe53746adf3b50bd81431a4756db607e",
+        "size_in_bytes": 14379459
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/tree.html",
+        "path_type": "hardlink",
+        "sha256": "bceab6f56faa6a2ec2fc990d4838d4127561cfc6ed188e2d8dbab76e8a7f5db3",
+        "sha256_in_prefix": "bceab6f56faa6a2ec2fc990d4838d4127561cfc6ed188e2d8dbab76e8a7f5db3",
+        "size_in_bytes": 1730
+      },
+      {
+        "_path": "share/jupyter/voila/templates/base/voila_setup.macro.html.j2",
+        "path_type": "hardlink",
+        "sha256": "f5fd248c42aa49af2dac14698500c49f077de02fdc2ba6fc5bbe93cdd3521bff",
+        "sha256_in_prefix": "f5fd248c42aa49af2dac14698500c49f077de02fdc2ba6fc5bbe93cdd3521bff",
+        "size_in_bytes": 1220
+      },
+      {
+        "_path": "share/jupyter/voila/templates/classic/index.html.j2",
+        "path_type": "hardlink",
+        "sha256": "1632f23a6ddb2fa770fcb177c2927f3a7dad56aa4d9fe94c421ca628d9a2d889",
+        "sha256_in_prefix": "1632f23a6ddb2fa770fcb177c2927f3a7dad56aa4d9fe94c421ca628d9a2d889",
+        "size_in_bytes": 1896
+      },
+      {
+        "_path": "share/jupyter/voila/templates/classic/static/labvariables.css",
+        "path_type": "hardlink",
+        "sha256": "f1f9c2f5232945d501c16737edece840b125eb9c256cf5a45892e4c051be06d7",
+        "sha256_in_prefix": "f1f9c2f5232945d501c16737edece840b125eb9c256cf5a45892e4c051be06d7",
+        "size_in_bytes": 14606
+      },
+      {
+        "_path": "share/jupyter/voila/templates/classic/static/materialcolors.css",
+        "path_type": "hardlink",
+        "sha256": "3ac7c7da9bf9b87b474e4740d6ec97b59bfddf4d3c811b6393152e3832116bcf",
+        "sha256_in_prefix": "3ac7c7da9bf9b87b474e4740d6ec97b59bfddf4d3c811b6393152e3832116bcf",
+        "size_in_bytes": 7334
+      },
+      {
+        "_path": "share/jupyter/voila/templates/lab/browser-open.html",
+        "path_type": "hardlink",
+        "sha256": "13ae8c7a678bb943b589a6b863fcf016be021f72fc730d1fb60d15e419f5e6b3",
+        "sha256_in_prefix": "13ae8c7a678bb943b589a6b863fcf016be021f72fc730d1fb60d15e419f5e6b3",
+        "size_in_bytes": 608
+      },
+      {
+        "_path": "share/jupyter/voila/templates/lab/error.html",
+        "path_type": "hardlink",
+        "sha256": "c1bdc07ef81abc013ca3176a1039a1a1ff4ece74f65eda620a1e09bc002b00fa",
+        "sha256_in_prefix": "c1bdc07ef81abc013ca3176a1039a1a1ff4ece74f65eda620a1e09bc002b00fa",
+        "size_in_bytes": 231
+      },
+      {
+        "_path": "share/jupyter/voila/templates/lab/index.html.j2",
+        "path_type": "hardlink",
+        "sha256": "2cb6eca73d8500a1088a938b71eae36eeb309fc4646e5747ed99288517ae7140",
+        "sha256_in_prefix": "2cb6eca73d8500a1088a938b71eae36eeb309fc4646e5747ed99288517ae7140",
+        "size_in_bytes": 3338
+      },
+      {
+        "_path": "share/jupyter/voila/templates/lab/page.html",
+        "path_type": "hardlink",
+        "sha256": "8b691e5fb066352f6270995f32560cda343c60bd7132bdf3b959a0de0bda21eb",
+        "sha256_in_prefix": "8b691e5fb066352f6270995f32560cda343c60bd7132bdf3b959a0de0bda21eb",
+        "size_in_bytes": 495
+      },
+      {
+        "_path": "share/jupyter/voila/templates/lab/tree.html",
+        "path_type": "hardlink",
+        "sha256": "a70ee50d59c80de7ae1697838ba645e4700729564b3cf21aa9dbb9b66ee36f50",
+        "sha256_in_prefix": "a70ee50d59c80de7ae1697838ba645e4700729564b3cf21aa9dbb9b66ee36f50",
+        "size_in_bytes": 2365
+      },
+      {
+        "_path": "share/jupyter/voila/templates/reveal/index.html.j2",
+        "path_type": "hardlink",
+        "sha256": "fe302d66b576c2c85c8d66dc3ef0d2ad6ce00e6a526410140988ca185ca5a89f",
+        "sha256_in_prefix": "fe302d66b576c2c85c8d66dc3ef0d2ad6ce00e6a526410140988ca185ca5a89f",
+        "size_in_bytes": 2118
+      },
+      {
+        "_path": "share/jupyter/voila/templates/reveal/static/labvariables.css",
+        "path_type": "hardlink",
+        "sha256": "f1f9c2f5232945d501c16737edece840b125eb9c256cf5a45892e4c051be06d7",
+        "sha256_in_prefix": "f1f9c2f5232945d501c16737edece840b125eb9c256cf5a45892e4c051be06d7",
+        "size_in_bytes": 14606
+      },
+      {
+        "_path": "share/jupyter/voila/templates/reveal/static/materialcolors.css",
+        "path_type": "hardlink",
+        "sha256": "3ac7c7da9bf9b87b474e4740d6ec97b59bfddf4d3c811b6393152e3832116bcf",
+        "sha256_in_prefix": "3ac7c7da9bf9b87b474e4740d6ec97b59bfddf4d3c811b6393152e3832116bcf",
+        "size_in_bytes": 7334
+      },
+      {
+        "_path": "site-packages/voila-0.4.0.dist-info/INSTALLER",
+        "path_type": "hardlink",
+        "sha256": "d0edee15f91b406f3f99726e44eb990be6e34fd0345b52b910c568e0eef6a2a8",
+        "sha256_in_prefix": "d0edee15f91b406f3f99726e44eb990be6e34fd0345b52b910c568e0eef6a2a8",
+        "size_in_bytes": 5
+      },
+      {
+        "_path": "site-packages/voila-0.4.0.dist-info/METADATA",
+        "path_type": "hardlink",
+        "sha256": "c5792617f87fc19b4251baf3912570d19e5c834fc12c1e56342d4a5913b6494c",
+        "sha256_in_prefix": "c5792617f87fc19b4251baf3912570d19e5c834fc12c1e56342d4a5913b6494c",
+        "size_in_bytes": 8693
+      },
+      {
+        "_path": "site-packages/voila-0.4.0.dist-info/RECORD",
+        "path_type": "hardlink",
+        "sha256": "4fbb6059fba75c289c95c81576243b1f7dc8ab08efa4ef62c886c2fb0e988e7b",
+        "sha256_in_prefix": "4fbb6059fba75c289c95c81576243b1f7dc8ab08efa4ef62c886c2fb0e988e7b",
+        "size_in_bytes": 11072
+      },
+      {
+        "_path": "site-packages/voila-0.4.0.dist-info/REQUESTED",
+        "path_type": "hardlink",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256_in_prefix": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size_in_bytes": 0
+      },
+      {
+        "_path": "site-packages/voila-0.4.0.dist-info/WHEEL",
+        "path_type": "hardlink",
+        "sha256": "35a2e68071d6fdff634efbffc1187dbdc2bb73b10af68e5fc2c21730ece81a03",
+        "sha256_in_prefix": "35a2e68071d6fdff634efbffc1187dbdc2bb73b10af68e5fc2c21730ece81a03",
+        "size_in_bytes": 87
+      },
+      {
+        "_path": "site-packages/voila-0.4.0.dist-info/direct_url.json",
+        "path_type": "hardlink",
+        "sha256": "debd99cbf7d793c995a22d7f62b2cefefe9b8d9e6696b08294ccda916cc772c3",
+        "sha256_in_prefix": "debd99cbf7d793c995a22d7f62b2cefefe9b8d9e6696b08294ccda916cc772c3",
+        "size_in_bytes": 101
+      },
+      {
+        "_path": "site-packages/voila-0.4.0.dist-info/entry_points.txt",
+        "path_type": "hardlink",
+        "sha256": "b68e79fcf33c4fec66d0f42db571557376dfbeb5e259d97dbf2fc5fc99b06e65",
+        "sha256_in_prefix": "b68e79fcf33c4fec66d0f42db571557376dfbeb5e259d97dbf2fc5fc99b06e65",
+        "size_in_bytes": 41
+      },
+      {
+        "_path": "site-packages/voila-0.4.0.dist-info/licenses/LICENSE",
+        "path_type": "hardlink",
+        "sha256": "96a9df624920a8b8b52f0d33bcbcf75e4d37fb485b337e0f9100fc8d3ea54148",
+        "sha256_in_prefix": "96a9df624920a8b8b52f0d33bcbcf75e4d37fb485b337e0f9100fc8d3ea54148",
+        "size_in_bytes": 1538
+      },
+      {
+        "_path": "site-packages/voila/__init__.py",
+        "path_type": "hardlink",
+        "sha256": "e2a473fc015fe723a957273c6c64e3b4c424ff9d860106c20c1d7b655dc728d6",
+        "sha256_in_prefix": "e2a473fc015fe723a957273c6c64e3b4c424ff9d860106c20c1d7b655dc728d6",
+        "size_in_bytes": 1069
+      },
+      {
+        "_path": "site-packages/voila/__main__.py",
+        "path_type": "hardlink",
+        "sha256": "3024a9d5960c2ad14a05c4a895b216e38405f3fc1b0cd85d32e4dedb60418c16",
+        "sha256_in_prefix": "3024a9d5960c2ad14a05c4a895b216e38405f3fc1b0cd85d32e4dedb60418c16",
+        "size_in_bytes": 695
+      },
+      {
+        "_path": "site-packages/voila/_version.py",
+        "path_type": "hardlink",
+        "sha256": "3d4b216205a7f4c6c9d7ee09fc60b44d1252f8e28079e547a2e10e125be7dc6c",
+        "sha256_in_prefix": "3d4b216205a7f4c6c9d7ee09fc60b44d1252f8e28079e547a2e10e125be7dc6c",
+        "size_in_bytes": 1552
+      },
+      {
+        "_path": "site-packages/voila/app.py",
+        "path_type": "hardlink",
+        "sha256": "d3b2dabac0bb3e58e259fc33a62bbb8b5180c683ddd9a86300cd396f6d81525b",
+        "sha256_in_prefix": "d3b2dabac0bb3e58e259fc33a62bbb8b5180c683ddd9a86300cd396f6d81525b",
+        "size_in_bytes": 26500
+      },
+      {
+        "_path": "site-packages/voila/configuration.py",
+        "path_type": "hardlink",
+        "sha256": "b39b8fd0481318ae01cbbfafcd661cf768bd2e74f384123cd6445576feabece6",
+        "sha256_in_prefix": "b39b8fd0481318ae01cbbfafcd661cf768bd2e74f384123cd6445576feabece6",
+        "size_in_bytes": 5098
+      },
+      {
+        "_path": "site-packages/voila/execute.py",
+        "path_type": "hardlink",
+        "sha256": "ce1d441faecd9784bd4d8a1fe377e4870dc93505039e3297e2f250be4022c9db",
+        "sha256_in_prefix": "ce1d441faecd9784bd4d8a1fe377e4870dc93505039e3297e2f250be4022c9db",
+        "size_in_bytes": 4962
+      },
+      {
+        "_path": "site-packages/voila/exporter.py",
+        "path_type": "hardlink",
+        "sha256": "58d683d532ce6634b811a2785336bc3528d80285200820515a26f4dbe87ba19a",
+        "sha256_in_prefix": "58d683d532ce6634b811a2785336bc3528d80285200820515a26f4dbe87ba19a",
+        "size_in_bytes": 5984
+      },
+      {
+        "_path": "site-packages/voila/handler.py",
+        "path_type": "hardlink",
+        "sha256": "98d573042a748de53f8185433415996589ea0e7a388cddd313f73cc87e4fc0b4",
+        "sha256_in_prefix": "98d573042a748de53f8185433415996589ea0e7a388cddd313f73cc87e4fc0b4",
+        "size_in_bytes": 10608
+      },
+      {
+        "_path": "site-packages/voila/labextension/package.json",
+        "path_type": "hardlink",
+        "sha256": "f0c80004e7a8a35515dabb5f33f620eaaa260267a23565cf29ab7d08035acf16",
+        "sha256_in_prefix": "f0c80004e7a8a35515dabb5f33f620eaaa260267a23565cf29ab7d08035acf16",
+        "size_in_bytes": 2819
+      },
+      {
+        "_path": "site-packages/voila/labextension/schemas/@voila-dashboards/jupyterlab-preview/package.json.orig",
+        "path_type": "hardlink",
+        "sha256": "480f4a77a10a9a0fc00e15fe22f438e62b70cb30bae56e61358fd49eb3bf9938",
+        "sha256_in_prefix": "480f4a77a10a9a0fc00e15fe22f438e62b70cb30bae56e61358fd49eb3bf9938",
+        "size_in_bytes": 2677
+      },
+      {
+        "_path": "site-packages/voila/labextension/schemas/@voila-dashboards/jupyterlab-preview/plugin.json",
+        "path_type": "hardlink",
+        "sha256": "21ea91dc6790eaff96e9a4fffa9b9a2a0564a261c1744e1456f59cc4ebd28aba",
+        "sha256_in_prefix": "21ea91dc6790eaff96e9a4fffa9b9a2a0564a261c1744e1456f59cc4ebd28aba",
+        "size_in_bytes": 466
+      },
+      {
+        "_path": "site-packages/voila/labextension/static/643.999197bbd8ad4b2ee222.js",
+        "path_type": "hardlink",
+        "sha256": "999197bbd8ad4b2ee222064462906a234661f86b5f685d941865ebd30033d91b",
+        "sha256_in_prefix": "999197bbd8ad4b2ee222064462906a234661f86b5f685d941865ebd30033d91b",
+        "size_in_bytes": 3546
+      },
+      {
+        "_path": "site-packages/voila/labextension/static/97.b47cf72a58e37d0e5332.js",
+        "path_type": "hardlink",
+        "sha256": "b47cf72a58e37d0e5332e04587de61d42042d300a450d62fa72307df1b0dd6ab",
+        "sha256_in_prefix": "b47cf72a58e37d0e5332e04587de61d42042d300a450d62fa72307df1b0dd6ab",
+        "size_in_bytes": 5843
+      },
+      {
+        "_path": "site-packages/voila/labextension/static/remoteEntry.42a1c55007d8b1652540.js",
+        "path_type": "hardlink",
+        "sha256": "42a1c55007d8b16525407735604c606692e95f5d53a477d6e58ba6ae6b356df5",
+        "sha256_in_prefix": "42a1c55007d8b16525407735604c606692e95f5d53a477d6e58ba6ae6b356df5",
+        "size_in_bytes": 7566
+      },
+      {
+        "_path": "site-packages/voila/labextension/static/style.js",
+        "path_type": "hardlink",
+        "sha256": "666baf3b96824380b07c7af668a57a17350772a2b1aeb656ef6d100dd681ea80",
+        "sha256_in_prefix": "666baf3b96824380b07c7af668a57a17350772a2b1aeb656ef6d100dd681ea80",
+        "size_in_bytes": 179
+      },
+      {
+        "_path": "site-packages/voila/labextension/static/third-party-licenses.json",
+        "path_type": "hardlink",
+        "sha256": "3ff5632ca092319dec5ee3dc920f1b0f207c5e7f090fb12c888a11aaf48fde1d",
+        "sha256_in_prefix": "3ff5632ca092319dec5ee3dc920f1b0f207c5e7f090fb12c888a11aaf48fde1d",
+        "size_in_bytes": 2452
+      },
+      {
+        "_path": "site-packages/voila/notebook_renderer.py",
+        "path_type": "hardlink",
+        "sha256": "80515ae2a9c9e99b255b2f89f13e0dd33fd57fd0cc01d074fea19d0052858c97",
+        "sha256_in_prefix": "80515ae2a9c9e99b255b2f89f13e0dd33fd57fd0cc01d074fea19d0052858c97",
+        "size_in_bytes": 17656
+      },
+      {
+        "_path": "site-packages/voila/paths.py",
+        "path_type": "hardlink",
+        "sha256": "b6f2940334b4a84a51969b04d7e2d828fefd905822f71d89bcd02b0d8b0a4c4f",
+        "sha256_in_prefix": "b6f2940334b4a84a51969b04d7e2d828fefd905822f71d89bcd02b0d8b0a4c4f",
+        "size_in_bytes": 5867
+      },
+      {
+        "_path": "site-packages/voila/request_info_handler.py",
+        "path_type": "hardlink",
+        "sha256": "86ad6cfc8aff9623ad8aa0a8fc42ef48290c2f74b62c9ad0369ca4da40c6d868",
+        "sha256_in_prefix": "86ad6cfc8aff9623ad8aa0a8fc42ef48290c2f74b62c9ad0369ca4da40c6d868",
+        "size_in_bytes": 2205
+      },
+      {
+        "_path": "site-packages/voila/server_extension.py",
+        "path_type": "hardlink",
+        "sha256": "6532d8747c8bd0a331dec580228f33af2b9792a9c7c5fc25536bee0820ee3e2a",
+        "sha256_in_prefix": "6532d8747c8bd0a331dec580228f33af2b9792a9c7c5fc25536bee0820ee3e2a",
+        "size_in_bytes": 5173
+      },
+      {
+        "_path": "site-packages/voila/shutdown_kernel_handler.py",
+        "path_type": "hardlink",
+        "sha256": "05198d4d01452eafcd0601ceb7dd32637485477c906b7e22c2548166e6126d58",
+        "sha256_in_prefix": "05198d4d01452eafcd0601ceb7dd32637485477c906b7e22c2548166e6126d58",
+        "size_in_bytes": 425
+      },
+      {
+        "_path": "site-packages/voila/static/extension.js",
+        "path_type": "hardlink",
+        "sha256": "7adf5a08cb7e629d9c47c9b917a06635fc2738708de49387dde602936fe0150b",
+        "sha256_in_prefix": "7adf5a08cb7e629d9c47c9b917a06635fc2738708de49387dde602936fe0150b",
+        "size_in_bytes": 886
+      },
+      {
+        "_path": "site-packages/voila/static_file_handler.py",
+        "path_type": "hardlink",
+        "sha256": "78fc78f16734e6fab25c6ee030a9d5f34d6d4ec2e37239d557d354ec2a4ab128",
+        "sha256_in_prefix": "78fc78f16734e6fab25c6ee030a9d5f34d6d4ec2e37239d557d354ec2a4ab128",
+        "size_in_bytes": 4728
+      },
+      {
+        "_path": "site-packages/voila/treehandler.py",
+        "path_type": "hardlink",
+        "sha256": "9ec66fdad0b3a3cb7dfef0170b1b696fc2079086fd66a02f588734ac4fb0761a",
+        "sha256_in_prefix": "9ec66fdad0b3a3cb7dfef0170b1b696fc2079086fd66a02f588734ac4fb0761a",
+        "size_in_bytes": 3812
+      },
+      {
+        "_path": "site-packages/voila/utils.py",
+        "path_type": "hardlink",
+        "sha256": "006cc6516ca36a18c99c5e96ae1a1592398d197507488878f7e71aab2a530481",
+        "sha256_in_prefix": "006cc6516ca36a18c99c5e96ae1a1592398d197507488878f7e71aab2a530481",
+        "size_in_bytes": 6379
+      },
+      {
+        "_path": "site-packages/voila/voila_kernel_manager.py",
+        "path_type": "hardlink",
+        "sha256": "bf77d9c926dd63230d3f489a0ea73433a3265201ffe75ef3115eca3d0bc12ee6",
+        "sha256_in_prefix": "bf77d9c926dd63230d3f489a0ea73433a3265201ffe75ef3115eca3d0bc12ee6",
+        "size_in_bytes": 16704
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/__init__.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/__main__.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/_version.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/app.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/configuration.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/execute.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/exporter.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/handler.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/notebook_renderer.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/paths.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/request_info_handler.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/server_extension.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/shutdown_kernel_handler.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/static_file_handler.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/treehandler.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/utils.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "lib/python3.8/site-packages/voila/__pycache__/voila_kernel_manager.cpython-38.pyc",
+        "path_type": "pyc_file"
+      },
+      {
+        "_path": "bin/voila",
+        "path_type": "unix_python_entry_point"
+      }
+    ],
+    "paths_version": 1
+  },
+  "requested_spec": "voila",
+  "sha256": "8fd0278f3104db9d3586eed598e074afe8de3b8ada58e2b8c8d76787976b8867",
+  "size": 4780024,
+  "subdir": "noarch",
+  "timestamp": 1666857136456,
+  "track_features": "",
+  "url": "https://conda.anaconda.org/conda-forge/noarch/voila-0.4.0-pyhd8ed1ab_0.tar.bz2",
+  "version": "0.4.0"
+}
