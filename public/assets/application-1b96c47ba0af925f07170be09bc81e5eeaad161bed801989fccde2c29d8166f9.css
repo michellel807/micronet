@@ -1,0 +1,143 @@
+html {
+color: none;
+  min-height: 100%;
+  background-image: linear-gradient(to top, #000750, #405fad);
+  padding-bottom: 100px;
+  min-width:800px;
+  overflow:visible;
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  justify-content: flex-start;
+   }
+body{
+  font-family: "Helvetica", sans-serif;
+}
+
+h1 {
+  font-size: 80px;
+  color: #fff;
+  font-weight: -30;
+  filter: drop-shadow(5px 1px 5px #000750);
+  text-align: center;
+  align-items:center;
+  justify-content: center;
+}
+
+h2 {
+  font-size: 40px;
+  color: #fff;
+  font-weight: -10; /*somehow higher number means thinner, can go neg, increments o f0 */
+  background: #000750;
+  margin-left: 20%;
+  margin-right: 20%;
+  padding: 0.1rem 0.2rem;
+  border-radius: 0.2rem;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload_class {
+  color: #fff;
+  padding: 0.1rem 0.2rem;
+  border-radius: 0.2rem;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+}
+
+.select_class {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.select_class label {
+  margin-right: 20px;
+}
+
+.generate_button {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+p {
+  color: #fff;
+  font-size: 20px;  
+  text-align: center;
+  position: relative;
+  border-radius: 0.4rem;
+}
+
+.notice{
+  color: yellow;
+  text-align: center;    
+  position: relative;
+}
+
+.chart-container {
+  color: #012190;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0.1rem 0.2rem;
+  border-radius: 0.2rem;
+  text-align: center;
+  position: relative;
+}
+
+.chart-container h3 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.2rem;
+}
+
+.single-chart {
+  display: flex;
+  justify-content: center;
+}
+
+<div id="chart-container" class="<%= @charts_data.keys.length == 1 ? 'single-chart' : '' %>">
+<% if @charts_data[:line_plot] %>
+    <div class="chart-container">
+      <h3>Line Plot</h3>
+      <%= image_tag @charts_data[:line_plot], class: 'chart-image' %>
+    </div>
+  <% end %>
+
+  <% if @charts_data[:bar_plot] %>
+    <div class="chart-container">
+      <h3>Bar Plot</h3>
+      <%= image_tag @charts_data[:bar_plot], class: 'chart-image' %>
+    </div>
+  <% end %>
+
+  <% if @charts_data[:scatter_plot] %>
+    <div class="chart-container">
+      <h3>Scatter Plot</h3>
+      <%= image_tag @charts_data[:scatter_plot], class: 'chart-image' %>
+    </div>
+  <% end %>
+</div>
+
+/* Makes the welcome page responsive to page width changes*/
+.skinny {
+  width: 60%;
+  margin: auto;
+  text-align: center;
+}
+
+.flex-wrapper{
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  justify-content: flex-start;
+}

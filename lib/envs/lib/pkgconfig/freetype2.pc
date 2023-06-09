@@ -1,0 +1,14 @@
+prefix=/Users/hrd11/Desktop/Schmid_Lab/amigacondaenv
+exec_prefix=/Users/hrd11/Desktop/Schmid_Lab/amigacondaenv
+libdir=/Users/hrd11/Desktop/Schmid_Lab/amigacondaenv/lib
+includedir=/Users/hrd11/Desktop/Schmid_Lab/amigacondaenv/include
+
+Name: FreeType 2
+URL: https://freetype.org
+Description: A free, high-quality, and portable font engine.
+Version: 24.3.18
+Requires: 
+Requires.private: 
+Libs: -L/Users/hrd11/Desktop/Schmid_Lab/amigacondaenv/lib -lfreetype
+Libs.private: -lz -L/Users/hrd11/Desktop/Schmid_Lab/amigacondaenv/lib -lpng16 -lz
+Cflags: -I${includedir}/freetype2
