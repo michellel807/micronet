@@ -1,0 +1,40 @@
+<div class="flex-wrapper">
+  <%= render "partials/navbar" %>
+  <div class='steps-container'>
+    <div class='steps active'>
+      <span>Upload Data</span>
+    </div>
+    <div class='steps'>
+      <span>Environment(s)</span>
+    </div>
+    <div class='steps'>
+      <span>Subsampling</span>
+    </div>
+    <div class='steps'>
+      <span>Review</span>
+    </div>
+    <div class='steps'>
+      <span>Finished</span>
+    </div>
+  </div>
+  <p class="alert-danger"><%=flash.notice%></p>
+  <div class="general-white-block">
+    <h2>Import Data Files</h2>
+    <br>
+    <%= form_with url: "/uploads", method: :post, html: { multipart: true} do |f| %> 
+      <div>
+        <%= f.label :odfile, "Submit OD File:"%>   
+        <%= f.file_field :odfile, :required => 'required', accept: 'text/csv' %>   
+      </div>
+      <br><br> 
+      <div>
+        <%= f.label :metafile, "Submit Meta File:"%>   
+        <%= f.file_field :metafile, :required => 'required', accept: 'text/csv' %>   
+      </div>
+      <br><br>   
+      <%= f.submit "Save", class: 'savebutton'%>  
+    <% end %> 
+  </div>
+  <%= render "partials/footer" %>
+</div>
+

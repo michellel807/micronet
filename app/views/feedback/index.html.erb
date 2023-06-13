@@ -1,0 +1,30 @@
+<div class = "flex-wrapper">
+  <%= render "partials/navbar" %>
+  <div class="general-white-block">
+    <h1>Feedback Form</h1>
+    <p> 
+      Welcome to the feedback page! Please let us know if we can do anything to make the process of uploading your data more feasible. We hope to hear back from you. 
+      Below is a section where you can specify if you had any trouble with any of the pages/steps of the model, or if you were overall satisfied with your experience.
+    </p>
+  <br>
+    <%= form_with url: '/feedback', method: :post do |form| %>
+      <%= form.label :email, "Please enter your email:"%>
+      <%= form.text_area :email, size: "80x1" %>
+      <%= form.label :like, "Was there any specific part of the process that you had issues with?" %>
+      <%= form.select :like, ["None", "Upload Data", "Environments", "Sub-Sampling", "Confirm"] %>
+      <br>
+      <%= form.label :issue, "If so please elaborate:" %>
+      <%= form.text_area :issue, size: "80x5" %>
+      <br>
+      <%= form.label :recommend, "Would you recommend the Phenom WebApp to a colleague?" %>
+      <%= form.select :recommend, ["Yes", "No"] %>
+      <br>
+      <%= form.label :suggestions, "Any additional comments/suggestions?" %>
+      <%= form.text_area :suggestions, size: "80x5" %>
+      <br>
+      <%= form.submit "Submit", class:'savebutton'%>
+    <% end %>
+  </div>
+  <%= render "partials/footer"%>
+</div>
+          

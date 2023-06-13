@@ -1,0 +1,48 @@
+<%# <div class = "general-white-block-email"> %>
+    <%# <style>
+        .general-white-block-email{
+            background-color: rgb(255, 255, 255);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin: 50px;
+            padding: 60px; 
+            padding-right:120px;
+            padding-left: 120px;
+            gap: 20px;
+            max-width: 800px;
+        }
+        .email{
+        background-color: #ededed;
+        font-size: 18px;
+        padding-left:50px;
+        padding-right: 50px;
+        text-align: left;
+        }
+    </style> %>
+    <div class = "email">
+      <h1>Phenom Confirmation Page</h1>
+      <p>Hello,<p>
+        <p>Attached is a summary of your data and variables. Your information is 
+        now being processed, and you will receive another email with your final 
+        results when the analysis has completed.</p>
+        <p>For more information, check out the papers under the "Resources" page of the Phenom Web App. Thank you for using the Phenom Web App!</p>
+        <%= link_to "Link to jobs associated with this email.", job_url(@hash)%>
+        <br>
+        <br/>
+        <table>
+            <tr>
+                <td> Email: </td>
+                <td><%=params[:user].email%></td> <br/>
+            </tr>
+            <tr>
+                <td>Subsample:</td>
+                <td><%=params[:job].subsample%></td> <br/>
+            </tr>
+            <tr>
+                <td>Environments:</td>
+                <td><%=params[:job].factors%></td> <br/>
+            </tr>
+        </table>
+    </div>
+<%# </div> %>

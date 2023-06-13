@@ -1,0 +1,15 @@
+<div class="flex-wrapper">
+  <%= render "partials/navbar" %>
+  <div class="general-white-block">
+    <h1>Completed!</h1>
+    <p> 
+      You're feedback has been submitted, thank you for your thoughts!
+    </p>
+    <br>
+    <%= form_with url: '/', method: :get do |form| %>
+      <%= form.submit "Return Home", class:'savebutton' %>
+    <% end %>
+  </div>
+  <%= render "partials/footer"%>
+</div>
+          

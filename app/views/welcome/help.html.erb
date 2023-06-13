@@ -1,0 +1,172 @@
+
+
+<div class = "flex-wrapper">
+  <%= render "partials/navbar" %>
+  <div class="general-white-block-help">
+    <h1>Help Page</h1>
+    <br>
+    <p> 
+      Welcome to the help page! Here you will find instructions on how to clean your data and how to use the webapp, and an explanation of the results the Phenom Web App produces. 
+      At the bottom of the page, there will also be a tutorial video to guide you along the process. 
+      If you require further assistance, please go to the “Resources” tab on the top right of this page to contact us.
+    </p>
+    <div class="m-4">
+      <div class="accordion" id="myAccordion">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingOne">
+            <button type="button" class="accordion-button" data-bs-toggle="collapse" data-bs-target="#collapseOne">Introduction</button>									
+          </h2>
+          <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#myAccordion">
+            <div class="card-body">
+              <p> This is the beta test of the Phenom Web App. This application will analyze microbial growth data collected by an optical density
+                scanner, fitting the flexible *Phenom* model described in <a style= "color: blue;" href="https://journals.plos.org/ploscompbiol/article/authors?id=10.1371/journal.pcbi.1008366">Tonner et al. (2020)</a>.
+                Specifically, we fit the 'MFULL' model, which features random effects for experimental replicates and (if included in the user-provided meta-data) experimental
+                batches. Using flexible Gaussian Process models, we learn growth curves, with pointwise standard errors, for each experimental 
+                treatment condition. To use this application you will need to make sure you have correctly formatted 
+                your data files in advance, as outlined in the tabs below:
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingTwo">
+            <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#collapseTwo">Optical Density Data</button>
+          </h2>
+          <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#myAccordion">
+            <div class="card-body">
+              <p>
+                Here we need a 'csv' file with N+1 rows and P+1 columns, where N is the number of time points and P is the number of wells 
+                in which optical density measurements were taken. The first row will consist of column labels, and the first column will contain
+                the times at which observations were recorded. The remaining PxN cells will contain optical density measurements. 
+                Note that, while the first row must be reserved for names, we need not specify a name for every column. A screenshot 
+                of a well-formatted file is provided below.
+              </p>
+              <br>
+              
+                <%= image_tag "od_screenshot.png", height: 500, alt: "Screenshot of a well-formatted optical density file", class: "help_image"%>
+             
+              </div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingThree">
+            <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#collapseThree">Meta Data</button>
+          </h2>
+          <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#myAccordion">
+            <div class="card-body">
+              <p>
+                The column name 'BATCH', in all capital letters, is reserved to indicate experimental batches. If no 'BATCH' column is included,
+                the app will assume that all replicates were observed in the same batch, and no batch-level random effect will be included. The app will indicate 
+                a warning if a 'BATCH' column was not included in the submited meta-data file. 
+                Any column included in the meta-data file (including 'BATCH', if it is used) must feature at least 2 treatment levels. The effects 
+                of treatment conditions which are not varied across replicates are absorbed into the intercept and are not separately identifiable. 
+                A screenshot of a well-formatted file is provided below.
+              </p>
+              <br>
+              <%= image_tag "meta_screenshot.png", height: 600, alt: "Screenshot of a well-formatted meta data file", class: "help_image"%>
+              <br>
+              <br>
+              <p>
+              After both the optical density file and meta-data file have been uploaded, an interactive plot of the optical density data 
+              and a printout of the metadata will appear so that 
+              the user can appraise whether their data have been uploaded and parsed correctly.
+            </div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingFour">
+              <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#collapseFour">Subsampling</button>
+          </h2>
+          <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#myAccordion">
+            <div class="card-body">
+              <p>
+                The subsampling tab will allow you to choose whether you want your data to be minimized or not. We encourage you to subsample data longer than
+                N<=15 (since time to fit this model scales with N^3), so that the data does not
+                take as long to process (usually longer than a week). If you choose to subsample, a random selection of your data 
+                will be chosen to analyze based of the subsampling factor you choose. The number of remaining rows in your dataset will be indicated on the confirmation page. 
+                An example of what the page should look like is shown below: 
+              </p>
+              <br>
+              <%= image_tag "sub-sample.png", height:500, alt: "Image of the subsampling page on the Phenom Web App", class: "help_image_h"%>   
+            </div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingFive">
+            <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#collapseFive">Confirming and Begin Processing</button>
+          </h2>
+          <div id="collapseFive" class="accordion-collapse collapse" data-bs-parent="#myAccordion">
+            <div class="card-body">
+              <p>
+                Once you have indicated (1) a file containing a sequence of optical density measurements for a collection of wells,
+                (2) a meta data file, (3) the treatments applied to each well, and (4) the subsampling applied to the data, you will confirm
+                your information on the 'Review' page. 
+                When you are ready, click 'Confirm and Begin Processing' 
+                and the app will fit the Phenom model to the provided data. A confirmation email of your analysis will be emailed to the email address provided within 5 minutes.
+                Depending on the number of timepoints, the number of replicates,
+                the number of covariates, and the number of treatment levels within each covariate, the analysis itself may take quite a while 
+                (10 minutes to a few hours). Once the process is complete, another 'processed data' email will be sent to you with a file attachment of your results.
+                An example of what the page should look like is shown below: 
+              </p>
+              <br>
+              <%= image_tag "confirm.png", height: 500, alt: "Image of the confirmation page on the Phenom Web App", class: "help_image_h"%> 
+            </div>
+          </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingEight">
+              <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#collapseEight">Job Status</button>									
+            </h2>
+            <div id="collapseEight" class="accordion-collapse collapse" data-bs-parent="#myAccordion">
+              <div class="card-body">
+                <p>In your confirmation email you will find a personalized link to a job status page for all of the past
+                 and current analyses you have submitted to the Phenom Web App. Since it is difficult to estimate the runtime for 
+                 your data, we hope that this will make it more convenient for you to check on your data analysis. 
+                 In the second to last column labeled "Analysis Status", you can download the most recent log file of your data analysis. 
+                 There are 6 steps in total for the analysis, so you can check at which step your process is currently at.
+                 You will also be able to see if your data analysis has stopped altogether due to an error. 
+                 A copy of your downloadable results will appear in the last column labaled "Processed Data".
+                 An example of what the page should look like is shown below:</p>
+                <br>
+                <%= image_tag "job_status.png", height: 500, alt: "Image of the job status page on the Phenom Web App", class: "help_image_h"%>             
+              </div>
+            </div>
+          </div>
+        
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="headingSix">
+              <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#collapseSix">Tutorial Video</button>
+            </h2>
+            <div id="collapseSix" class="accordion-collapse collapse" data-bs-parent="#myAccordion">
+              <div class="card-body">
+                <p>
+                  Below is a tutorial video that will show a step-by-step process on how to properly use the Phenom Web App. If you require additional assistance, 
+                  please click the “Resources" tab on the top right part of this screen, and we will respond within 2-3 business days.
+                </p>
+              <div class="video-container">
+                <iframe alt text = "Tutorial Video" src="https://www.youtube.com/embed/NM6_WvQfnBE" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <%# Uncomment below for future FAQ questions %>
+          <%# <div class="accordion-item">
+            <h2 class="accordion-header" id="headingSeven">
+              <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#collapseSeven">Frequently Asked Questions</button>									
+            </h2>
+            <div id="collapseSeven" class="accordion-collapse collapse" data-bs-parent="#myAccordion">
+              <div class="card-body">
+                <p>In this section lies a collection
+                  of frequently asked questions from our users. If you still have any questions, please
+                  contact us.</p>
+                            
+              </div>
+            </div>
+          </div> %>
+
+      </div>
+    </div>
+  </div>
+  <%=render "partials/footer"%>
+</div>                         

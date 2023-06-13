@@ -1,0 +1,50 @@
+<div class = "welcomescreen">
+    <header>
+      <a href="https://genome.duke.edu/">
+    <img src="<%= asset_path('logo.png') %>" alt="Logo" style="max-width: 
+150px; height: auto;">
+      </a>
+    <div class="vertical-bar" style="width: 1px; height: 30px; 
+background-color: #fff; margin-right: 10px;"></div>
+    <h2 style="font-size: 1.5em; margin: 0;">Schmid Lab Microbial Growth 
+Model</h2>
+      <nav>
+        <a class = "wel_nav" href="/help" >HELP</a>
+        <a class = "wel_nav" href="/resources">RESOURCES</a>
+        <a class = "wel_nav" href="/admin">ADMIN</a>
+      </nav>
+    </header>
+    <div class="column skinny">
+      <br>
+      <h1>WELCOME TO THE SCHMID LAB MICROBIAL GROWTH MODEL!</h1>
+      <br>
+      <p>
+        The Schmid Lab Microbial Growth Model is a hierarchical Bayesian 
+non-parametric 
+model of population growth that identifies microbial latent growth behavior and
+        response to perturbation, while simultaneously correcting for both batch and replicate effects on treatment estimations.
+      </p>
+      <p>
+        Results are usually reported within a few days, and an automated email will be sent to you once your results are ready.
+      </p>
+      <p>Please submit the email that you would like results to be sent to, 
+then click “Begin Now” to start your analysis. </p>
+      <br>
+      <%= form_with url: "/", method: :post do |form|%>
+        <%= form.label :email, "Input Email:", class: "input_email"%>
+        <%= form.text_field :email%>
+        <%= form.submit "Begin Now!"%>
+      <% end %>
+      <div class="email-alert"><%=flash[:notice]%></div>
+      <%= link_to 'Need help?', "help", id: "help_link" %>
+    </div>
+    
+
+
+  <footer>
+    <a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>
+    
+    <h2 style= "margin-top:10px">&copy; Code+ 2022</h2>
+    <br/>
+  </footer>
+</div>

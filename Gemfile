@@ -2,7 +2,11 @@ source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
 ruby "3.2.2"
-
+gem 'daemons' #to start delayed jobs automatically
+gem 'delayed_job_active_record' #apparently need this for delayed jobs too
+gem 'delayed_job' #need for delayed jobs to run
+gem 'hashids' #apparently need for hash IDs
+gem 'carrierwave'
 gem 'mini_magick' #to convert PDFs to PNGs
 gem 'activerecord-session_store' #to avoid cookie overflow
 gem 'csv'  # for CSV file processing

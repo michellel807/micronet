@@ -1,0 +1,118 @@
+  <head>
+    <%# The bootstrap for the pagination and the search bar in the tables %>
+   
+    <%# Stylesheet for the navbar button %>
+
+    <link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css"/>
+    <link rel="stylesheet" type="text/css" 
+      href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">
+    <link rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">   
+
+    <script type="text/javascript" language="javascript" 
+      src="https://code.jquery.com/jquery-3.3.1.js"></script>
+    <script type="text/javascript" language="javascript" 
+      src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script 
+      src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script type="text/javascript" 
+      src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+
+  </head>
+  
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <%= stylesheet_link_tag "navbar" %>
+
+    <header class="adminheader">
+      <a href="https://biostat.duke.edu/research/duke-center-genomic-and-computational-biology">
+        <%= image_tag 'logo.png', alt: 'Duke Center for Genomic and Computational Biology Logo' %>
+      </a>
+      <a><p style="font-size:16px; padding-top:5px; color: white;">THE PHENOM MICROBIAL GROWTH MODEL</p></a>
+    
+      <nav>
+        <style>
+          .dropbtn {
+            background-color: rgba(0,0,0,0);
+            color: white;
+            padding: 16px;
+            min-width:60px;
+            border: none;
+            cursor: pointer;
+            margin-left:50px;
+          }
+
+          .dropbtn:hover, .dropbtn:focus {
+            background-color: rgba(0,0,0,0);
+            color: #1287ed;
+          }
+
+          .dropdown {
+            position: relative;
+            display: inline-block;
+            margin-right: 50px;
+            
+          }
+
+          .dropdown-content {
+            display: none;
+            font-size:14px;
+            position: absolute;
+            background-color: #f1f1f1;
+            min-width: 160px;
+            overflow: auto;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+             border-radius: 5px;
+          }
+
+          .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+          }
+
+          .dropdown a:hover {
+            background-color: #1287ed; 
+            color: black;
+          }
+
+          .show {display: block;}
+        </style>
+
+        <div class="dropdown">
+          <button onclick="myFunction()" class="dropbtn">EXIT  &nbsp;<i class="bi bi-box-arrow-right"></i></button>
+          <div id="myDropdown" class="dropdown-content">
+            <a href="/">Home</a>
+            <a href="/help">Help</a>
+            <a href="/resources">Resources</a>
+            <hr>
+            <a href="https://shib.oit.duke.edu/cgi-bin/logout.pl">Log Out</a>
+          </div>
+        </div>
+
+        <script>
+        /* When the user clicks on the button, 
+        toggle between hiding and showing the dropdown content */
+        function myFunction() {
+          document.getElementById("myDropdown").classList.toggle("show");
+        }
+
+        // Close the dropdown if the user clicks outside of it
+        window.onclick = function(event) {
+          if (!event.target.matches('.dropbtn')) {
+            var dropdowns = document.getElementsByClassName("dropdown-content");
+            var i;
+            for (i = 0; i < dropdowns.length; i++) {
+              var openDropdown = dropdowns[i];
+              if (openDropdown.classList.contains('show')) {
+                openDropdown.classList.remove('show');
+              }
+            }
+          }
+        }
+        </script>
+
+      </nav>
+    </header>

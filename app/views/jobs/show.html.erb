@@ -1,0 +1,57 @@
+<div class="flex-wrapper">
+  <%= render "partials/navbar" %>
+  <div class="general-white-block">
+    <h2>Jobs under <%=@email%></h2>
+    <div class= "scroll-container">
+      <table>
+        <tr>
+          <th>ID</th>
+          <th>Job Status</th>
+          <th>Analysis Start Time</th>
+          <th>Analysis End Time</th>
+          <th>Meta-Data File</th>
+          <th>OD Data File</th>
+          <th>Analysis Status</th>
+          <th>Processed Data</th>
+        </tr>
+        <% @jobs.each do |job|%>
+          <tr>
+            <td> <%=job.id%> </td>
+            <td> <%=job.status%> </td>
+            <td> <%=job.startTime%> </td>
+            <td> <%=job.endTime%> </td>
+
+            <td>
+              <% if !job.metafile.file.nil? %>
+                <%= link_to "Download Meta Data", job.metafile_url, class: "download" %>
+              <% end %>
+            </td>
+            <td>
+              <% if !job.odfile.file.nil? %>
+                <%= link_to "Download OD Data", job.odfile_url, class: "download" %>
+              <% end %>
+            </td>
+
+            <td>
+              <% if File.exist?("#{Rails.root}/public/uploads/job/#{job.id}/logfile.txt")%>
+                <% lines = File.open("#{Rails.root}/public/uploads/job/#{job.id}/logfile.txt").to_a %>
+                <%= link_to lines.last, "/uploads/job/#{job.id}/logfile.txt", download: "diagnostic_log"%>
+              <% else %>
+                N/A
+              <%end%>
+            </td>
+
+            <td>
+              <% if File.exist?("#{Rails.root}/public/uploads/job/#{job.id}/finaltable.csv")%>
+                <%= link_to "Download Processed Data", "/uploads/job/#{job.id}/finaltable.csv", download: "processed_data"%>
+              <% else %>
+                Processing Not Complete
+              <%end%>
+            </td>
+          </tr>
+        <%end%>
+      </table>
+    </div>
+  </div>
+  <%= render "partials/footer" %>
+</div>

@@ -24,43 +24,8 @@ def upload
       session[:mapping_file_paths] << mapping_file.file_path.to_s # Add the file path to the session array
   end
 
-  redirect_to root_path, notice: 'Files uploaded successfully.'
+  redirect_to '/home', notice: 'Files uploaded successfully.'
 end
-
-  def generate_charts
-    @selected_chart_types = params[:chart_types] || []
-
-    if @selected_chart_types.include?('raw_data')
-      raw_data_results = RawDataGenerator.generate_raw_data()
-      @raw_data_pdf_paths = raw_data_results[:raw_data_pdf_paths]
-      @raw_data_png_paths = raw_data_results[:raw_data_png_paths]
-    end
-
-    if @selected_chart_types.include?('fit_stats')
-      @fit_stats_paths = FitStatisticsGenerator.generate_fit_stats()
-    end
-
-    respond_to do |format|
-      format.html do
-        if @selected_chart_types.any?
-          render partial: 'plots', locals: { fit_stats_paths: @fit_stats_paths, raw_data_pdf_paths: @raw_data_pdf_paths }
-        else
-          render plain: 'No chart types selected.'
-        end
-      end
-    end
-  end
-
-  def serve_image
-    filename = params[:filename]
-    file_path = Rails.root.join('public', 'uploads', 'userexpt', 'figures', filename)
-    
-    if File.exist?(file_path) && File.file?(file_path)
-      send_file file_path, disposition: 'inline'
-    else
-      head :not_found
-    end
-  end
 
 require 'fileutils'
 
@@ -73,6 +38,3 @@ at_exit do
   HomeController.new.delete_files
  end
 end
-
-
-
