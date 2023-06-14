@@ -1,0 +1,61 @@
+/* ...
+*= require_self
+*= require_tree .
+*/
+
+/* for the home screen */
+* {
+  font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
+  font-weight: 300;
+}
+.homescreen{
+  color: white;
+  background-image: linear-gradient(to top, #000750, #405fad);
+
+} 
+.homescreen h1 {
+  font-size: 50px;
+  margin-top: 20px;
+}
+
+.homescreen p {
+  font-size: 25px;
+}
+
+.background{
+  background-image: linear-gradient(to bottom, #000750, #000750);
+}
+
+
+.checkbox-container {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.upload-button {
+  background-color: #000750;
+  padding: 5px 15px;
+  border-radius: 6px;
+  color: white;
+  font-size: 20px;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  display: inline-block;
+  text-align: center;
+  align-self: center;
+  filter: drop-shadow(3px 3px 4px #b4b4b4);
+}
+
+.upload-button:hover {
+  background-color: #405fad;
+  color: white;
+  text-decoration: none;
+}
+
+.notice{
+  font-size: 20px;
+  font-weight: 500;
+  color: #405fad;
+  margin-top: 20px;
+}

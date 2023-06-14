@@ -1,16 +1,14 @@
 class UserMailer < ApplicationMailer
   default from: "noreply@duke.edu"
 
-  # Sends the final email with processed results and visualization pdf as file attachments
-  # The email can be found under views/user_mailer/welcome_email.html.erb
-  def welcome_email(file_name)
-    @user = User.find(params[:job].user_id)
-    @file_name = file_name
-    # The use of `Kernel#open` is a serious security risk.
-    file = open(params[:job].pfile).read
-    file2 = open(params[:job].vfile).read
-    attachments[params[:filename]] = file
-    attachments["final_visualizations.pdf"] = file2
+  def welcome_email(file_names, job)
+    @user = User.find(job.user_id)
+    @file_names = file_names
+
+    file_names.each do |file_name|
+      file_path = Rails.root.join('public', 'uploads', 'userexpt', 'figures', file_name)
+      attachments[file_name] = File.read(file_path) if File.exist?(file_path)
+    end
 
     mail(to: @user.email, subject: "Phenom Model Processed Data")
   end
@@ -27,11 +25,11 @@ class UserMailer < ApplicationMailer
     @job = params[:job]
 
     # The use of `Kernel#open` is a serious security risk.
-    mfile = open("#{Rails.root}/public/#{params[:job].metafile_url}").read
-    attachments["meta.csv"] = mfile
+    #mfile = open("#{Rails.root}/public/#{params[:job].metafile_url}").read
+    #attachments["meta.csv"] = mfile
 
-    ofile = open("#{Rails.root}/public/#{params[:job].odfile_url}").read
-    attachments["od.csv"] = ofile
+    #ofile = open("#{Rails.root}/public/#{params[:job].odfile_url}").read
+    #attachments["od.csv"] = ofile
 
     mail(to: @user.email, subject: "Phenom Model Confirmation")
   end

@@ -16,4 +16,6 @@ Rails.application.routes.draw do
 
   get "/jobs/:id", to: "jobs#show"
 
+  get "/resources", to: "welcome#resources"
+  get "/help", to: "welcome#help"
 end

@@ -1,51 +1,79 @@
-<h1>Welcome to the Schmid Lab Microbial Growth Model!</h1>
-<p>The model takes plate reader data as input data file(s), in either tab-delimited or 
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Home page</title>
+    <%= stylesheet_link_tag 'home' %>
+  <head>
+  <body>
+    <%= yield %>
+  </body>
+</html>
+
+<div class = "homescreen">
+<header>
+<a href="https://genome.duke.edu/">
+  <%= image_tag 'logo.png', alt: 'Duke Logo' %>
+</a>
+<h2 style = "color:white;" >THE SCHMID LAB MICROBIAL GROWTH MODEL</h2>
+<nav>
+  <a class = "wel_nav" href="/help" >HELP</a>
+  <a class = "wel_nav" href="/resources">RESOURCES</a>
+  <a class = "wel_nav" href="/admin">ADMIN</a>
+</nav>
+</header>
+
+  <div class="column skinny">
+    <h1>The Schmid Lab Microbial Growth Model: Uploading Data</h1>
+       <p>The model takes plate reader data as input data file(s), in either tab-delimited or 
 comma-separated formats. You may also provide a metadata file(s) containing the metadata 
 associated with each well. Upload your .txt, .csv, or .ascii file, along with an 
 associated metadata file if desired, and then select the charts you would like to 
 generate.</p>
+  </div>
 
-<div class="upload_class">
+  <div class="general-white-block">
+  <h2>Upload Data and Metadata File(s)</h2>
   <%= form_tag(upload_path, multipart: true) do %>
-    <h2>Upload Data and Metadata File(s)</h2>
-    <label for="data_files">Data File:</label>
-    <%= file_field_tag 'data_files[]', multiple: true %>
-
-    <label for="mapping_files">Mapping File:</label>
-    <%= file_field_tag 'mapping_files[]', multiple: true %>
-    <%= submit_tag 'Upload' %>
+    <p>
+      <label for="data_files">Data File:</label>
+      <%= file_field_tag 'data_files[]', multiple: true %>
+    </p>
+    <p>
+      <label for="mapping_files">Mapping File:</label>
+      <%= file_field_tag 'mapping_files[]', multiple: true %>
+    </p>
+    <%= submit_tag 'Upload', class: 'upload-button' %>
   <% end %>
+
+  <% if flash[:notice] %>
+    <div class="notice">
+      <%= flash[:notice] %>
+    </div>
+  <% end %>
+
+  <p></p> <!-- Add an empty paragraph tag here -->
+
+  <%= form_with url: '/generate', method: :post do |form| %>
+    <h2 style="text-align: center;">Select Analyses</h2>
+    <div class="checkbox-container">
+      <label>
+        <%= check_box_tag 'chart_types[]', 'raw_data', @selected_chart_types.include?('raw_data') %>
+        Raw Data Plot (Per Well)
+      </label>
+      <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
+        <%= check_box_tag 'chart_types[]', 'fit_stats', @selected_chart_types.include?('fit_stats') %>
+        Fit Statistics
+      </label>
+      <label>
+        <%= check_box_tag 'chart_types[]', 'scatter_plot', @selected_chart_types.include?('scatter_plot') %>
+        Scatter Plot
+      </label>
+    </div>
+
+    <%= hidden_field_tag 'chart_types[]', @selected_chart_types %>
+
+    <%= submit_tag 'Run Analysis', class: 'upload-button' %>
+  </div>
 </div>
-
-<% if flash[:notice] %>
-  <div class="notice">
-    <%= flash[:notice] %>
-  </div>
 <% end %>
-
-<div>
-<%= form_with url: '/generate', method: :post do |form| %>
-  <h2>Select Analyses</h2>
-  <div class="select_class">
-    <label>
-      <%= check_box_tag 'chart_types[]', 'raw_data', @selected_chart_types.include?('raw_data') %>
-      Raw Data Plot (Per Well)
-    </label>
-    <br>
-    <label>
-      <%= check_box_tag 'chart_types[]', 'fit_stats', @selected_chart_types.include?('fit_stats') %>
-      Fit Statistics
-    </label>
-    <br>
-    <label>
-      <%= check_box_tag 'chart_types[]', 'scatter_plot', @selected_chart_types.include?('scatter_plot') %>
-      Scatter Plot
-    </label>
-    <br>
-  </div>
-
-  <%= hidden_field_tag 'chart_types[]', @selected_chart_types %>
-
-  <%= submit_tag 'Run Analysis' %>
-<% end %>
-
+<div class="background-space"></div>

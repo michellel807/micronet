@@ -4,28 +4,44 @@
 }
 
 .general-white-block {
-  background-color: rgb(255, 255, 255);
+  color: black;
+  background-color: white;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  margin: 50px;
   border-radius: 50px;
-  padding: 60px; 
-  padding-right:120px;
-  padding-left: 120px;
-  filter: drop-shadow(9px 5px 10px #b4b4b4);
-  gap: 20px;
+  padding: 30px; 
+  padding-right:50px;
+  padding-left: 50px;
+  filter: drop-shadow(9px 5px 10px black);
+  margin-left: 50px;
+  margin-right: 50px;
+  padding-bottom: 50px;
+  margin-bottom: 50px;
 }
-.general-white-block p {
-  font-size: 18px;
-  padding-left:50px;
-  padding-right: 50px;
-  text-align: center;
-}
+
 .general-white-block h2 {
   font-size: 40px;
+  justify-content: center;
 }
+
+.general-white-block p {
+  font-size: 18px;
+  padding: 10px;
+  text-align: center;
+}
+
+.general-white-block label{
+  font-weight: 500;
+}
+
+.background-space {
+  margin-top: -60px;
+  height: 100px;
+  background: #000750;
+}
+
 .general-white-block-help {
   background-color: rgb(255, 255, 255);
   display: flex;
@@ -299,3 +315,4 @@ label {
   max-width: 80%;
   margin-left: 20px;
 }
+

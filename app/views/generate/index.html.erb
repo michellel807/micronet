@@ -1,4 +1,29 @@
-<h1> Submission successful </h1>
-<p> Your job is running. You will receive an email containing a link to your  
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Generate page</title>
+    <%= stylesheet_link_tag 'generate' %>
+  <head>
+  <body>
+    <%= yield %>
+  </body>
+</html>
+
+<div class = "generatescreen">
+  <header>
+    <a href="https://genome.duke.edu/">
+      <%= image_tag 'logo.png', alt: 'Duke Logo' %>
+    </a>
+    <h2 style = "color:white;" >THE SCHMID LAB MICROBIAL GROWTH MODEL</h2>
+    <nav>
+    <a class = "wel_nav" href="/help" >HELP</a>
+    <a class = "wel_nav" href="/resources">RESOURCES</a>
+    <a class = "wel_nav" href="/admin">ADMIN</a>
+    </nav>
+  </header>
+<h1> Submission successful! </h1>
+  <p> Your job is running, and you will receive an email containing a link to your  
 results when it is finished. Thank you for using the Schmid Lab Microbial 
-Growth model! </p>
+Growth model! 
+  </p>
+</div>
