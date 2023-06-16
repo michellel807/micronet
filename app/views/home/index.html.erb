@@ -6,6 +6,35 @@
   <head>
   <body>
     <%= yield %>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var container = document.getElementById("data-files-container");
+      var header = document.getElementById("data-files-header");
+      var button = document.getElementById("view-files-button");
+      var tableContainer = document.getElementById("data-files-table-container");
+  
+      button.style.display = "none"; // Hide the button initially
+  
+      button.addEventListener("click", function() {
+        if (container.style.display === "none") {
+          container.style.display = "block";
+          header.style.display = "block";
+        } else {
+          container.style.display = "none";
+          header.style.display = "none";
+        }
+      });
+  
+      // Show the button after the notice is displayed
+      var notice = document.querySelector(".notice");
+      if (notice) {
+        button.style.display = "block";
+      }
+    });
+  </script>
+  
+  
+
   </body>
 </html>
 
@@ -50,6 +79,26 @@ generate.</p>
       <%= flash[:notice] %>
     </div>
   <% end %>
+
+  <button id="view-files-button" style="margin-top: 20px; margin-bottom: 40px;">View Files</button>
+  <div id="data-files-container" style="display: none;">
+  <h3 id="data-files-header" style="text-align: center; margin-top: 10px; margin-bottom: 10px;">Your Data Files</h3>
+    <div id="data-files-table-container">
+      <% @data_file_paths.each do |file_path| %>
+        <% converted_file_path = convert_asc_to_tab_delimited(file_path) %>
+        <% File.foreach(converted_file_path) do |line| %>
+          <table class="fit-stats-table">
+            <tr>
+              <% line.split("\t").each do |cell| %>
+                <td><%= cell %></td>
+              <% end %>
+            </tr>
+          </table>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
 
   <p></p> <!-- Add an empty paragraph tag here -->
 

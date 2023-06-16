@@ -18,6 +18,11 @@
   margin-top: 20px;
 }
 
+.homescreen h3 {
+  font-size: 30px;
+  margin-top: 20px;
+  margin: auto;
+}
 .homescreen p {
   font-size: 25px;
 }
@@ -59,3 +64,34 @@
   color: #405fad;
   margin-top: 20px;
 }
+
+#data-files-table-container {
+  display: block;
+  width: 500px;
+  height: 500px; 
+  overflow: auto;
+  overflow: scroll;
+  white-space: nowrap;
+}
+
+#view-files-button {
+  background-color: #000750;
+  padding: 5px 15px;
+  border-radius: 6px;
+  color: white;
+  font-size: 20px;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  display: inline-block;
+  text-align: center;
+  align-self: center;
+  filter: drop-shadow(3px 3px 4px #b4b4b4);
+}
+
+#view-files-button:hover {
+  background-color: #405fad;
+  color: white;
+  text-decoration: none;
+}
+
