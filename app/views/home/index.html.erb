@@ -97,8 +97,20 @@ generate.</p>
         <% end %>
       <% end %>
     </div>
+    
+  <h3 id="mapping-files-header" style="text-align: center; margin-top: 10px; margin-bottom: 10px;">Your Mapping Files</h3>
+  <div id="mapping-files-table-container">
+      <% File.foreach(@mapping_file_paths) do |line| %>
+        <table class="fit-stats-table">
+          <tr>
+            <% line.split("\t").each do |cell| %>
+              <td><%= cell %></td>
+            <% end %>
+          </tr>
+        </table>
+      <% end %>
   </div>
-
+  </div>
 
   <p></p> <!-- Add an empty paragraph tag here -->
 

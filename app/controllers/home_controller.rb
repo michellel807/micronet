@@ -6,6 +6,7 @@ class HomeController < ApplicationController
     @charts_data = {}
     DirectoryInitializer.create_upload_directory()
     @data_file_paths = session[:data_file_paths] || []
+    @mapping_file_paths = session[:mapping_file_paths]&.first || ""
   end
 
 def upload
