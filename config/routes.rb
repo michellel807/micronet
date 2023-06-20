@@ -6,6 +6,8 @@ Rails.application.routes.draw do
   root 'welcome#index'
   get '/upload', to: 'upload#index'
   get '/parameter', to: 'parameter#index'
+  get '/selectanalyses', to: 'selectanalyses#index'
+  post '/selectanalyses', to: 'selectanalyses#index'
   get '/generate', to: 'generate#index'
   post '/generate', to: 'generate#run'
   post '/generate_charts', to: 'home#generate_charts', as: 'generate_charts'

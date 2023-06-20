@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Parameter page</title>
+  <%= stylesheet_link_tag 'selectanalyses' %>
+ </head>
+<body>
+  <div class="homescreen">
+    <header>
+      <a href="https://genome.duke.edu/">
+        <%= image_tag 'logo.png', alt: 'Duke Logo' %>
+      </a>
+      <h2 style="color:white;">THE SCHMID LAB MICROBIAL GROWTH MODEL</h2>
+      <nav>
+        <a class="wel_nav" href="/help">HELP</a>
+        <a class="wel_nav" href="/resources">RESOURCES</a>
+        <a class="wel_nav" href="/admin">ADMIN</a>
+      </nav>
+    </header>
+
+    <div class="column skinny">
+      <% content_for :title, "Parameters page" %>
+
+  <div class="general-white-block">
+  <%= form_with url: '/generate', method: :post do |form| %>
+    <h2 style="text-align: center;">Select Analyses</h2>
+    <div class="checkbox-container">
+      <label>
+        <%= check_box_tag 'chart_types[]', 'raw_data', @selected_chart_types.include?('raw_data') %>
+        Raw Data Plot (Per Well)
+      </label>
+      <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
+        <%= check_box_tag 'chart_types[]', 'fit_stats', @selected_chart_types.include?('fit_stats') %>
+        Fit Statistics
+      </label>
+      <label>
+        <%= check_box_tag 'chart_types[]', 'scatter_plot', @selected_chart_types.include?('scatter_plot') %>
+        Scatter Plot
+      </label>
+    </div>
+
+    <%= hidden_field_tag 'chart_types[]', @selected_chart_types %>
+
+    <%= submit_tag 'Run Analysis', class: 'upload-button' %>
+  </div>
+  </div>
+  <%end%>
+  <div class="background-space"></div>

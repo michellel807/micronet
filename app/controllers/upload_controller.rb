@@ -7,7 +7,9 @@ class UploadController < ApplicationController
     DirectoryInitializer.create_upload_directory()
     @data_file_paths = [] # Initialize @data_file_paths as an empty array
     @data_file_paths = session[:data_file_paths] if session[:data_file_paths].present?
+    session[:data_file_paths] = @data_file_paths
     @mapping_file_paths = session[:mapping_file_paths]&.first || ""
+    session[:mapping_file_paths] = @mapping_file_paths
   end
 
 def upload
@@ -17,6 +19,7 @@ def upload
     data_file = DataFile.new(file)
     puts "Data file upload done"
     @data_file_paths << data_file.file_path.to_s # Add the file path to the instance variable
+    session[:data_file_paths] = @data_file_paths
   end
 
   @mapping_file_paths = []
@@ -25,11 +28,10 @@ def upload
     mapping_file = MappingFile.new(file)
     puts "Mapping file upload done"
     @mapping_file_paths << mapping_file.file_path.to_s # Add the file path to the instance variable
+    session[:mapping_file_paths] = @mapping_file_paths
   end
   
   @upload_completed = true #set flag for "Next" button to appear, etc
-  puts "Upload completed status: #{@upload_completed}"
-
   redirect_to '/upload', notice: 'Files uploaded successfully.'
 end
 

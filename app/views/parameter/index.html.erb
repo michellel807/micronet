@@ -3,6 +3,52 @@
 <head>
   <title>Parameter page</title>
   <%= stylesheet_link_tag 'parameter' %>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+  $(document).ready(function() {
+    // Get the "Next" button element
+    var nextButton = $(".next-button");
+
+    // Attach a click event handler to the "Next" button
+    nextButton.on("click", function() {
+      // Get all the selected checkboxes
+      var selectedCheckboxes = $("input[name='parameter_types[]']:checked");
+
+      // Create an array to store the selected checkbox values
+      var selectedValues = [];
+
+      // Iterate over the selected checkboxes and collect their values
+      selectedCheckboxes.each(function() {
+        selectedValues.push($(this).val());
+      });
+
+      // Convert the array of selected values into a comma-separated string
+      var selectedString = selectedValues.join(",");
+
+      // Print the selected string for testing
+      console.log(selectedString);
+
+      function todo() {
+        var checkboxes = document.getElementsByName("pool_options[]");
+        var selectedOptions = [];
+    
+        for (var i = 0; i < checkboxes.length; i++) {
+          if (checkboxes[i].checked) {
+            selectedOptions.push(checkboxes[i].value);
+          }
+        }
+    
+        var selectedOptionsString = selectedOptions.join(","); // Convert the array to a string
+    
+        // Save the selected options string for later use
+        // You can use any method to store the string, such as localStorage or a hidden input field
+        // For example, using localStorage:
+        localStorage.setItem("selectedOptions", selectedOptionsString);
+    
+      }
+    });
+  });
+</script>
 </head>
 <body>
   <div class="homescreen">
@@ -55,7 +101,7 @@
       <p>The Schmid Lab Growth Model can make use of several different optional parameters to optimize your results. Below, please select from these options before proceeding to the next page.</p>
 
       <div class="general-white-block">
-        <form action="/next_step" method="post">
+        <form action="/selectanalyses" method="post">
           <h2>Pool Replicates?</h2>
 
           <div class="radio-container">
@@ -82,27 +128,27 @@
                 Plate ID
               </label>
               <label>
-                <input type="checkbox" name="pool_options[]" value="Isolate">
+                <input type="checkbox" id="isolate-checkbox" name="pool_options[]" value="Isolate">
                 Isolate
               </label>
               <label>
-                <input type="checkbox" name="pool_options[]" value="PM">
+                <input type="checkbox" id="pm-checkbox" name="pool_options[]" value="PM">
                 PM
               </label>
               <label>
-                <input type="checkbox" name="pool_options[]" value="Replicate">
+                <input type="checkbox" id="replicate-checkbox" name="pool_options[]" value="Replicate">
                 Replicate
               </label>
               <label>
-                <input type="checkbox" name="pool_options[]" value="Substrate">
+                <input type="checkbox" id="substrate-checkbox" name="pool_options[]" value="Substrate">
                 Substrate
               </label>
               <label>
-                <input type="checkbox" name="pool_options[]" value="Group">
+                <input type="checkbox" id="group-checkbox" name="pool_options[]" value="Group">
                 Group
               </label>
               <label>
-                <input type="checkbox" name="pool_options[]" value="Control">
+                <input type="checkbox" id="control-checkbox" name="pool_options[]" value="Control">
                 Control
               </label>
             </div>
