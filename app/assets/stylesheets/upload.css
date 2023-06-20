@@ -1,0 +1,146 @@
+/* ...
+*= require_self
+*= require_tree .
+*/
+
+/* for the home screen */
+* {
+  font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
+  font-weight: 300;
+}
+.homescreen{
+  color: white;
+  background-image: linear-gradient(to top, #000750, #405fad);
+
+} 
+.homescreen h1 {
+  font-size: 50px;
+  margin-top: 20px;
+}
+
+.homescreen h3 {
+  font-size: 30px;
+  margin-top: 20px;
+  margin: auto;
+}
+.homescreen p {
+  font-size: 25px;
+}
+
+.background{
+  background-image: linear-gradient(to bottom, #000750, #000750);
+}
+
+
+.checkbox-container {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.upload-button {
+  background-color: #000750;
+  padding: 5px 15px;
+  border-radius: 6px;
+  color: white;
+  font-size: 20px;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  display: inline-block;
+  text-align: center;
+  align-self: center;
+  filter: drop-shadow(3px 3px 4px #b4b4b4);
+}
+
+.upload-button:hover {
+  background-color: #405fad;
+  color: white;
+  text-decoration: none;
+}
+
+.next-button {
+  background-color: #000750;
+  padding: 60px;
+  margin-top: 30px;
+  border-radius: 6px;
+  width: 100px;
+  color: white;
+  font-size: 50px;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  display: inline-block;
+  text-align: center;
+  filter: drop-shadow(3px 3px 4px #b4b4b4);
+  width: 200px;
+  border: none;
+  padding: 12px 48px 12px 24px;
+  border-radius: 4px;
+  color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='30' viewBox='0 0 7.41 12'%3E%3Cpath d='M10,6,8.59,7.41,13.17,12,8.59,16.59,10,18l6-6Z' transform='translate(-8.59 -6)' fill='%23fff'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 24px center;
+}
+
+.next-button:hover {
+  background-color: #405fad;
+  color: white;
+  text-decoration: none;
+}
+
+.notice{
+  font-size: 20px;
+  font-weight: 500;
+  color: #405fad;
+  margin-top: 20px;
+}
+
+#data-files-table-container {
+  display: inline-block;
+  width: 500px;
+  height: 500px; 
+  overflow: auto;
+  overflow: scroll;
+  white-space: nowrap;
+}
+
+#view-files-button {
+  background-color: #000750;
+  padding: 5px 15px;
+  border-radius: 6px;
+  color: white;
+  font-size: 20px;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  display: inline-block;
+  text-align: center;
+  align-self: center;
+  filter: drop-shadow(3px 3px 4px #b4b4b4);
+}
+
+#view-files-button:hover {
+  background-color: #405fad;
+  color: white;
+  text-decoration: none;
+}
+
+tr>th:first-child,tr>td:first-child {
+  position: sticky;
+  left: 0;
+  font-weight: 300;
+}
+
+table tr td:first-child {
+  font-weight: bold;
+  background: white;
+}
+
+#mapping-files-table-container {
+  display: inline-block;
+  width: 500px;
+  height: 500px; 
+  overflow: auto;
+  overflow: scroll;
+  white-space: nowrap;
+}

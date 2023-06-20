@@ -4,11 +4,12 @@ Rails.application.routes.draw do
   get "/", to: "welcome#index"
   post "/", to: "welcome#create"
   root 'welcome#index'
-  get '/home', to: 'home#index'
+  get '/upload', to: 'upload#index'
+  get '/parameter', to: 'parameter#index'
   get '/generate', to: 'generate#index'
   post '/generate', to: 'generate#run'
   post '/generate_charts', to: 'home#generate_charts', as: 'generate_charts'
-  post '/upload', to: 'home#upload', as: 'upload'
+  post '/upload', to: 'upload#upload'
   get '/uploads/userexpt/figures/:filename', to: 'home#serve_image', as: 'serve_image'
   get "/confirm", to: "confirm#index"
   post "/confirm", to: "confirm#final"

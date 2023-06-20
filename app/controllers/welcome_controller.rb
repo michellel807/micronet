@@ -17,7 +17,7 @@ class WelcomeController < ApplicationController
     @job = Job.create(user_id: @user.id, status: "Uploading Data")
     @job.save
     session[:current_user_id] = @job.id
-    redirect_to "/home"
+    redirect_to "/upload"
   end
 
   # Displays views/welcome/resources.html.erb

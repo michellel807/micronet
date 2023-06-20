@@ -19,6 +19,7 @@
   margin-right: 50px;
   padding-bottom: 50px;
   margin-bottom: 50px;
+  min-width: 100%;
 }
 
 .general-white-block h2 {
