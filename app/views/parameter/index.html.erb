@@ -32,20 +32,20 @@
           margin-right: 10px;
         }
 
-        .dropdown-container {
+        .checkbox-container {
           display: none;
         }
       </style>
 
       <script>
-        function toggleDropdown() {
-          var dropdown = document.getElementById("pool-options-dropdown");
+        function toggleCheckboxContainer() {
+          var checkboxContainer = document.getElementById("pool-options-checkboxes");
           var checkbox = document.getElementById("pool-replicates-yes");
-          var dropdownHeader = document.getElementById("dropdown-header");
+          var checkboxHeader = document.getElementById("checkbox-header");
           var additionalText = document.getElementById("additional-text");
 
-          dropdown.style.display = checkbox.checked ? "block" : "none";
-          dropdownHeader.textContent = checkbox.checked ? "Pool on: (select at least one)" : "";
+          checkboxContainer.style.display = checkbox.checked ? "block" : "none";
+          checkboxHeader.textContent = checkbox.checked ? "Pool on: (select at least one)" : "";
           additionalText.style.display = checkbox.checked ? "block" : "none";
         }
       </script>
@@ -65,27 +65,46 @@
             </label>
 
             <label>
-              <input type="radio" name="pool_replicates" value="yes" id="pool-replicates-yes" onclick="toggleDropdown()">
+              <input type="radio" name="pool_replicates" value="yes" id="pool-replicates-yes" onclick="toggleCheckboxContainer()">
               Yes
             </label>
           </div>
 
-          <div class="dropdown-container" id="pool-options-dropdown" style="display: none;">
-            <div id="dropdown-content">
-              <h3 id="dropdown-header"></h3>
-              <select name="pool_options" multiple>
-                <option value="Plate_ID">Plate ID</option>
-                <option value="Isolate">Isolate</option>
-                <option value="PM">PM</option>
-                <option value="Replicate">Replicate</option>
-                <option value="Substrate">Substrate</option>
-                <option value="Group">Group</option>
-                <option value="Control">Control</option>
-              </select>
 
-              <div id="additional-text" style="display: none;">
-                Please select the variable(s) to pool on. If selecting multiple variables, the Schmid Lab Growth Model will pool based on all unique combinations of the selected variables and model them jointly. For more information on this process, please <a href="http://firasmidani.github.io/amiga/doc/pooling.html">click here</a>.
-              </div>
+          <div class="checkbox-container" id="pool-options-checkboxes" style="display: none;">
+            <div id="checkbox-content">
+              <h3 id="checkbox-header"></h3>
+              <div class="additional-text">
+              Please select the variable(s) to pool on. If selecting multiple variables, the Schmid Lab Growth Model will pool based on all unique combinations of the selected variables and model them jointly. For more information on this process, please <a href="http://firasmidani.github.io/amiga/doc/pooling.html">click here</a>.
+            </div>
+              <label>
+                <input type="checkbox" name="pool_options[]" value="Plate_ID">
+                Plate ID
+              </label>
+              <label>
+                <input type="checkbox" name="pool_options[]" value="Isolate">
+                Isolate
+              </label>
+              <label>
+                <input type="checkbox" name="pool_options[]" value="PM">
+                PM
+              </label>
+              <label>
+                <input type="checkbox" name="pool_options[]" value="Replicate">
+                Replicate
+              </label>
+              <label>
+                <input type="checkbox" name="pool_options[]" value="Substrate">
+                Substrate
+              </label>
+              <label>
+                <input type="checkbox" name="pool_options[]" value="Group">
+                Group
+              </label>
+              <label>
+                <input type="checkbox" name="pool_options[]" value="Control">
+                Control
+              </label>
             </div>
           </div>
 
