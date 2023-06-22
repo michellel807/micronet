@@ -4,97 +4,31 @@
   <title>Parameter page</title>
   <%= stylesheet_link_tag 'parameter' %>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style type="text/css">
+    .checkbox-container {
+      display: none;
+    }
+  </style>
   <script>
-  $(document).ready(function() {
-    // Get the "Next" button element
-    var nextButton = $(".next-button");
-
-    // Attach a click event handler to the "Next" button
-    nextButton.on("click", function() {
-      // Get all the selected checkboxes
-      var selectedCheckboxes = $("input[name='parameter_types[]']:checked");
-
-      // Create an array to store the selected checkbox values
-      var selectedValues = [];
-
-      // Iterate over the selected checkboxes and collect their values
-      selectedCheckboxes.each(function() {
-        selectedValues.push($(this).val());
+    $(document).ready(function() {
+      $("input[name='pool_replicates']").on("change", function() {
+        $(".checkbox-container").toggle(this.value === "yes");
       });
-
-      // Convert the array of selected values into a comma-separated string
-      var selectedString = selectedValues.join(",");
-
-      // Print the selected string for testing
-      console.log(selectedString);
-
-      function todo() {
-        var checkboxes = document.getElementsByName("pool_options[]");
-        var selectedOptions = [];
-    
-        for (var i = 0; i < checkboxes.length; i++) {
-          if (checkboxes[i].checked) {
-            selectedOptions.push(checkboxes[i].value);
-          }
-        }
-    
-        var selectedOptionsString = selectedOptions.join(","); // Convert the array to a string
-    
-        // Save the selected options string for later use
-        // You can use any method to store the string, such as localStorage or a hidden input field
-        // For example, using localStorage:
-        localStorage.setItem("selectedOptions", selectedOptionsString);
-    
-      }
     });
-  });
-</script>
+  </script>
 </head>
 <body>
   <div class="homescreen">
     <header>
-      <a href="https://genome.duke.edu/">
-        <%= image_tag 'logo.png', alt: 'Duke Logo' %>
-      </a>
-      <h2 style="color:white;">THE SCHMID LAB MICROBIAL GROWTH MODEL</h2>
-      <nav>
-        <a class="wel_nav" href="/help">HELP</a>
-        <a class="wel_nav" href="/resources">RESOURCES</a>
-        <a class="wel_nav" href="/admin">ADMIN</a>
-      </nav>
+      <!-- Header content -->
     </header>
 
     <div class="column skinny">
       <% content_for :title, "Parameters page" %>
 
       <style>
-        .radio-container {
-          display: flex;
-          align-items: center;
-          margin: auto;
-        }
-
-        .radio-container label {
-          margin-right: 10px;
-        }
-
-        .checkbox-container {
-          display: none;
-        }
+        /* CSS styles */
       </style>
-
-      <script>
-        function toggleCheckboxContainer() {
-          var checkboxContainer = document.getElementById("pool-options-checkboxes");
-          var checkbox = document.getElementById("pool-replicates-yes");
-          var checkboxHeader = document.getElementById("checkbox-header");
-          var additionalText = document.getElementById("additional-text");
-
-          checkboxContainer.style.display = checkbox.checked ? "block" : "none";
-          checkboxHeader.textContent = checkbox.checked ? "Pool on: (select at least one)" : "";
-          additionalText.style.display = checkbox.checked ? "block" : "none";
-        }
-      </script>
 
       <h1>Select Options</h1>
 
@@ -105,24 +39,23 @@
           <h2>Pool Replicates?</h2>
 
           <div class="radio-container">
-            <label>
+            <label class="option-label">
               <input type="radio" name="pool_replicates" value="no" checked>
               No
             </label>
 
-            <label>
-              <input type="radio" name="pool_replicates" value="yes" id="pool-replicates-yes" onclick="toggleCheckboxContainer()">
+            <label class="option-label">
+              <input type="radio" name="pool_replicates" value="yes">
               Yes
             </label>
           </div>
 
-
-          <div class="checkbox-container" id="pool-options-checkboxes" style="display: none;">
+          <div class="checkbox-container">
             <div id="checkbox-content">
               <h3 id="checkbox-header"></h3>
               <div class="additional-text">
-              Please select the variable(s) to pool on. If selecting multiple variables, the Schmid Lab Growth Model will pool based on all unique combinations of the selected variables and model them jointly. For more information on this process, please <a href="http://firasmidani.github.io/amiga/doc/pooling.html">click here</a>.
-            </div>
+                Please select the variable(s) to pool on. If selecting multiple variables, the Schmid Lab Growth Model will pool based on all unique combinations of the selected variables and model them jointly. For more information on this process, please <a href="http://firasmidani.github.io/amiga/doc/pooling.html">click here</a>.
+              </div>
               <label>
                 <input type="checkbox" name="pool_options[]" value="Plate_ID">
                 Plate ID
@@ -154,10 +87,13 @@
             </div>
           </div>
 
-          <input type="submit" value="Next">
+          <input type="submit" value="Next" class="next-button">
         </form>
       </div>
     </div>
+    <div class="footer"></div>
+    <p>Copyright Schmid Lab 2023</p>
   </div>
+  <div class="background-space"></div>
 </body>
 </html>

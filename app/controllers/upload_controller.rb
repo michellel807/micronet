@@ -32,7 +32,14 @@ def upload
   end
   
   @upload_completed = true #set flag for "Next" button to appear, etc
+  puts "Upload completed status: #{@upload_completed}"
+  puts "Data file path is #{@data_file_paths}"
+  puts "Data file path present? #{@data_file_paths.present?}"
   redirect_to '/upload', notice: 'Files uploaded successfully.'
+  puts "Upload completed status: #{@upload_completed}"
+  puts "Data file path is #{@data_file_paths}"
+  puts "Data file path present? #{@data_file_paths.present?}"
+  puts "Session data file paths: #{session[:data_file_paths]}"
 end
 
 helper_method :convert_asc_to_tab_delimited
