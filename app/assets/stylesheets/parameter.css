@@ -70,32 +70,3 @@
   font-size: 30px;
 }
 
-.radio-container {
-  display: flex;
-  align-items: center;
-  margin: auto;
-}
-
-.radio-container label {
-  margin-right: 10px;
-}
-
-.checkbox-container {
-  display: none;
-}
-
-.additional-text {
-  margin-top: 10px;
-}
-
-.next-button {
-  margin-top: 20px;
-}
-
-.footer {
-  height: 100px;
-}
-
-.background-space {
-  height: 100px;
-}

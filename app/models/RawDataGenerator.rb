@@ -1,8 +1,8 @@
 class RawDataGenerator
   def self.generate_raw_data()
-    system("source activate lib/envs/amigacondaenv/ && lib/envs/amigacondaenv/bin/python lib/scripts/amigagitsimplified/amiga.py summarize -i public/uploads/userexpt")
+    system("source activate lib/envs/amigacondaenv/ && lib/envs/amigacondaenv/bin/python lib/scripts/amigagitsimplified/amiga.py summarize -i private/uploads/userexpt")
     
-    raw_data_pdf_paths = Dir.glob(Rails.root.join('public', 'uploads', 'userexpt', 'figures', '*.pdf'))
+    raw_data_pdf_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'figures', '*.pdf'))
     
     raw_data_png_paths = []
     raw_data_pdf_paths.each do |pdf_path|

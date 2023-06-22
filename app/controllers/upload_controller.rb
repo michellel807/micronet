@@ -45,7 +45,7 @@ end
 helper_method :convert_asc_to_tab_delimited
 def convert_asc_to_tab_delimited(file_path)
   input_file_path = file_path
-  output_file_path = Rails.root.join('public', 'uploads', 'userexpt', 'data', File.basename(file_path, '.*') + '.txt')
+  output_file_path = Rails.root.join('private', 'uploads', 'userexpt', 'data', File.basename(file_path, '.*') + '.txt')
 
   # Call the Python script and check for errors
   success = system("python lib/scripts/otherscripts/convertasc.py #{input_file_path} #{output_file_path}")
@@ -60,7 +60,7 @@ end
 require 'fileutils'
 
 def delete_files
-  upload_directory = Rails.root.join('public', 'uploads', 'userexpt')
+  upload_directory = Rails.root.join('private', 'uploads', 'userexpt')
   FileUtils.rm_rf(upload_directory)
 end
 

@@ -6,7 +6,7 @@ class UserMailer < ApplicationMailer
     @file_names = file_names
 
     file_names.each do |file_name|
-      file_path = Rails.root.join('public', 'uploads', 'userexpt', 'figures', file_name)
+      file_path = Rails.root.join('private', 'uploads', 'userexpt', 'figures', file_name)
       attachments[file_name] = File.read(file_path) if File.exist?(file_path)
     end
 
@@ -25,10 +25,10 @@ class UserMailer < ApplicationMailer
     @job = params[:job]
 
     # The use of `Kernel#open` is a serious security risk.
-    #mfile = open("#{Rails.root}/public/#{params[:job].metafile_url}").read
+    #mfile = open("#{Rails.root}/private/#{params[:job].metafile_url}").read
     #attachments["meta.csv"] = mfile
 
-    #ofile = open("#{Rails.root}/public/#{params[:job].odfile_url}").read
+    #ofile = open("#{Rails.root}/private/#{params[:job].odfile_url}").read
     #attachments["od.csv"] = ofile
 
     mail(to: @user.email, subject: "Phenom Model Confirmation")

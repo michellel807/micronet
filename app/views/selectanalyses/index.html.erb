@@ -20,11 +20,14 @@
 
     <div class="column skinny">
       <% content_for :title, "Parameters page" %>
+      <h1>Select Analyses</h1>
+
+      <p>Please select which analyses you would like to run. When you click "Start My Job," you will receive an email confirming that your jobs have begun. For more details on each analysis, please see the "Resources" tab.</p>
 
   <div class="general-white-block">
-  <%= form_with url: '/generate', method: :post do |form| %>
+   <%= form_with url: '/generate', method: :post do |form| %>
     <h2 style="text-align: center;">Select Analyses</h2>
-    <div class="checkbox-container">
+    <div class="analyses-container">
       <label>
         <%= check_box_tag 'chart_types[]', 'raw_data', @selected_chart_types.include?('raw_data') %>
         Raw Data Plot (Per Well)
@@ -33,16 +36,13 @@
         <%= check_box_tag 'chart_types[]', 'fit_stats', @selected_chart_types.include?('fit_stats') %>
         Fit Statistics
       </label>
-      <label>
-        <%= check_box_tag 'chart_types[]', 'scatter_plot', @selected_chart_types.include?('scatter_plot') %>
-        Scatter Plot
-      </label>
     </div>
 
     <%= hidden_field_tag 'chart_types[]', @selected_chart_types %>
 
-    <%= submit_tag 'Run Analysis', class: 'upload-button' %>
+    <%= submit_tag 'Start My Job', class: 'analysis-button' %>
   </div>
+</div>
+<% end %>
+<div class="background-space"></div>
   </div>
-  <%end%>
-  <div class="background-space"></div>

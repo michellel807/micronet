@@ -3,31 +3,79 @@
 <head>
   <title>Parameter page</title>
   <%= stylesheet_link_tag 'parameter' %>
+
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <style type="text/css">
-    .checkbox-container {
-      display: none;
-    }
-  </style>
   <script>
-    $(document).ready(function() {
-      $("input[name='pool_replicates']").on("change", function() {
-        $(".checkbox-container").toggle(this.value === "yes");
+  $(document).ready(function() {
+    $("input[name='pool_replicates']").on("change", function() {
+      $(".checkbox-container").toggle(this.value === "yes");
+
+      // Get the selected checkbox values
+      var selectedOptions = [];
+      $("input[name='pool_options[]']:checked").each(function() {
+        selectedOptions.push($(this).val());
       });
+
+      // Convert the array of selected values into a comma-separated string
+      var selectedOptionsString = selectedOptions.join(",");
+
+      // Store the selected options string in a hidden input field
+      $("#selectedOptionsInput").val(selectedOptionsString);
     });
+
+    // Get the "Next" button element
+    var nextButton = $(".next-button");
+
+    // Attach a click event handler to the "Next" button
+    nextButton.on("click", function(e) {
+      var poolReplicatesOption = $("input[name='pool_replicates']:checked").val();
+      // If "Yes" is selected
+      if (poolReplicatesOption === "yes") {
+        // Get all the selected checkboxes
+        var selectedCheckboxes = $("input[name='pool_options[]']:checked");
+        // If no additional checkboxes are checked
+        if (selectedCheckboxes.length === 0) {
+          e.preventDefault(); // Prevent form submission
+          alert("Please select at least one parameter or answer 'No'.");
+        }
+      }
+    });
+  });
   </script>
 </head>
+
+
 <body>
   <div class="homescreen">
     <header>
-      <!-- Header content -->
+      <a href="https://genome.duke.edu/">
+        <%= image_tag 'logo.png', alt: 'Duke Logo' %>
+      </a>
+      <h2 style="color:white;" href="/">THE SCHMID LAB MICROBIAL GROWTH MODEL</h2>
+      <nav>
+        <a class="wel_nav" href="/help">HELP</a>
+        <a class="wel_nav" href="/resources">RESOURCES</a>
+        <a class="wel_nav" href="/admin">ADMIN</a>
+      </nav>
     </header>
 
     <div class="column skinny">
       <% content_for :title, "Parameters page" %>
 
       <style>
-        /* CSS styles */
+        .radio-container {
+          display: flex;
+          align-items: center;
+          margin: auto;
+        }
+
+        .radio-container label {
+          margin-right: 10px;
+        }
+
+        .checkbox-container {
+          display: none;
+        }
       </style>
 
       <h1>Select Options</h1>
@@ -35,7 +83,7 @@
       <p>The Schmid Lab Growth Model can make use of several different optional parameters to optimize your results. Below, please select from these options before proceeding to the next page.</p>
 
       <div class="general-white-block">
-        <form action="/selectanalyses" method="post">
+        <form id="parameter-form" action="/selectanalyses" method="post">
           <h2>Pool Replicates?</h2>
 
           <div class="radio-container">
@@ -87,12 +135,13 @@
             </div>
           </div>
 
+          <input type="hidden" name="selectedOptions" id="selectedOptionsInput">
           <input type="submit" value="Next" class="next-button">
         </form>
       </div>
     </div>
     <div class="footer"></div>
-    <p>Copyright Schmid Lab 2023</p>
+    <p> Copyright Schmid Lab 2023 </p>
   </div>
   <div class="background-space"></div>
 </body>

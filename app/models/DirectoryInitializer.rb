@@ -1,6 +1,6 @@
 class DirectoryInitializer
   def self.create_upload_directory
-    upload_dir = Rails.root.join('public', 'uploads', 'userexpt')
+    upload_dir = Rails.root.join('private', 'uploads', 'userexpt')
 
     # Create the main upload directory if it doesn't exist
     FileUtils.mkdir_p(upload_dir) unless Dir.exist?(upload_dir)

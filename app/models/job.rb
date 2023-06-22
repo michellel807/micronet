@@ -27,7 +27,7 @@ class Job < ApplicationRecord
 
   def serve_image
     filename = params[:filename]
-    file_path = Rails.root.join('public', 'uploads', 'userexpt', 'figures', filename)
+    file_path = Rails.root.join('private', 'uploads', 'userexpt', 'figures', filename)
     
     if File.exist?(file_path) && File.file?(file_path)
       send_file file_path, disposition: 'inline'

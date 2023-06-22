@@ -1,74 +1,132 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <title>Upload page</title>
+    <%= stylesheet_link_tag 'upload' %>
+  <head>
+  <body>
+    <%= yield %>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var container = document.getElementById("data-files-container");
+      var header = document.getElementById("data-files-header");
+      var button = document.getElementById("view-files-button");
+      var tableContainer = document.getElementById("data-files-table-container");
   
-<head>
-    <title>
-      Show and Hide div elements using checkbox
-    </title>
-    <script src=
-"https://code.jquery.com/jquery-1.12.4.min.js">
-    </script>
-    <style type="text/css">
-        .selectt {
-            color: #fff;
-            padding: 30px;
-            margin-top: 30px;
-            width: 60%;
-            background: green
+      button.style.display = "none"; // Hide the button initially
+  
+      button.addEventListener("click", function() {
+        if (container.style.display === "none") {
+          container.style.display = "block";
+          header.style.display = "block";
+        } else {
+          container.style.display = "none";
+          header.style.display = "none";
         }
-          
-        label {
-            margin-right: 20px;
-        }
-    </style>
-</head>
+      });
   
-<body>
-    <center>
-        <h1 style="color:green;"> 
-         GeeksforGeeks 
-        </h1>
-        <h3>
-          Show and Hide div elements using checkbox
-        </h3>
-        <div>
-            <label>
-                <input type="checkbox" name="colorCheckbox"
-                       value="C"> C</label>
-            <label>
-                <input type="checkbox" name="colorCheckbox"
-                       value="Cplus"> C++</label>
-            <label>
-                <input type="checkbox" name="colorCheckbox" 
-                       value="Python"> Python</label>
-            <label>
-                <input type="checkbox" name="colorCheckbox" 
-                       value="Java"> Java</label>
-        </div>
-        <div class="C selectt">
-          <strong>C</strong> 
-          is a procedural programming language</div>
-        <div class="Cplus selectt">
-          <strong>C++</strong>
-          is a general purpose programming language</div>
-        <div class="Python selectt">
-          <strong>Python</strong>
-          is a widely used general-purpose, high level
-          programming language.</div>
-        <div class="Java selectt">
-          <strong>Java</strong>
-          is a most popular programming language for
-          many years.</div>
-        <script type="text/javascript">
-            $(document).ready(function() {
-                $('input[type="checkbox"]').click(function() {
-                    var inputValue = $(this).attr("value");
-                    $("." + inputValue).toggle();
+      // Show the button after the notice is displayed
+      var notice = document.querySelector(".notice");
+      if (notice) {
+        button.style.display = "block";
+      }
+
+    });
+  </script>
   
-                });
-            });
-        </script>
-    </center>
-</body>
   
-</html>                    
+
+  </body>
+</html>
+
+<div class = "homescreen">
+<header>
+<a href="https://genome.duke.edu/">
+  <%= image_tag 'logo.png', alt: 'Duke Logo' %>
+</a>
+<h2 style = "color:white;" >THE SCHMID LAB MICROBIAL GROWTH MODEL</h2>
+<nav>
+  <a class = "wel_nav" href="/help" >HELP</a>
+  <a class = "wel_nav" href="/resources">RESOURCES</a>
+  <a class = "wel_nav" href="/admin">ADMIN</a>
+</nav>
+</header>
+
+  <div class="column skinny">
+    <h1>The Schmid Lab Microbial Growth Model: Uploading Data</h1>
+       <p>The model takes plate reader data as input data file(s), in either tab-delimited or 
+comma-separated formats. You may also provide a metadata file(s) containing the metadata 
+associated with each well. Upload your .txt, .csv, or .ascii file, along with an 
+associated metadata file if desired, and then select the charts you would like to 
+generate.</p>
+  </div>
+
+  <div class="general-white-block">
+  <h2>Upload Data and Metadata File(s)</h2>
+  <%= form_tag(upload_path, multipart: true) do %>
+    <p>
+      <label for="data_files">Data File:</label>
+      <%= file_field_tag 'data_files[]', multiple: true %>
+    </p>
+    <p>
+      <label for="mapping_files">Mapping File:</label>
+      <%= file_field_tag 'mapping_files[]', multiple: true %>
+    </p>
+    <%= submit_tag 'Upload', class: 'upload-button' %>
+  <% end %>
+
+  <% if flash[:notice] %>
+    <div class="notice">
+      <%= flash[:notice] %>
+    </div>
+  <% end %>
+
+  <button id="view-files-button" style="margin-top: 20px; margin-bottom: 40px;">View Files</button>
+  <div id="data-files-container" style="display: none;">
+  <h3 id="data-files-header" style="text-align: center; margin-top: 10px; margin-bottom: 10px;">Your Data Files</h3>
+    <div id="data-files-table-container">
+    <% if @data_file_paths.present? %>
+      <% @data_file_paths.each do |file_path| %>
+        <% converted_file_path = convert_asc_to_tab_delimited(file_path) %>
+        <% next unless converted_file_path && File.exist?(converted_file_path) %>
+        <% File.foreach(converted_file_path) do |line| %>
+          <table class="fit-stats-table">
+            <tr>
+              <% line.split("\t").each do |cell| %>
+                <td><%= cell %></td>
+              <% end %>
+            </tr>
+          </table>
+        <% end %>
+      <% end %>
+    <%else%>
+      <p> No data files to display. </p>
+    <% end %>
+    </div>
+    
+  <h3 id="mapping-files-header" style="text-align: center; margin-top: 10px; margin-bottom: 10px;">Your Mapping Files</h3>
+  <div id="mapping-files-table-container">
+  <% if @mapping_file_paths.present? && File.exist?(@mapping_file_paths) %>
+    <% File.foreach(@mapping_file_paths) do |line| %>
+        <table class="fit-stats-table">
+          <tr>
+            <% line.split("\t").each do |cell| %>
+              <td><%= cell %></td>
+            <% end %>
+          </tr>
+        </table>
+      <% end %>
+    <%else%>
+      <p> No mapping files to display. </p>
+    <%end%>
+  </div>
+  </div>
+
+  <% if @data_file_paths.present? && @mapping_file_paths.present? && File.exist?(@mapping_file_paths) %>
+  <%= link_to "Next", 'parameter', class: "next-button" %>
+  <% end %>
+
+  </div>
+</div>
+<% end %>
+<div class="background-space"></div>

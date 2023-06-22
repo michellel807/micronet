@@ -16,7 +16,7 @@ class DataFile
   private
 
   def save_file(file)
-    file_path = Rails.root.join('public', 'uploads', 'userexpt', 'data', file.original_filename)
+    file_path = Rails.root.join('private', 'uploads', 'userexpt', 'data', file.original_filename)
 
     File.open(file_path, 'wb') do |f|
       f.write(file.read)
