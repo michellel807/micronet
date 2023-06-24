@@ -33,7 +33,14 @@
       <%= link_to 'Need help?', "help", id: "help_link" %>
     </div>
     
-
+    <% if flash[:notice].present? && flash[:notice] != "Need help?" %>        
+    <%= flash[:notice] %>
+        <div class="button-group">
+        <%= button_to "Yes", resume_job_path, method: :post %>
+        <%= button_to "No", create_job_path, method: :post %>
+        </div>
+    <% end %>
+  
 
   <footer>
     <a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>

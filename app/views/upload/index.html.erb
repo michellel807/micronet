@@ -104,25 +104,25 @@ generate.</p>
     <% end %>
     </div>
     
-  <h3 id="mapping-files-header" style="text-align: center; margin-top: 10px; margin-bottom: 10px;">Your Mapping Files</h3>
-  <div id="mapping-files-table-container">
-  <% if @mapping_file_paths.present? && File.exist?(@mapping_file_paths) %>
-    <% File.foreach(@mapping_file_paths) do |line| %>
-        <table class="fit-stats-table">
-          <tr>
-            <% line.split("\t").each do |cell| %>
-              <td><%= cell %></td>
-            <% end %>
-          </tr>
-        </table>
-      <% end %>
-    <%else%>
-      <p> No mapping files to display. </p>
-    <%end%>
-  </div>
-  </div>
+    <h3 id="mapping-files-header" style="text-align: center; margin-top: 10px; margin-bottom: 10px;">Your Mapping Files</h3>
+    <div id="mapping-files-table-container">
+      <% if @mapping_file_paths.present? && File.exist?(@mapping_file_paths[0]) %>
+        <% File.foreach(@mapping_file_paths[0]) do |line| %>
+            <table class="fit-stats-table">
+              <tr>
+                <% line.split("\t").each do |cell| %>
+                  <td><%= cell %></td>
+                <% end %>
+              </tr>
+            </table>
+        <% end %>
+      <%else%>
+        <p> No mapping files to display. </p>
+      <%end%>
+    </div>
+    </div>
 
-  <% if @data_file_paths.present? && @mapping_file_paths.present? && File.exist?(@mapping_file_paths) %>
+  <% if @data_file_paths.present? && @mapping_file_paths.present? && File.exist?(@mapping_file_paths[0]) %>
   <%= link_to "Next", 'parameter', class: "next-button" %>
   <% end %>
 <div class="background-space"></div>

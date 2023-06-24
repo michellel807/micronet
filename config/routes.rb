@@ -5,6 +5,8 @@ Rails.application.routes.draw do
   post "/", to: "welcome#create"
   root 'welcome#index'
   get '/upload', to: 'upload#index'
+  post '/resume_job', to: 'welcome#resume_job', as: 'resume_job'
+  post '/create_job', to: 'welcome#create_job', as: 'create_job'
   get '/parameter', to: 'parameter#index'
   get '/selectanalyses', to: 'selectanalyses#index'
   post '/selectanalyses', to: 'selectanalyses#index'

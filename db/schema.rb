@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_06_08_184814) do
+ActiveRecord::Schema[7.0].define(version: 2023_06_23_152358) do
   create_table "delayed_jobs", force: :cascade do |t|
     t.integer "priority", default: 0, null: false
     t.integer "attempts", default: 0, null: false
@@ -41,9 +41,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_08_184814) do
     t.integer "subsample"
     t.string "factors", default: "{}"
     t.string "status"
-    t.string "metafile"
-    t.string "odfile"
-    t.string "pfile"
     t.integer "user_id"
     t.datetime "start_time"
     t.datetime "end_time"

@@ -2,13 +2,15 @@ class UploadController < ApplicationController
   skip_before_action :verify_authenticity_token
 
   def index
+    @job = Job.find(session[:current_user_id]) if session[:current_user_id]
+    #puts "Job id is #{@job.id}"  
     @selected_chart_types = [] # Initialize the selected_chart_types variable
     @charts_data = {}
     DirectoryInitializer.create_upload_directory()
     @data_file_paths = [] # Initialize @data_file_paths as an empty array
     @data_file_paths = session[:data_file_paths] if session[:data_file_paths].present?
     session[:data_file_paths] = @data_file_paths
-    @mapping_file_paths = session[:mapping_file_paths]&.first || ""
+    @mapping_file_paths = session[:mapping_file_paths]|| ""
     session[:mapping_file_paths] = @mapping_file_paths
   end
 
@@ -59,12 +61,12 @@ end
 
 require 'fileutils'
 
-def delete_files
-  upload_directory = Rails.root.join('private', 'uploads', 'userexpt')
-  FileUtils.rm_rf(upload_directory)
-end
+#def delete_files
+#  upload_directory = Rails.root.join('private', 'uploads', 'userexpt')
+#  FileUtils.rm_rf(upload_directory)
+#end
 
-at_exit do
-  UploadController.new.delete_files
- end
+#at_exit do
+#  UploadController.new.delete_files
+# end
 end
