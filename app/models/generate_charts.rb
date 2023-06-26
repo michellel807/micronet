@@ -23,7 +23,8 @@
 
 
     if @selected_chart_types.include?('fit_stats')
-    system("source activate lib/envs/amigacondaenv/ && lib/envs/amigacondaenv/bin/python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt")
+    selected_options_string = @selected_options.join(",") #convert to string so python can use it
+    system("source activate lib/envs/amigacondaenv/ && lib/envs/amigacondaenv/bin/python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt --pool-by #{selected_options_string}")
     @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', '*_summary.txt'))
     end
 
