@@ -36,20 +36,21 @@ class WelcomeController < ApplicationController
     @user = session[:session_user]
     if @user && @user.job && @user.job.status == "In Progress"
       session[:current_user_id] = @user.job.id
+      puts "Redirecting to upload page: job id is #{@user.job.id}"  
       redirect_to "/upload"
     end
   end
 
 
   def create_job
-    @user = User.find_or_create_by(email: job_params[:email])
+    @user = session[:session_user]
     @job = Job.create(user_id: @user.id, status: "In Progress")
     @job.save
     session[:current_user_id] = @job.id
     puts "Job ID is #{@job.id}"
     puts "User is #{@user.id}"
     puts "status is #{@user.job_in_progress?}"
-    redirect_to "/upload"
+    redirect_to "/upload/delete_files"
   end
   
   private

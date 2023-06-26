@@ -1,20 +1,41 @@
 class UploadController < ApplicationController
 skip_before_action :verify_authenticity_token
 
+def delete_files
+  @data_file_paths = session[:data_file_paths]
+  @mapping_file_paths = session[:mapping_file_paths]
+
+  # Delete data files
+  @data_file_paths.each do |file_path|
+    FileUtils.rm(file_path) if File.exist?(file_path)
+  end
+
+  # Delete mapping files
+  @mapping_file_paths.each do |file_path|
+    FileUtils.rm(file_path) if File.exist?(file_path)
+  end
+
+  # Clear session variables
+  session[:data_file_paths] = nil
+  session[:mapping_file_paths] = nil
+
+  redirect_to '/upload'
+end
+
 def index
   @job = Job.find(session[:current_user_id]) if session[:current_user_id]
-  #puts "Job id is #{@job.id}"  
   @selected_chart_types = [] # Initialize the selected_chart_types variable
   @charts_data = {}
   DirectoryInitializer.create_upload_directory()
   @data_file_paths = [] # Initialize @data_file_paths as an empty array
   @data_file_paths = session[:data_file_paths] if session[:data_file_paths].present?
   session[:data_file_paths] = @data_file_paths
-  @mapping_file_paths = session[:mapping_file_paths]|| ""
-  session[:mapping_file_paths] = @mapping_file_paths
+  @mapping_file_paths = session[:mapping_file_paths] || [] # Assign an empty array if session value is nil
+  session[:mapping_file_paths] ||= @mapping_file_paths # Set the session value if it's nil
   @data_file_names = @data_file_paths.map { |file_path| File.basename(file_path) }
   @mapping_file_names = @mapping_file_paths.map { |file_path| File.basename(file_path) }
 end
+
 
 def upload
   @data_file_paths = []

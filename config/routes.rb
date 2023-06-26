@@ -4,6 +4,7 @@ Rails.application.routes.draw do
   get "/", to: "welcome#index"
   post "/", to: "welcome#create"
   root 'welcome#index'
+  get '/upload/delete_files', to: 'upload#delete_files'
   get '/upload', to: 'upload#index'
   post '/resume_job', to: 'welcome#resume_job', as: 'resume_job'
   post '/create_job', to: 'welcome#create_job', as: 'create_job'
