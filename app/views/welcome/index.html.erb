@@ -33,8 +33,8 @@
       <%= link_to 'Need help?', "help", id: "help_link" %>
     </div>
     
-    <% if flash[:notice].present? && flash[:notice] != "Need help?" %>        
-    <%= flash[:notice] %>
+    <% if flash[:alert].present? && flash[:alert] != "Need help?" %>      
+    <div class="unsavedjob-alert"><%=flash[:alert]%></div>  
         <div class="button-group">
         <%= button_to "Yes", resume_job_path, method: :post %>
         <%= button_to "No", create_job_path, method: :post %>

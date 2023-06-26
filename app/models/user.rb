@@ -5,7 +5,7 @@ class User < ApplicationRecord
   validates :email, presence: true
   validates :email, format: {with: URI::MailTo::EMAIL_REGEXP}
   def job_in_progress?
-    job.present? && job.status == 'Uploading Data'
+    job.present? && job.status == 'In Progress'
   end
 
 end
