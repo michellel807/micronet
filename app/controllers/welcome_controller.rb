@@ -49,7 +49,7 @@ class WelcomeController < ApplicationController
     session[:current_user_id] = @job.id
     puts "Job ID is #{@job.id}"
     puts "User is #{@user.id}"
-    puts "status is #{@user.job_in_progress?}"
+    puts "Job status is #{@job.status}"
     redirect_to "/upload/delete_files"
   end
   

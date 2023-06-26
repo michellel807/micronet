@@ -9,7 +9,8 @@ class GenerateController < ApplicationController
     @user = User.find_or_create_by(email: params[:email])
     @job.sendconfirm
     @job.delay.analyze(params[:chart_types])
-    @user.job.update(status: "Job submitted") if @user.job.present?
+    @job.update(status: "Job submitted") if @job.present?
+    puts "Job status is #{@job.status}"
   respond_to do |format|
     format.html { redirect_to '/generate', notice: 'Email sent successfully.' }
     format.js 
