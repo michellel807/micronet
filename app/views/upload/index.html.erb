@@ -75,11 +75,21 @@ generate.</p>
     <%= submit_tag 'Upload', class: 'upload-button' %>
   <% end %>
 
-  <% if flash[:notice] %>
-    <div class="notice">
-      <%= flash[:notice] %>
+  <% if flash[:notice] | (@data_file_paths.present? && @mapping_file_paths.present?) %>
+  <div class="notice">
+    <p>
+      <span class="success" style="color: black; font-weight: 500;">Files uploaded successfully. </span>
+    </p>
+    <div class="upload-notice" style="color: blue; font-weight: 300;">
+      <p>
+        <span class="current">Currently uploaded data file(s): <%= @data_file_names %></span>
+      </p>
+      <p>
+        <span class="current">Currently uploaded mapping file(s): <%= @mapping_file_names %></span>
+      </p>
     </div>
-  <% end %>
+  </div>
+<% end %>
 
   <button id="view-files-button" style="margin-top: 20px; margin-bottom: 40px;">View Files</button>
   <div id="data-files-container" style="display: none;">

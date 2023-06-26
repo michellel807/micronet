@@ -12,6 +12,8 @@ class UploadController < ApplicationController
     session[:data_file_paths] = @data_file_paths
     @mapping_file_paths = session[:mapping_file_paths]|| ""
     session[:mapping_file_paths] = @mapping_file_paths
+    @data_file_names = @data_file_paths.map { |file_path| File.basename(file_path) }
+    @mapping_file_names = @mapping_file_paths.map { |file_path| File.basename(file_path) }
   end
 
 def upload
