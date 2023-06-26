@@ -75,7 +75,19 @@ generate.</p>
     <%= submit_tag 'Upload', class: 'upload-button' %>
   <% end %>
 
-  <% if flash[:notice] | (@data_file_paths.present? && @mapping_file_paths.present?) %>
+  <% if flash.now[:alert] %>
+  <div class="error">
+    <%= flash.now[:alert] %>
+  </div>
+<% end %>
+
+<% if flash.now[:error] %>
+<div class="error">
+  <%= flash.now[:error] %>
+</div>
+<% end %>
+
+  <% if flash[:notice] or (@data_file_paths.present? && @mapping_file_paths.present?) %>
   <div class="notice">
     <p>
       <span class="success" style="color: black; font-weight: 500;">Files uploaded successfully. </span>

@@ -1,22 +1,26 @@
 class DataFile
-  attr_reader :file_path
+  attr_reader :file_path, :error_message
 
   def initialize(file)
+    @file = file
     if File.extname(file.original_filename) == '.asc'
       @file_path = save_file(file)
     else
-      raise ArgumentError, 'Invalid data file format'
+      @error_message = 'Invalid data file format. Please ensure that your data file is a .asc file and try again.'
     end
   end
 
   def valid?
-    !@file_path.nil? && File.exist?(@file_path) && File.file?(@file_path)
+    @file_path && File.exist?(@file_path) && File.file?(@file_path) && File.extname(@file.original_filename) == '.asc'
   end
-
+  
   private
 
   def save_file(file)
-    file_path = Rails.root.join('private', 'uploads', 'userexpt', 'data', file.original_filename)
+    directory_path = Rails.root.join('public', 'uploads', 'userexpt', 'data')
+    FileUtils.mkdir_p(directory_path) unless Dir.exist?(directory_path)
+
+    file_path = directory_path.join(file.original_filename)
 
     File.open(file_path, 'wb') do |f|
       f.write(file.read)
@@ -25,4 +29,3 @@ class DataFile
     file_path.to_s
   end
 end
-
