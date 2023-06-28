@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+<div class = "upload">
+  <!DOCTYPE html>
 <html>
   <head>
     <title>Upload page</title>
@@ -39,7 +40,7 @@
   </body>
 </html>
 
-<div class = "homescreen">
+<div class = "uploadscreen">
 <header>
 <a href="https://genome.duke.edu/">
   <%= image_tag 'logo.png', alt: 'Duke Logo' %>
@@ -53,7 +54,7 @@
 </header>
 
   <div class="column skinny">
-    <h1>The Schmid Lab Microbial Growth Model: In Progress</h1>
+    <h1>The Schmid Lab Microbial Growth Model: Upload Files</h1>
        <p>The model takes plate reader data as input data file(s), in either tab-delimited or 
 comma-separated formats. You may also provide a metadata file(s) containing the metadata 
 associated with each well. Upload your .txt, .csv, or .ascii file, along with an 
@@ -87,7 +88,7 @@ generate.</p>
 </div>
 <% end %>
 
-  <% if flash[:notice] or (@data_file_paths.present? && @mapping_file_paths.present?) %>
+  <% if @data_file_paths.present? && @mapping_file_paths.present? %>
   <div class="notice">
     <p>
       <span class="success" style="color: black; font-weight: 500;">Files uploaded successfully. </span>
@@ -148,3 +149,12 @@ generate.</p>
   <%= link_to "Next", 'parameter', class: "next-button" %>
   <% end %>
 <div class="background-space"></div>
+
+</div>
+<footer>
+<a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>
+
+<h2 style= "margin-top:10px">&copy; Schmid Lab 2023</h2>
+<br/>
+</footer>
+</div>

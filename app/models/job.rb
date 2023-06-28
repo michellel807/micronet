@@ -2,6 +2,7 @@ class Job < ApplicationRecord
   belongs_to :user
 
   def analyze(chart_types)
+    self.status = "Analyzing..."
     @selected_chart_types = chart_types || []
     if @selected_chart_types.include?('raw_data')
       raw_data_results = RawDataGenerator.generate_raw_data()

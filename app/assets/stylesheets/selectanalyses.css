@@ -8,22 +8,22 @@
   font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
   font-weight: 300;
 }
-.homescreen{
+.selectanalyses{
   color: white;
   background-image: linear-gradient(to top, #000750, #405fad);
 
 } 
-.homescreen h1 {
+.selectanalyses h1 {
   font-size: 50px;
   margin-top: 20px;
 }
 
-.homescreen h3 {
+.selectanalyses h3 {
   font-size: 30px;
   margin-top: 20px;
   margin: auto;
 }
-.homescreen p {
+.selectanalyses p {
   font-size: 25px;
 }
 
@@ -51,4 +51,9 @@
   background-color: #405fad;
   color: white;
   text-decoration: none;
+}
+
+.selectanalyses footer{
+  background-color: #000750;
+  box-shadow: 0 0 15px 0 rgba(0,0,0,.8) inset;
 }

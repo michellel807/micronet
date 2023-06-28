@@ -3,27 +3,27 @@
 *= require_tree .
 */
 
-/* for the home screen */
+/* for the parameter screen */
 * {
   font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
   font-weight: 300;
 }
-.homescreen{
+.parameterscreen{
   color: white;
   background-image: linear-gradient(to top, #000750, #405fad);
 
 } 
-.homescreen h1 {
+.parameterscreen h1 {
   font-size: 50px;
   margin-top: 20px;
 }
 
-.homescreen h3 {
+.parameterscreen h3 {
   font-size: 30px;
   margin-top: 20px;
   margin: auto;
 }
-.homescreen p {
+.parameterscreen p {
   font-size: 25px;
 }
 
@@ -68,5 +68,10 @@
 
 .option-label {
   font-size: 30px;
+}
+
+.parameterscreen footer{ 
+  background-color: #000750;
+  box-shadow: 0 0 15px 0 rgba(0,0,0,.8) inset;
 }
 

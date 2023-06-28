@@ -3,27 +3,27 @@
 *= require_tree .
 */
 
-/* for the home screen */
+/* for the upload screen */
 * {
   font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
   font-weight: 300;
 }
-.homescreen{
-  color: white;
+.uploadscreen {
   background-image: linear-gradient(to top, #000750, #405fad);
+  color: white;
 
 } 
-.homescreen h1 {
+.uploadscreen h1 {
   font-size: 50px;
   margin-top: 20px;
 }
 
-.homescreen h3 {
+.uploadscreen h3 {
   font-size: 30px;
   margin-top: 20px;
   margin: auto;
 }
-.homescreen p {
+.uploadscreen p {
   font-size: 25px;
 }
 
@@ -153,4 +153,9 @@ table tr td:first-child {
   overflow: auto;
   overflow: scroll;
   white-space: nowrap;
+}
+
+.uploadscreen footer{
+  background-color: #000750;
+  box-shadow: 0 0 15px 0 rgba(0,0,0,.8) inset;
 }

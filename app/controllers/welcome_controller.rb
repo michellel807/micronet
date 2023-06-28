@@ -16,17 +16,19 @@ class WelcomeController < ApplicationController
       return
     end
 
-    if @user.job_in_progress?
+    @job = Job.find(session[:current_user_id])
+    if (session[:current_user_id] and @job.status == "In Progress")
       flash.now.alert = "Looks like you have an unsaved job open. Would you like to resume?"
       session[:session_user] = @user
       render "index"
     else
-      @job = Job.create(user_id: @user.id, status: "In Progress")
+      @job = Job.create(user_id: @user.id)
       @job.save
+      @job.update(status: "In Progress")
       session[:current_user_id] = @job.id
       puts "Job ID is #{@job.id}"
       puts "User is #{@user.id}"
-      puts "status is #{@user.job_in_progress?}"
+      puts "status is #{@job.status}"
       redirect_to "/upload"
     end
 
@@ -34,8 +36,8 @@ class WelcomeController < ApplicationController
 
   def resume_job
     @user = session[:session_user]
-    if @user && @user.job && @user.job.status == "In Progress"
-      session[:current_user_id] = @user.job.id
+    @job = Job.find(session[:current_user_id])
+    if @job.status == "In Progress"
       puts "Redirecting to upload page: job id is #{@user.job.id}"  
       redirect_to "/upload"
     end
@@ -49,7 +51,7 @@ class WelcomeController < ApplicationController
     session[:current_user_id] = @job.id
     puts "Job ID is #{@job.id}"
     puts "User is #{@user.id}"
-    puts "Job status is #{@job.status}"
+    puts "Job status is #{@user.job_in_progress?}"
     redirect_to "/upload/delete_files"
   end
   

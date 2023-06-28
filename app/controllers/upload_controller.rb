@@ -2,24 +2,18 @@ class UploadController < ApplicationController
 skip_before_action :verify_authenticity_token
 
 def delete_files
-  @data_file_paths = session[:data_file_paths]
-  @mapping_file_paths = session[:mapping_file_paths]
-
-  # Delete data files
-  @data_file_paths.each do |file_path|
-    FileUtils.rm(file_path) if File.exist?(file_path)
-  end
-
-  # Delete mapping files
-  @mapping_file_paths.each do |file_path|
-    FileUtils.rm(file_path) if File.exist?(file_path)
-  end
-
   # Clear session variables
   session[:data_file_paths] = nil
   session[:mapping_file_paths] = nil
+  @data_file_paths = session[:data_file_paths]
+  @mapping_file_paths = session[:mapping_file_paths]
 
-  redirect_to '/upload'
+  puts "Session[:data_file_paths] is #{session[:data_file_paths] }"
+  puts "Session[:mapping_file_paths] is #{session[:mapping_file_paths] }"
+  puts "@data_file_paths is #{@data_file_paths}"
+  puts "@mapping_file_paths is #{@mapping_file_paths}"
+  redirect_to '/upload', notice: 'No files currently uploaded.'
+
 end
 
 def index
