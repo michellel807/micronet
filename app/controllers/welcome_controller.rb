@@ -29,7 +29,7 @@ class WelcomeController < ApplicationController
       puts "Job ID is #{@job.id}"
       puts "User is #{@user.id}"
       puts "status is #{@job.status}"
-      redirect_to "/upload"
+      redirect_to "/upload/delete_files"
     end
 
   end
