@@ -3,7 +3,8 @@
 <head>
   <title>Parameter page</title>
   <%= stylesheet_link_tag 'selectanalyses' %>
- </head>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
 <body>
   <div class="selectanalyses">
     <header>
@@ -24,32 +25,99 @@
 
       <p>Please select which analyses you would like to run. When you click "Start My Job," you will receive an email confirming that your jobs have begun. For more details on each analysis, please see the "Resources" tab.</p>
 
-  <div class="general-white-block">
-   <%= form_with url: '/generate', method: :post do |form| %>
-    <h2 style="text-align: center;">Select Analyses</h2>
-    <div class="analyses-container">
-      <label>
-        <%= check_box_tag 'chart_types[]', 'raw_data', @selected_chart_types.include?('raw_data') %>
-        Raw Data Plot (Per Well)
-      </label>
-      <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
-        <%= check_box_tag 'chart_types[]', 'fit_stats', @selected_chart_types.include?('fit_stats') %>
-        Fit Statistics
-      </label>
+      <div class="general-white-block">
+        <%= form_with url: '/generate', method: :post do |form| %>
+          <h2 style="text-align: center;">Select Analyses</h2>
+          <div class="analyses-container">
+            <label>
+              <%= check_box_tag 'chart_types[]', 'raw_data', @selected_chart_types.include?('raw_data') %>
+              Raw Data Plot (Per Well)
+            </label>
+            <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
+              <%= check_box_tag 'chart_types[]', 'fit_stats', @selected_chart_types.include?('fit_stats') %>
+              Fit Statistics
+            </label>
+            <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
+              <%= check_box_tag 'chart_types[]', 'test-hypothesis', @selected_chart_types.include?('test-hypothesis') %>
+              Test Hypothesis
+            </label>
+          </div>
+
+          <div class="test-hypothesis-container" style="display: none;">
+            <label>Choose variable to compare on:</label>
+            <% if @mapping_file_paths.present? %>
+            <%= hidden_field_tag 'file_data', @file_data_json %>
+            <%= select_tag 'column', options_for_select(@columns), prompt: 'Select a column', id: 'column' %>
+          <% end %>
+                   
+  
+            <div class="compare-options-container" style="display: none;">
+              <label>Choose two to compare:</label>
+              <%= select_tag 'condition1', '', prompt: 'Select a condition' %>
+              <%= select_tag 'condition2', '', prompt: 'Select another condition' %>
+            </div>
+          </div>
+          
+          <%= hidden_field_tag 'chart_types[]', @selected_chart_types %>
+
+          <%= submit_tag 'Start My Job', class: 'analysis-button' %>
+          <p style="margin-top: 10px;"> Note: Submitting may take a few seconds. Please be patient. </p>
+        <% end %>
+      </div>
     </div>
 
-    <%= hidden_field_tag 'chart_types[]', @selected_chart_types %>
-
-    <%= submit_tag 'Start My Job', class: 'analysis-button' %>
-    <p style="margin-top: 10px;"> Note: Submitting may take a few seconds. Please be patient. </p>
+    <footer>
+      <a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>
+      <h2 style= "margin-top:10px">&copy; Schmid Lab 2023</h2>
+      <br/>
+    </footer>
   </div>
-</div>
-<% end %>
 
-  <footer>
-  <a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>
-  
-  <h2 style= "margin-top:10px">&copy; Schmid Lab 2023</h2>
-  <br/>
-</footer>
-</div>
+  <script>
+  $(document).ready(function() {
+    $("input[name='chart_types[]'][value='test-hypothesis']").on("change", function() {
+      if ($(this).is(":checked")) {
+        $(".test-hypothesis-container").show();
+      } else {
+        $(".test-hypothesis-container").hide();
+      }
+    });
+
+    $("#column").on("change", function() {
+      var column = $(this).val();
+      var options = <%= raw @data_file_paths.to_json %>;
+
+      if (column) {
+        var conditions = [];
+        var fileData = JSON.parse($("#file_data").val());
+        var rows = fileData.trim().split("\n");
+        var header = rows.shift().split("\t");
+        var columnIndex = header.indexOf(column);
+
+        rows.forEach(function(row) {
+          var values = row.split("\t");
+          var condition = values[columnIndex];
+          if (condition && !conditions.includes(condition)) {
+            conditions.push(condition);
+          }
+        });
+
+        $("#condition1, #condition2").empty();
+
+        conditions.forEach(function(condition) {
+          $("<option />").text(condition).appendTo("#condition1");
+          $("<option />").text(condition).appendTo("#condition2");
+        });
+
+        $(".compare-options-container").show();
+      } else {
+        $(".compare-options-container").hide();
+      }
+    });
+  });
+</script>
+
+
+
+</body>
+</html>
