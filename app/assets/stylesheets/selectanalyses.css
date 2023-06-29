@@ -27,6 +27,10 @@
   font-size: 25px;
 }
 
+.selectanalyses label {
+  font-size: 30px;
+}
+
 .background{
   background-image: linear-gradient(to bottom, #000750, #000750);
 }
@@ -56,4 +60,21 @@
 .selectanalyses footer{
   background-color: #000750;
   box-shadow: 0 0 15px 0 rgba(0,0,0,.8) inset;
+}
+
+.selectanalyses form {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* Set the number of columns here */
+  grid-gap: 10px;
+}
+
+.general-white-block-container {
+  display: grid; /* Change to grid to create a new grid context */
+  grid-template-columns: 1fr; /* Single column grid for the white blocks */
+  grid-gap: 10px;
+}
+
+.general-white-block {
+  padding: 20px;
+  border: 1px solid #ddd;
 }
