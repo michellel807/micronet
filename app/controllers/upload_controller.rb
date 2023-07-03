@@ -2,6 +2,10 @@ class UploadController < ApplicationController
 skip_before_action :verify_authenticity_token
 
 def delete_files
+  # Clear data
+  FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'data'))
+  FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'mapping'))
+    
   # Clear session variables
   session[:data_file_paths] = nil
   session[:mapping_file_paths] = nil

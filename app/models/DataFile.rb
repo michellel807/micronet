@@ -17,7 +17,7 @@ class DataFile
   private
 
   def save_file(file)
-    directory_path = Rails.root.join('public', 'uploads', 'userexpt', 'data')
+    directory_path = Rails.root.join('private', 'uploads', 'userexpt', 'data')
     FileUtils.mkdir_p(directory_path) unless Dir.exist?(directory_path)
 
     file_path = directory_path.join(file.original_filename)
