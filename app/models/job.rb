@@ -42,5 +42,10 @@ class Job < ApplicationRecord
     UserMailer.with(job: self, user: User.find(self.user_id)).confirm_email.deliver_now
   end
 
+  def deleteoldfiles
+    FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'figures'))
+    FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'summary'))
+  end
+
 
 end

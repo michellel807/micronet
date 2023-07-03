@@ -7,8 +7,11 @@ class GenerateController < ApplicationController
   def run
    @job = Job.find(session[:current_user_id])
     @user = User.find_or_create_by(email: params[:email])
+    @job.deleteoldfiles
+    puts "old files deleted"
     @job.sendconfirm
     @job.delay.analyze(params[:chart_types])
+    puts "beginning analysis"
     @job.update(status: "Job submitted")
     puts "Job status is #{@job.status}"
   respond_to do |format|
