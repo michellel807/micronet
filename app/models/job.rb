@@ -23,7 +23,7 @@ class Job < ApplicationRecord
     file_names += @fit_stats_paths if @fit_stats_paths.present?
 
     # Send email to the user with the file names and the job object
-    UserMailer.welcome_email(file_names, self).deliver_now
+    UserMailer.processedjob_email(file_names, self).deliver_now
   end
 
   def serve_image

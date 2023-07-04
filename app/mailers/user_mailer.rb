@@ -1,7 +1,7 @@
 class UserMailer < ApplicationMailer
   default from: "noreply@duke.edu"
 
-  def welcome_email(file_names, job)
+  def processedjob_email(file_names, job)
     @user = User.find(job.user_id)
     @file_names = file_names
 
@@ -10,7 +10,7 @@ class UserMailer < ApplicationMailer
       attachments[file_name] = File.read(file_path) if File.exist?(file_path)
     end
 
-    mail(to: @user.email, subject: "Phenom Model Processed Data")
+    mail(to: @user.email, subject: "Schmid Lab Microbial Growth Model: Processed Data")
   end
 
   # Sends a confirmation email with User-submitted meta data and optical density
@@ -31,7 +31,7 @@ class UserMailer < ApplicationMailer
     #ofile = open("#{Rails.root}/private/#{params[:job].odfile_url}").read
     #attachments["od.csv"] = ofile
 
-    mail(to: @user.email, subject: "Phenom Model Confirmation")
+    mail(to: @user.email, subject: "Schmid Lab Microbial Growth Model: Job Submitted")
   end
 end
 
