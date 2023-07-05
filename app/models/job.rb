@@ -14,8 +14,11 @@ class Job < ApplicationRecord
 
     if @selected_chart_types.include?('fit_stats') && @pool_replicates == "no"
       @fit_stats_paths = FitStatisticsGenerator.generate_fit_stats()
-    elsif @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes"
-      @fit_stats_paths = FitStatisticsGenerator.generate_fit_stats(@pool_options_string)
+    end
+
+    if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes"
+      system("source activate lib/envs/amigacondaenv/ && lib/envs/amigacondaenv/bin/python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt --pool-by '#{pool_options_string}'")
+      @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', '*_summary.txt'))  
     end
 
     save # Save the instance of Job
