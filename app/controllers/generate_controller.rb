@@ -3,9 +3,15 @@ class GenerateController < ApplicationController
    @job = Job.find(session[:current_user_id])
    @user = User.find_or_create_by(email: params[:email])
   @pool_replicates= session[:pool_replicates]
-  @pool_options= session[:pool_options]
+  @pool_options = session[:pool_options] || []
+  if !@pool_options.empty?
+    @pool_options_string = "'#{ @pool_options.join(",") }'"
+  end
+  session[:pool_options_string] = @pool_options_string
    puts "@pool_replicates is #{@pool_replicates}"
-   puts "@pool_options is #{@pool_options}"
+   puts "@pool_options_string is #{@pool_options_string}"
+   puts "session[:pool_options_string] is #{session[:pool_options_string]}"
+
    if @pool_replicates == "no"
      puts "secret status unlocked"
    end
@@ -17,7 +23,7 @@ class GenerateController < ApplicationController
     @job.deleteoldfiles
     puts "old files deleted"
     @job.sendconfirm
-    Delayed::Job.enqueue(JobAnalyzer.new(@job.id, params[:chart_types], session[:pool_replicates], session[:pool_options]))
+    Delayed::Job.enqueue(JobAnalyzer.new(@job.id, params[:chart_types], session[:pool_replicates], session[:pool_options_string]))
     puts "beginning analysis"
     @job.update(status: "Job submitted")
     puts "Job status is #{@job.status}"

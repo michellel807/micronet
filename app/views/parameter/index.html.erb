@@ -104,34 +104,13 @@
               <div class="additional-text">
                 Please select the variable(s) to pool on. If selecting multiple variables, the Schmid Lab Growth Model will pool based on all unique combinations of the selected variables and model them jointly. For more information on this process, please <a href="http://firasmidani.github.io/amiga/doc/pooling.html">click here</a>.
               </div>
-              <label>
-                <input type="checkbox" name="pool_options[]" value="Plate_ID">
-                Plate ID
-              </label>
-              <label>
-                <input type="checkbox" id="isolate-checkbox" name="pool_options[]" value="Isolate">
-                Isolate
-              </label>
-              <label>
-                <input type="checkbox" id="pm-checkbox" name="pool_options[]" value="PM">
-                PM
-              </label>
-              <label>
-                <input type="checkbox" id="replicate-checkbox" name="pool_options[]" value="Replicate">
-                Replicate
-              </label>
-              <label>
-                <input type="checkbox" id="substrate-checkbox" name="pool_options[]" value="Substrate">
-                Substrate
-              </label>
-              <label>
-                <input type="checkbox" id="group-checkbox" name="pool_options[]" value="Group">
-                Group
-              </label>
-              <label>
-                <input type="checkbox" id="control-checkbox" name="pool_options[]" value="Control">
-                Control
-              </label>
+              <% @pool_options.each do |option| %>
+                <% next if option.downcase.include?('well') %>
+                <label>
+                  <input type="checkbox" name="pool_options[]" value="<%= option %>">
+                  <%= option %>
+                </label>
+              <% end %>
             </div>
           </div>
 
@@ -141,12 +120,11 @@
       </div>
     </div>
     <footer>
-    <a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>
-    
-    <h2 style= "margin-top:10px">&copy; Schmid Lab 2023</h2>
-    <br/>
-  </footer>
-</div>
+      <a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>
+      <h2 style="margin-top:10px">&copy; Schmid Lab 2023</h2>
+      <br/>
+    </footer>
+  </div>
   <div class="background-space"></div>
 </body>
 </html>
