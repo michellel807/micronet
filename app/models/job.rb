@@ -1,16 +1,19 @@
 class Job < ApplicationRecord
   belongs_to :user
 
-  def analyze(chart_types)
+  def analyze(chart_types, pool_replicates, pool_options)
     self.status = "Analyzing..."
     @selected_chart_types = chart_types || []
+    @pool_replicates = pool_replicates
+    @pool_options = pool_options
+
     if @selected_chart_types.include?('raw_data')
       raw_data_results = RawDataGenerator.generate_raw_data()
       @raw_data_pdf_paths = raw_data_results[:raw_data_pdf_paths]
       @raw_data_png_paths = raw_data_results[:raw_data_png_paths]
     end
 
-    if @selected_chart_types.include?('fit_stats')
+    if @selected_chart_types.include?('fit_stats') && @pool_replicates == "no"
       @fit_stats_paths = FitStatisticsGenerator.generate_fit_stats()
     end
 
