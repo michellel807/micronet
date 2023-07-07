@@ -21,7 +21,6 @@ Rails.application.routes.draw do
   post "/confirm/update", to: "confirm#update"
 
   get "/jobs/:id", to: "jobs#show"
-
-  get "/resources", to: "welcome#resources"
+  get '/resources', to: 'resources#index'
   get "/help", to: "welcome#help"
 end

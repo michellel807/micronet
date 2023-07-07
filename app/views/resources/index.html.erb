@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Parameter page</title>
+  <%= stylesheet_link_tag 'resources' %>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  </head>
+<body>
+  <div class="selectanalyses">
+    <header>
+      <a href="https://genome.duke.edu/">
+        <%= image_tag 'logo.png', alt: 'Duke Logo' %>
+      </a>
+      <h2 style="color:white;">THE SCHMID LAB MICROBIAL GROWTH MODEL</h2>
+      <nav>
+        <a class="wel_nav" href="/help">HELP</a>
+        <a class="wel_nav" href="/resources">RESOURCES</a>
+        <a class="wel_nav" href="/admin">ADMIN</a>
+      </nav>
+    </header>
+
+    <div class="column skinny">
+      <% content_for :title, "Resources page" %>
+      <h1> The Schmid Lab Microbial Growth Model: Background <h1>
+      <p> The Schmid Lab Microbial Growth Model is built on the work of Peter Tonner and Firas Midani. In particular, it uses the
+      AMIGA pipeline developed by Firas, and partially based on work by Peter, that provides several frameworks for microbial
+      growth analysis in Python. Please check out the in-depth vignette Firas has developed for AMIGA here: <a href="https://firasmidani.github.io/amiga/"> https://firasmidani.github.io/amiga/</a>.
+
+      The Schmid Lab Microbial Growth Model simplifies the AMIGA pipeline into a user-friendly webapp that doesn't require
+      command-line knowledge. It is intended for (INSERT MORE INFO HERE)
+      </p>
+
+
+      <h1> Specific Analyses </h1>
+      <h2> Raw Data (Per Well)</h2>
+      <p> This analysis will generate a simple growth curve for each well in the user's dataset. 
+      According to the <a href="https://firasmidani.github.io/amiga/doc/plotting.html"> AMIGA vignette</a>, this analysis computes 'the fold-change for all wells relative to the negative control well. 
+      Fold-change is computed as maximum change in OD in each well relative to the first time point divided by the maximum change in OD in the control well relative to the first time point. 
+      The numbers on the top right of each plot is the raw maximum OD in each curve [...] wells where the fold-change is higher than 1.5 [are highlighted] in blue [while wells where the fold change is] lower than 0.5 [are highlighted] in red.' </p>
+      <h2 id="test-differential-growth"> Comparing Growth in Different Conditions </h2>
+      <p> This analysis uses a Gaussian Process regression to test for differential growth between conditions.
+      To do so, it uses the "test" function of the AMIGA pipeline (see <a href="https://firasmidani.github.io/amiga/doc/hypothesistesting.html"> https://firasmidani.github.io/amiga/doc/hypothesistesting.html)</a>
+      for more about the command-line usage of this function). By default, the number of permutations is set to
+      99, and the time step is set to 3. In future iterations of the Schmid Lab Microbial Growth Model, you may be able to adjust
+      these parameters yourself; for the time being, if you seek additional control over these parameters, we recommend implementing
+      AMIGA's "test" function on your own or indicating your interest in these features via our <a href="/feedback">Feedback</a>  page. 
+
+      The analysis will generate a normalized OD plot modelling the growth of the two conditions you selected. The thin lines
+      surrounding the model curve indicate 95% confidence intervals. The output report will provide the log Bayes Factor value,
+      as well as the confidence interval outside which this value must fall in order to indicate differential growth at an FDR of 10%.
+      If you require additional help understanding the output of this analysis, please <a href="/contact"> contact us</a> and someone
+      on our team will be happy to assist you with interpretation via email.</p>

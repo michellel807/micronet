@@ -41,7 +41,8 @@
           <div class="general-white-block">
             <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
               <%= check_box_tag 'chart_types[]', 'compare-parameters', @selected_chart_types.include?('compare-parameters') %>
-              Compare Parameters
+              Compare Growth in Different Conditions
+              <p> Note: Please <a href="/resources/#test-differential-growth">click here</a>  for more information about this test if it is your first time usingt it. </p>
             </label>
 
           <div class="compare-parameters-container" style="display: none;">
@@ -100,7 +101,7 @@
         rows.forEach(function(row) {
           var values = row.split("\t");
           var condition = values[columnIndex];
-          if (condition && !conditions.includes(condition)) {
+          if (condition && !conditions.includes(condition) && !column.toLowerCase().includes("well")) {
             conditions.push(condition);
           }
         });
@@ -119,13 +120,13 @@
 
         // Generate subset dropdowns for remaining columns
         var remainingColumns = header.filter(function(col) {
-          return col !== column;
+          return col !== column && !col.toLowerCase().includes("well");
         });
 
         var subsetDropdowns = $("#subset-dropdowns");
         subsetDropdowns.empty();
 
-        $("<p />").text("Subset data so conditions can be directly compared:").appendTo(subsetDropdowns);
+        $("<p />").text("Subset data so conditions can be directly compared (This is optional: choose as many subsettings as you wish):)").appendTo(subsetDropdowns);
 
         remainingColumns.forEach(function(col) {
           var select = $("<select />").attr("name", col);
