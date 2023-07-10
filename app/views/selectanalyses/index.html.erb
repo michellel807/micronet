@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <title>Parameter page</title>
   <%= stylesheet_link_tag 'selectanalyses' %>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  </head>
+</head>
+
 <body>
   <div class="selectanalyses">
     <header>
@@ -19,50 +21,79 @@
       </nav>
     </header>
 
-    <div class="column skinny">
-      <% content_for :title, "Parameters page" %>
-      <h1> Select Analyses </h1>
-      <p>Please select which analyses you would like to run. When you click "Start My Job," you will receive an email confirming that your jobs have begun. For more details on each analysis, please see the "Resources" tab.</p>
+  <div class="column skinny">
+    <% content_for :title, "Parameters page" %>
+    <h1> Select Analyses </h1>
+    <p>Please select which analyses you would like to run. When you click "Start My Job," you will receive an email confirming that your jobs have begun. For more details on each analysis, please see the "Resources" tab.</p>
+    <%= form_with url: '/generate', method: :post do |form| %>
+    <div class="general-white-block">
+      <label>
+          <%= check_box_tag 'chart_types[]', 'raw_data', @selected_chart_types.include?('raw_data') %>
+          Raw Data Plot (Per Well)
+      </label>
+    </div>
+    <div class="general-white-block">
+      <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
+        <%= check_box_tag 'chart_types[]', 'fit_stats', @selected_chart_types.include?('fit_stats') %>
+        Fit Statistics
+      </label>
 
-        <%= form_with url: '/generate', method: :post do |form| %>
-          <div class="general-white-block">
-            <label>
-              <%= check_box_tag 'chart_types[]', 'raw_data', @selected_chart_types.include?('raw_data') %>
-              Raw Data Plot (Per Well)
-            </label>
-          </div>
-          <div class="general-white-block">
-            <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
-              <%= check_box_tag 'chart_types[]', 'fit_stats', @selected_chart_types.include?('fit_stats') %>
-              Fit Statistics
-            </label>
-          </div>
+    <div class="radio-container" style="display: none;">
+      <h2> Pool Replicates? </h2>
+      <label class="option-label">
+        <input type="radio" name="pool_replicates" value="no" checked>
+        No
+      </label>
 
-          <div class="general-white-block">
-            <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
-              <%= check_box_tag 'chart_types[]', 'compare-parameters', @selected_chart_types.include?('compare-parameters') %>
-              Compare Growth in Different Conditions
-              <p> Note: Please <a href="/resources/#test-differential-growth">click here</a>  for more information about this test if it is your first time usingt it. </p>
-            </label>
+      <label class="option-label">
+        <input type="radio" name="pool_replicates" value="yes">
+        Yes
+      </label>
+    </div>
 
-          <div class="compare-parameters-container" style="display: none;">
-            <p>Choose variable to compare on:</p>
-            <% if @mapping_file_paths.present? %>
-            <%= hidden_field_tag 'file_data', @file_data_json %>
-            <%= select_tag 'column', options_for_select(@columns), prompt: 'Select a column', id: 'column' %>
-          <% end %>
-                   
-  
-            <div class="compare-options-container" style="display: none;">
-              <p>Choose two to compare:</p>
-              <%= select_tag 'condition1', '', prompt: 'Select a condition' %>
-              <%= select_tag 'condition2', '', prompt: 'Select another condition' %>
-            </div>
-          </div>
-          <div id="subset-dropdowns"></div>
-          <%= hidden_field_tag 'chart_types[]', @selected_chart_types %>
+    <div class="checkbox-container">
+      <div id="checkbox-content">
+        <h3 id="checkbox-header"></h3>
+        <div class="additional-text">
+          Please select the variable(s) to pool on. If selecting multiple variables, the Schmid Lab Growth Model will pool based on all unique combinations of the selected variables and model them jointly. For more information on this process, please <a href="http://firasmidani.github.io/amiga/doc/pooling.html">click here</a>.
         </div>
-        </div>
+      <% @pool_options.each do |option| %>
+        <% next if option.downcase.include?('well') %>
+        <label>
+          <input type="checkbox" name="pool_options[]" value="<%= option %>">
+            <%= option %>
+        </label>
+      <% end %>
+    </div>
+  </div>
+
+          </div>
+
+  <div class="general-white-block">
+    <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
+      <%= check_box_tag 'chart_types[]', 'compare-parameters', @selected_chart_types.include?('compare-parameters') %>
+      Compare Growth in Different Conditions
+      <p> Note: Please <a href="/resources/#test-differential-growth">click here</a>  for more information about this test if it is your first time using it. </p>
+    </label>
+
+  <div class="compare-parameters-container" style="display: none;">
+    <p>Choose variable to compare on:</p>
+    <% if @mapping_file_paths.present? %>
+    <%= hidden_field_tag 'file_data', @file_data_json %>
+    <%= select_tag 'column', options_for_select(@columns), prompt: 'Select a column', id: 'column' %>
+  <% end %>
+            
+
+    <div class="compare-options-container" style="display: none;">
+      <p>Choose two to compare:</p>
+      <%= select_tag 'condition1', '', prompt: 'Select a condition' %>
+      <%= select_tag 'condition2', '', prompt: 'Select another condition' %>
+    </div>
+  </div>
+  <div id="subset-dropdowns"></div>
+  <%= hidden_field_tag 'chart_types[]', @selected_chart_types %>
+</div>
+</div>
         <div class="general-white-block">
           <%= submit_tag 'Start My Job', class: 'analysis-button' %>
           <p style="margin-top: 10px;"> Note: Submitting may take a few seconds. Please be patient. </p>
@@ -87,6 +118,15 @@
       }
     });
 
+    $("input[name='chart_types[]'][value='fit_stats']").on("change", function() {
+      if ($(this).is(":checked")) {
+        $(".radio-container").show();
+        $("input[name='pool_replicates'][value='no']").prop("checked", true);
+      } else {
+        $(".radio-container").hide();
+      }
+    });
+
     $("#column").on("change", function() {
       var column = $(this).val();
       var options = <%= raw @data_file_paths.to_json %>;
@@ -107,7 +147,7 @@
         });
 
         $("#condition1, #condition2").empty();
-        
+
         $("<option />").text("Select a condition").appendTo("#condition1");
         $("<option />").text("Select another condition").appendTo("#condition2");
 
@@ -126,7 +166,7 @@
         var subsetDropdowns = $("#subset-dropdowns");
         subsetDropdowns.empty();
 
-        $("<p />").text("Subset data so conditions can be directly compared (This is optional: choose as many subsettings as you wish):)").appendTo(subsetDropdowns);
+        $("<p />").text("Subset data so conditions can be directly compared (This is optional: choose as many subsettings as you wish):").appendTo(subsetDropdowns);
 
         remainingColumns.forEach(function(col) {
           var select = $("<select />").attr("name", col);
@@ -164,9 +204,27 @@
         }
       });
     });
+
+    // Hide Fit Stats options initially
+    $(".checkbox-container").hide();
+
+    // Handle "No" and "Yes" radio button change events
+    $("input[name='pool_replicates']").on("change", function() {
+      if ($(this).val() === "yes") {
+        $(".checkbox-container").show();
+      } else {
+        $(".checkbox-container").hide();
+        clearCheckedOptions();
+      }
+    });
+
+    function clearCheckedOptions() {
+      $("input[name='pool_options[]']").prop("checked", false);
+    }
   });
 </script>
 
 
+
 </body>
-</html>
+</html> 
