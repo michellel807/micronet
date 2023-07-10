@@ -8,7 +8,10 @@ class WelcomeController < ApplicationController
 
   def create
     @user = User.find_or_create_by(email: job_params[:email])
+    # Store the email value in the session (don't need these lines now but need them on the review page):
+    session[:email] = job_params[:email]
 
+  
     if !@user.valid? # ensures email matches email format
       @user.destroy
       flash.now.notice = "Invalid Email"

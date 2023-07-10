@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Parameter page</title>
+  <%= stylesheet_link_tag 'parameter' %>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <div class="parameterscreen">
+    <header>
+      <a href="https://genome.duke.edu/">
+        <%= image_tag 'logo.png', alt: 'Duke Logo' %>
+      </a>
+      <h2 style="color:white;" href="/">THE SCHMID LAB MICROBIAL GROWTH MODEL</h2>
+      <nav>
+        <a class="wel_nav" href="/help">HELP</a>
+        <a class="wel_nav" href="/resources">RESOURCES</a>
+        <a class="wel_nav" href="/admin">ADMIN</a>
+      </nav>
+    </header>
+
+    <div class="column skinny">
+      <% content_for :title, "Parameters page" %>
+
+      <h1>Review and Submit</h1>
+      <p>Please verify that your details are correct before submitting. If you wish to change something other than your email, you may use your browser's 'Back' button. When you click "Start My Job," you will receive an email confirming your submission.</p>
+
+        <h2>Email:</h2>
+        <p><%= @user.email %></p>
+
+        <h2>Data Files:</h2>
+        <% @data_file_names.each do |data_file| %>
+          <p><%= data_file %></p>
+        <% end %>
+
+        <h2>Mapping Files:</h2>
+        <% @mapping_file_names.each do |mapping_file_path| %>
+          <p><%= mapping_file_path %></p>
+        <% end %>
+
+        <h2>Analyses To Run:</h2>
+        <% session[:chart_types].each do |chart_type| %>
+          <% if chart_type == 'fit_stats' %>
+          <p>Fit Statistics</p>
+          <% end %>
+          <% if chart_type == 'raw_data' %>
+          <p>Raw Data Plots (Per Well)</p>
+          <% end %>
+          <% if chart_type == 'compare-parameters' %>
+          <p>Compare Growth in Different Conditions</p>
+          <% end %>
+        <% end %>
+
+        <h2>Pool Replicates: Selected Options</h2>
+        <% if session[:pool_replicates]=="yes" && !session[:pool_options].empty?%>
+          <p>For fit statistics, replicates will be pooled by <%= session[:pool_options] %></p>
+        <% end %>
+        <% if session[:pool_replicates]=="no" %>
+        <p>For fit statistics, no pooling will be used.</p>
+      <% end %>
+
+        <%= link_to 'Start My Job', '/generate', class: 'start-job-button' %>
+    </div>
+
+    <footer>
+      <a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>
+      <h2 style="margin-top:10px">&copy; Schmid Lab 2023</h2>
+      <br/>
+    </footer>
+  </div>
+  <div class="background-space"></div>
+</body>
+</html>

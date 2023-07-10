@@ -24,12 +24,13 @@
   <div class="column skinny">
     <% content_for :title, "Parameters page" %>
     <h1> Select Analyses </h1>
-    <p>Please select which analyses you would like to run. When you click "Start My Job," you will receive an email confirming that your jobs have begun. For more details on each analysis, please see the "Resources" tab.</p>
-    <%= form_with url: '/generate', method: :post do |form| %>
+    <p>Please select which results you would like to generate. For more details on each analysis, please see the "Resources" tab.</p>
+    <%= form_with url: '/review', method: :post do |form| %>
     <div class="general-white-block">
       <label>
           <%= check_box_tag 'chart_types[]', 'raw_data', @selected_chart_types.include?('raw_data') %>
           Raw Data Plot (Per Well)
+          <p> This analysis will generate a growth curve for each well in the experimental design individually. </p>
       </label>
     </div>
     <div class="general-white-block">
@@ -55,7 +56,7 @@
       <div id="checkbox-content">
         <h3 id="checkbox-header"></h3>
         <div class="additional-text">
-          Please select the variable(s) to pool on. If selecting multiple variables, the Schmid Lab Growth Model will pool based on all unique combinations of the selected variables and model them jointly. For more information on this process, please <a href="http://firasmidani.github.io/amiga/doc/pooling.html">click here</a>.
+          If necessary, please select the variable(s) to pool on. If selecting multiple variables, the Schmid Lab Growth Model will pool based on all unique combinations of the selected variables and model them jointly. For more information on this process, please <a href="http://firasmidani.github.io/amiga/doc/pooling.html">click here</a>.
         </div>
       <% @pool_options.each do |option| %>
         <% next if option.downcase.include?('well') %>
@@ -95,7 +96,7 @@
 </div>
 </div>
         <div class="general-white-block">
-          <%= submit_tag 'Start My Job', class: 'analysis-button' %>
+          <%= submit_tag 'Review', class: 'analysis-button' %>
           <p style="margin-top: 10px;"> Note: Submitting may take a few seconds. Please be patient. </p>
         <% end %>
       </div>
