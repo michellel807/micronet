@@ -14,7 +14,6 @@ Rails.application.routes.draw do
   post '/review', to: 'review#index'
   get '/generate', to: 'generate#index'
   post '/generate', to: 'generate#run'
-  post '/generate_charts', to: 'home#generate_charts', as: 'generate_charts'
   post '/upload', to: 'upload#upload'
   get '/uploads/userexpt/figures/:filename', to: 'home#serve_image', as: 'serve_image'
   get "/confirm", to: "confirm#index"
@@ -24,4 +23,17 @@ Rails.application.routes.draw do
   get "/jobs/:id", to: "jobs#show"
   get '/resources', to: 'resources#index'
   get "/help", to: "welcome#help"
+  get "/admin", to: "admin#login"
+
+  scope '/admin' do
+    get 'login', to: 'admin#login'
+    post 'authenticate', to: 'admin#authenticate_admin', as: 'authenticate_admin' 
+    delete 'logout', to: 'admin#logout'
+    resources :jobs, module: 'admin', only: [:index, :destroy]
+  end
+  # Other routes
+
+  namespace :admin do
+    resources :jobs, only: [:index, :destroy]
+  end
 end

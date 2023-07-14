@@ -2,6 +2,7 @@ source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
 ruby "3.2.2"
+gem 'bcrypt' #handle password encryption for admin page
 gem 'daemons' #to start delayed jobs automatically
 gem 'delayed_job_active_record' #apparently need this for delayed jobs too
 gem 'delayed_job' #need for delayed jobs to run

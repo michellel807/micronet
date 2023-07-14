@@ -11,7 +11,7 @@ class GenerateController < ApplicationController
    puts "@pool_replicates is #{@pool_replicates}"
    puts "@pool_options_string is #{@pool_options_string}"
    puts "session[:pool_options_string] is #{session[:pool_options_string]}"
-
+   puts"session[:chart_types] is #{session[:chart_types]}"
    if @pool_replicates == "no"
      puts "secret status unlocked"
    end
@@ -23,7 +23,7 @@ class GenerateController < ApplicationController
     @job.deleteoldfiles
     puts "old files deleted"
     @job.sendconfirm
-    Delayed::Job.enqueue(JobAnalyzer.new(@job.id, params[:chart_types], session[:pool_replicates], session[:pool_options_string]))
+    Delayed::Job.enqueue(JobAnalyzer.new(@job.id, session[:chart_types], session[:pool_replicates], session[:pool_options_string]))
     puts "beginning analysis"
     @job.update(status: "Job submitted")
     puts "Job status is #{@job.status}"

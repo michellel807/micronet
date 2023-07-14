@@ -1,25 +1,29 @@
+# app/controllers/admin_controller.rb
 class AdminController < ApplicationController
-  # Renders views/admin/index.html.erb
+  before_action :authenticate_admin
+
   def index
-    @jobs = Job.all
-    @feedbacks = Feedback.all
-    @feedbackcnt = Feedback.all.count
+    @jobs = Job.where(completed: false)
   end
 
-  # Renders views/admin/feedback.html.erb
-  def feedback
-    @jobs = Job.all
+  def login
+    # Render the login form
   end
 
-  # Renders views/admin/users.html.erb
-  def users
-    @users = User.all
+  def authenticate_admin
+    if request.post?
+      admin = Admin.find_by(username: params[:username])
+      if admin && admin.authenticate(params[:password])
+        session[:admin_id] = admin.id
+        redirect_to admin_jobs_path
+      else
+        flash.now[:error] = 'Invalid username or password'
+      end
+    end
   end
 
-  # Renders views/admin/jobs.html.erb
-  def jobs
-    @jobs = Job.all
-
+  def logout
+    session[:admin_id] = nil
+    redirect_to login_path
   end
-
 end

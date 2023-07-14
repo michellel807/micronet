@@ -1,5 +1,6 @@
 class Job < ApplicationRecord
   belongs_to :user
+  attr_accessor :title
 
   def analyze(chart_types, pool_replicates, pool_options_string)
     self.status = "Analyzing..."
@@ -29,8 +30,9 @@ class Job < ApplicationRecord
     file_names += @raw_data_pdf_paths if @raw_data_pdf_paths.present?
     file_names += @fit_stats_paths if @fit_stats_paths.present?
 
-    # Send email to the user with the file names and the job object
+    # Send email to the user with the file names and the job object and mark job as completed
     UserMailer.processedjob_email(file_names, self).deliver_now
+    self.completed = true
   end
 
   def serve_image
@@ -54,5 +56,7 @@ class Job < ApplicationRecord
     FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'summary'))
   end
 
-
+  def self.admin_can_manage_jobs?(admin)
+    admin&.is_admin? 
+  end
 end

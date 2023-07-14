@@ -10,7 +10,14 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_06_23_152358) do
+ActiveRecord::Schema[7.0].define(version: 2023_07_14_151522) do
+  create_table "admins", force: :cascade do |t|
+    t.string "username"
+    t.string "password_digest"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "delayed_jobs", force: :cascade do |t|
     t.integer "priority", default: 0, null: false
     t.integer "attempts", default: 0, null: false
@@ -49,6 +56,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_23_152358) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "confirm_time"
+    t.boolean "completed"
   end
 
   create_table "sessions", force: :cascade do |t|

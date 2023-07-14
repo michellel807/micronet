@@ -35,13 +35,12 @@
   font-size: 20px;
 }
 
-.next-button {
+.start-job-button {
   margin: auto;
   background-color: #000750;
   padding: 60px;
   margin-top: 30px;
   border-radius: 6px;
-  width: 100px;
   color: white;
   font-size: 50px;
   text-decoration: none;
@@ -50,7 +49,7 @@
   display: inline-block;
   text-align: center;
   filter: drop-shadow(3px 3px 4px #b4b4b4);
-  width: 200px;
+  width: 500px;
   border: none;
   padding: 12px 48px 12px 24px;
   border-radius: 4px;

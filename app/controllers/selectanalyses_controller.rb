@@ -17,8 +17,8 @@ class SelectanalysesController < ApplicationController
 
     puts "session[:pool_replicates] is #{session[:pool_replicates]}"
     puts "session[:pool_options] is #{session[:pool_options]}"
-    puts "session[:fit_stats_options] is #{session[:fit_stats_options]}" # Added line
-
+    session[:chart_types] = params[:chart_types]
+    puts "session[:chart_types] is #{session[:chart_types]}" # Added line
     if session[:pool_replicates] == "no"
       puts "secret status unlocked"
     end
