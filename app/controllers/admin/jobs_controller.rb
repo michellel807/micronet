@@ -1,4 +1,4 @@
-class Admin:: JobsController < ApplicationController
+class Admin::JobsController < ApplicationController
   def index
     @jobs = Job.all
   end
@@ -12,5 +12,10 @@ class Admin:: JobsController < ApplicationController
     @job.destroy
     redirect_to admin_jobs_path
   end
-  
+
+  def cancel
+    @job = Job.find(params[:id])
+    @job.destroy
+    redirect_to admin_jobs_path, notice: 'Job canceled successfully.'
+  end
 end

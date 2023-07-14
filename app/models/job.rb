@@ -59,4 +59,8 @@ class Job < ApplicationRecord
   def self.admin_can_manage_jobs?(admin)
     admin&.is_admin? 
   end
+
+  def admin_can_manage_jobs?(admin)
+    admin&.is_admin?
+  end
 end

@@ -1,6 +1,9 @@
 Rails.application.routes.draw do
   resources :feedbacks
   resources :jobs
+  
+  # Other routes
+
   get "/", to: "welcome#index"
   post "/", to: "welcome#create"
   root 'welcome#index'
@@ -19,21 +22,24 @@ Rails.application.routes.draw do
   get "/confirm", to: "confirm#index"
   post "/confirm", to: "confirm#final"
   post "/confirm/update", to: "confirm#update"
-
   get "/jobs/:id", to: "jobs#show"
   get '/resources', to: 'resources#index'
   get "/help", to: "welcome#help"
   get "/admin", to: "admin#login"
-
+  
   scope '/admin' do
     get 'login', to: 'admin#login'
     post 'authenticate', to: 'admin#authenticate_admin', as: 'authenticate_admin' 
     delete 'logout', to: 'admin#logout'
     resources :jobs, module: 'admin', only: [:index, :destroy]
   end
-  # Other routes
-
+   
   namespace :admin do
-    resources :jobs, only: [:index, :destroy]
+    resources :jobs, only: [:index, :destroy] do
+      member do
+        patch 'cancel'
+      end
+    end
   end
+
 end
