@@ -50,20 +50,17 @@
     <h1>Currently Running Jobs</h1>
     <ul>
       <% @jobs.each do |job| %>
-        <%= "User: #{job.user_id}" %> 
-        <br>
-        <%= "Job: #{job.id}" %>
-        <br>
-        <%= "Status: #{job.status}" %> 
-        <br>
-        <%= "Start Time: #{job.start_time}" %>
+        <%= "User: #{job.user_id} | "  %> 
+        <%= "Job: #{job.id} | " %>
+        <%= "Status: #{job.status} | " %> 
+        <%= "Start Time: #{job.start_time} | " %>
         <% if job.admin_can_manage_jobs?(current_admin) %>
         <%= button_to 'Cancel', cancel_admin_job_path(job), method: :patch, class: 'cancel-button', 'data-confirm-message': 'Are you sure you want to cancel this job?' %>
         <% end %>
     <% end %>
   </ul>
 
-  <%= button_to "Logout", admin_logout_path, method: :delete, data: { confirm: "Are you sure you want to logout?" }, id: "logout-button" %>
+  <%= button_to "Logout", admin_logout_path, method: :delete, data: { confirm: "Are you sure you want to logout?" }, id: "logout-button", class: "logout-button"%>
   </div>
   <footer>
 <a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>

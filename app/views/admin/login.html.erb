@@ -18,17 +18,17 @@
         <a class="wel_nav" href="/admin">ADMIN</a>
       </nav>
     </header>
-<h2>Admin Login</h2>
+<h1>Admin Login</h1>
 <%= form_tag authenticate_admin_path, method: :post do %>
-  <div>
+  <div class ="login">
     <%= label_tag :username %>
     <%= text_field_tag :username %>
   </div>
-  <div>
+  <div class="login">
     <%= label_tag :password %>
     <%= password_field_tag :password %>
   </div>
-  <%= submit_tag 'Login' %>
+  <%= submit_tag 'Login',class:"login-button" %>
 
   <footer>
 <a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>

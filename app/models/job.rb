@@ -4,6 +4,7 @@ class Job < ApplicationRecord
 
   def analyze(chart_types, pool_replicates, pool_options_string)
     self.status = "Analyzing..."
+    self.start_time = DateTime.now
     @selected_chart_types = chart_types || []
     @pool_replicates = pool_replicates
     @pool_options_string = pool_options_string || []
@@ -15,12 +16,14 @@ class Job < ApplicationRecord
 
     if @selected_chart_types.include?('fit_stats') && @pool_replicates == "no"
       system("source activate lib/envs/amigacondaenv/ && lib/envs/amigacondaenv/bin/python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt -o fit")
-      @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary.txt'))
+      system("source activate lib/envs/amigacondaenv/ && lib/envs/amigacondaenv/bin/python lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
+      @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
     end
 
     if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes"
       system("source activate lib/envs/amigacondaenv/ && lib/envs/amigacondaenv/bin/python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt --pool-by '#{pool_options_string}' -o fit")
-      @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary.txt'))  
+      system("source activate lib/envs/amigacondaenv/ && lib/envs/amigacondaenv/bin/python lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
+      @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
     end
 
     save # Save the instance of Job
@@ -31,8 +34,7 @@ class Job < ApplicationRecord
     file_names += @fit_stats_paths if @fit_stats_paths.present?
 
     # Send email to the user with the file names and the job object and mark job as completed
-    UserMailer.processedjob_email(file_names, self).deliver_now
-    self.completed = true
+    UserMailer.processedjob_email(file_names, self).deliver_now && self.status = "Completed"
   end
 
   def serve_image

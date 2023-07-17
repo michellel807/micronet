@@ -3,7 +3,7 @@ class AdminController < ApplicationController
   before_action :authenticate_admin
 
   def index
-    @jobs = Job.where(completed: false)
+    @jobs = Job.where.not(status: Completed)
   end
 
   def login

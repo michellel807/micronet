@@ -37,23 +37,22 @@
 
 .cancel-button {
   margin: auto;
-  background-color: #000750;
+  background-color: #fff;
   padding: 30px;
   margin-top: 10px;
   border-radius: 6px;
   color: white;
   font-size: 20px;
-  text-decoration: none;
+  text-decoration: nonse;
   cursor: pointer;
   border: none;
   display: inline-block;
   text-align: center;
-  filter: drop-shadow(3px 3px 4px #b4b4b4);
-  width: 100px;
+s  width: 100px;
   border: none;
   padding: 12px 48px 12px 24px;
   border-radius: 4px;
-  color: #fff;
+  color: #000750;
 }
 
 .cancel-button:hover {
@@ -71,5 +70,55 @@
   box-shadow: 0 0 15px 0 rgba(0,0,0,.8) inset;
 }
 
+.adminscreen h1{
+  margin:center;
+  margin-left: 50px;
+}
 
+.login{
+  margin-left: 50px;
+}
 
+.login-button{
+margin-left: 50px;
+background-color: #000750;
+padding: 30px;
+margin-top: 10px;
+margin-bottom: 10px;
+border-radius: 6px;
+color: white;
+font-size: 20px;
+text-decoration: none;
+cursor: pointer;
+border: none;
+display: inline-block;
+text-align: center;
+filter: drop-shadow(3px 3px 4px #b4b4b4);
+width: 90px;
+border: none;
+padding: 12px 48px 12px 24px;
+border-radius: 4px;
+color: #fff;
+}
+
+.logout-button{
+  margin-left: 30px;
+  background-color: #000750;
+  padding: 30px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  color: white;
+  font-size: 20px;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  display: inline-block;
+  text-align: center;
+  filter: drop-shadow(3px 3px 4px #b4b4b4);
+  width: 100px;
+  border: none;
+  padding: 12px 48px 12px 24px;
+  border-radius: 4px;
+  color: #fff;
+  }
