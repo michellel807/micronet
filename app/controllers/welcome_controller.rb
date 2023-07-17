@@ -19,8 +19,8 @@ class WelcomeController < ApplicationController
       return
     end
 
-    @job = Job.find(session[:current_user_id])
-    if (session[:current_user_id] and @job.status == "In Progress")
+    @job = Job.find_by(user_id: @user.id, status: "In Progress")
+    if @job.present? && @job.status == "In Progress"
       flash.now.alert = "Looks like you have an unsaved job open. Would you like to resume?"
       session[:session_user] = @user
       render "index"
