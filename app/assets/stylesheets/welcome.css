@@ -162,3 +162,7 @@
   justify-content: center;
   margin: auto;
 }
+
+.home_link:hover{
+  text-decoration: none;
+}
