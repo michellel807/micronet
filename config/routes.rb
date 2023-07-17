@@ -26,6 +26,7 @@ Rails.application.routes.draw do
   get '/resources', to: 'resources#index'
   get "/help", to: "welcome#help"
   get "/admin", to: "admin#login"
+
   
   scope '/admin' do
     get 'login', to: 'admin#login'
@@ -35,11 +36,11 @@ Rails.application.routes.draw do
   end
    
   namespace :admin do
+    delete '/logout', to: 'admin#logout', as: 'logout'
     resources :jobs, only: [:index, :destroy] do
       member do
         patch 'cancel'
       end
     end
   end
-
 end

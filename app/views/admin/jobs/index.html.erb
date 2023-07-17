@@ -28,3 +28,5 @@
       <% end %>
   <% end %>
 </ul>
+
+<%= button_to "Logout", admin_logout_path, method: :delete, data: { confirm: "Are you sure you want to logout?" }, id: "logout-button" %>
