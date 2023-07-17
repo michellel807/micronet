@@ -46,6 +46,7 @@
         <a class="wel_nav" href="/admin">ADMIN</a>
       </nav>
     </header>
+    <% @jobs = @jobs.to_a.reject { |job| job.status == 'Completed' } %>
 
     <h1>Currently Running Jobs</h1>
     <ul>
