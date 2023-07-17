@@ -3,7 +3,22 @@
 <head>
   <title>Admin page</title>
   <%= stylesheet_link_tag 'admin' %>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+  <%= javascript_include_tag 'application', 'data-turbolinks-track': 'reload' %>
+  <%= csrf_meta_tags %>
+  <script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var cancelButton = document.querySelector('.cancel-button');
+    cancelButton.addEventListener('click', function(event) {
+      event.preventDefault();
+      var confirmation = confirm(this.dataset.confirmMessage);
+      if (confirmation) {
+        var form = this.closest('form');
+        form.submit(); // Submit the form
+      }
+    });
+  });
+  </script>
 </head>
 <body>
   <div class="adminscreen">
@@ -11,7 +26,7 @@
       <a href="https://genome.duke.edu/">
         <%= image_tag 'logo.png', alt: 'Duke Logo' %>
       </a>
-      <a class = "home_link" href="/"><h2 style = "color:white;" >THE SCHMID LAB MICROBIAL GROWTH MODEL</h2></a>
+      <a class="home_link" href="/"><h2 style="color:white;">THE SCHMID LAB MICROBIAL GROWTH MODEL</h2></a>
       <nav>
         <a class="wel_nav" href="/help">HELP</a>
         <a class="wel_nav" href="/resources">RESOURCES</a>
@@ -19,14 +34,23 @@
       </nav>
     </header>
 
-<h2>Currently Running Jobs</h2>
-<ul>
-  <% @jobs.each do |job| %>
-      <%= "Job #{job.id}: #{job.title}" %> <!-- Displaying the job number and title -->
-      <% if job.admin_can_manage_jobs?(current_admin) %> 
-      <%= button_to 'Cancel', cancel_admin_job_path(job), method: :patch, data: { confirm: 'Are you sure you want to cancel this job?' }, class:"cancel-button" %>
-      <% end %>
-  <% end %>
-</ul>
+    <h2>Currently Running Jobs</h2>
+    <ul>
+      <% @jobs.each do |job| %>
+        <%= "User: #{job.user_id}" %> 
+        <br>
+        <%= "Job: #{job.id}" %>
+        <br>
+        <%= "Status: #{job.status}" %> 
+        <br>
+        <%= "Start Time: #{job.start_time}" %>
+        <% if job.admin_can_manage_jobs?(current_admin) %>
+        <%= button_to 'Cancel', cancel_admin_job_path(job), method: :patch, class: 'cancel-button', 'data-confirm-message': 'Are you sure you want to cancel this job?' %>
+        <% end %>
+    <% end %>
+  </ul>
 
-<%= button_to "Logout", admin_logout_path, method: :delete, data: { confirm: "Are you sure you want to logout?" }, id: "logout-button" %>
+  <%= button_to "Logout", admin_logout_path, method: :delete, data: { confirm: "Are you sure you want to logout?" }, id: "logout-button" %>
+  </div>
+</body>
+</html>
