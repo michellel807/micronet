@@ -17,6 +17,19 @@
         form.submit(); // Submit the form
       }
     });
+
+    var navLinks = document.querySelectorAll('nav a, .home_link');
+    navLinks.forEach(function(link) {
+      link.addEventListener('click', function(event) {
+        event.preventDefault();
+        var confirmation = confirm('Please log out before navigating away from the admin page');
+        if (confirmation) {
+          if (this.href === 'https://genome.duke.edu/') {
+            window.open(this.href, '_blank'); // Open the external link in a new tab
+          }
+        }
+      });
+    });
   });
   </script>
 </head>
@@ -34,7 +47,7 @@
       </nav>
     </header>
 
-    <h2>Currently Running Jobs</h2>
+    <h1>Currently Running Jobs</h1>
     <ul>
       <% @jobs.each do |job| %>
         <%= "User: #{job.user_id}" %> 
@@ -52,5 +65,11 @@
 
   <%= button_to "Logout", admin_logout_path, method: :delete, data: { confirm: "Are you sure you want to logout?" }, id: "logout-button" %>
   </div>
+  <footer>
+<a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>
+
+<h2 style= "margin-top:10px">&copy; Schmid Lab 2023</h2>
+<br/>
+</footer>
 </body>
 </html>

@@ -96,7 +96,7 @@
 </div>
 </div>
         <div class="general-white-block">
-          <%= submit_tag 'Review', class: 'analysis-button' %>
+          <%= submit_tag 'Review', class: 'analysis-button', id: 'review-button' %>
           <p style="margin-top: 10px;"> Note: Submitting may take a few seconds. Please be patient. </p>
         <% end %>
       </div>
@@ -111,6 +111,15 @@
 
   <script>
   $(document).ready(function() {
+    $('#review-button').on('click', function(e) {
+        var poolReplicates = $("input[name='pool_replicates']:checked").val();
+        var selectedOptions = $("input[name='pool_options[]']:checked").length;
+        
+        if (poolReplicates === 'yes' && selectedOptions === 0) {
+          e.preventDefault();
+          alert("Please select at least one parameter to pool on for the Fit Statistics analysis, or select 'No'.");
+        }
+      });
     $("input[name='chart_types[]'][value='compare-parameters']").on("change", function() {
       if ($(this).is(":checked")) {
         $(".compare-parameters-container").show();
