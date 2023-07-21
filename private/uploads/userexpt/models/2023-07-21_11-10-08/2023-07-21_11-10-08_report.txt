@@ -1,0 +1,12 @@
+The following criteria were used to subset data:
+Concentration.......['Low', 'High']
+Substrate...........['Glucose', 'Isolate']
+
+
+Model Tested: {'H0': ['Time'], 'H1': ['Time', 'Concentration']}
+
+log Bayes Factor: 36.124
+
+Functional Difference [95% CI]: 0.499 [0.350,0.649]
+
+Data Manipulation: Input was reduced to 145 equidistant time points. Samples were modeled without controlling for batch effects (i.e. subtracting the growth of group/batch-specific control samples).

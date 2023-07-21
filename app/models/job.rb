@@ -3,12 +3,14 @@ class Job < ApplicationRecord
   attr_accessor :title
   
 
-  def analyze(chart_types, pool_replicates, pool_options_string)
+  def analyze(chart_types, pool_replicates, pool_options_string, finalsubset, hypothesis)
     self.status = "Analyzing..."
     self.start_time = DateTime.now
     @selected_chart_types = chart_types || []
     @pool_replicates = pool_replicates
     @pool_options_string = pool_options_string || []
+    @finalsubset = finalsubset
+    @hypothesis = hypothesis
 
     if @selected_chart_types.include?('raw_data')
       raw_data_results = RawDataGenerator.generate_raw_data()
@@ -27,12 +29,21 @@ class Job < ApplicationRecord
       @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
     end
 
+    if @selected_chart_types.include?('compare-parameters')
+      system("source activate lib/envs/amigacondaenv/ && lib/envs/amigacondaenv/bin/python lib/scripts/amigagitsimplified/amiga.py test -i private/uploads/userexpt -s #{finalsubset} -y #{hypothesis} -o 'compare-parameters'")
+      @compare_params_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters', '*report.txt'))
+      @compare_params_pdf_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters','*pdf'))
+
+    end
     save # Save the instance of Job
 
     # Prepare the file names to be sent in the email
     file_names = []
     file_names += @raw_data_pdf_paths if @raw_data_pdf_paths.present?
     file_names += @fit_stats_paths if @fit_stats_paths.present?
+    file_names += @compare_params_paths if @compare_params_paths.present?
+    file_names += @compare_params_pdf_paths if @compare_params_pdf_paths.present?
+
 
     # Send email to the user with the file names and the job object and mark job as completed
     UserMailer.processedjob_email(file_names, self).deliver_now 

@@ -155,7 +155,7 @@
           }
         });
 
-        $("#condition1, #condition2").empty();
+      
 
         $("<option />").text("Select a condition").appendTo("#condition1");
         $("<option />").text("Select another condition").appendTo("#condition2");
@@ -178,6 +178,7 @@
         $("<p />").text("Subset data so conditions can be directly compared (This is optional: choose as many subsettings as you wish):").appendTo(subsetDropdowns);
 
         remainingColumns.forEach(function(col) {
+          var col = col.replace(/(\r\n|\n|\r)/gm, "");
           var select = $("<select />").attr("name", col);
           $("<option />").text("Select a value for " + col).appendTo(select);
 
@@ -204,14 +205,6 @@
       selectedConditions.push($("#condition2").val());
 
       // Remove the selected options from the other select elements
-      $("#condition1, #condition2").not(this).find("option").each(function() {
-        var optionValue = $(this).val();
-        if (selectedConditions.includes(optionValue)) {
-          $(this).prop("disabled", true);
-        } else {
-          $(this).prop("disabled", false);
-        }
-      });
     });
 
     // Hide Fit Stats options initially
@@ -219,6 +212,7 @@
 
     // Handle "No" and "Yes" radio button change events
     $("input[name='pool_replicates']").on("change", function() {
+      alert("FOUND")
       if ($(this).val() === "yes") {
         $(".checkbox-container").show();
       } else {

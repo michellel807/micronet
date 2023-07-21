@@ -12,16 +12,6 @@ class SelectanalysesController < ApplicationController
       @columns = file_data.lines.first.chomp.split("\t")
     end
     @pool_options = @columns.reject { |column| column.downcase.include?('well') }
-
-    puts "mapping file paths is #{@mapping_file_paths}"
-
-    puts "session[:pool_replicates] is #{session[:pool_replicates]}"
-    puts "session[:pool_options] is #{session[:pool_options]}"
-    session[:chart_types] = params[:chart_types]
-    puts "session[:chart_types] is #{session[:chart_types]}" # Added line
-    if session[:pool_replicates] == "no"
-      puts "secret status unlocked"
-    end
-
+    session[:columns] = params[:columns]
   end
 end

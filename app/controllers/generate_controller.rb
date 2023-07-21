@@ -8,13 +8,13 @@ class GenerateController < ApplicationController
     @pool_options_string = "'#{ @pool_options.join(",") }'"
   end
   session[:pool_options_string] = @pool_options_string
-   puts "@pool_replicates is #{@pool_replicates}"
-   puts "@pool_options_string is #{@pool_options_string}"
-   puts "session[:pool_options_string] is #{session[:pool_options_string]}"
-   puts"session[:chart_types] is #{session[:chart_types]}"
-   if @pool_replicates == "no"
-     puts "secret status unlocked"
-   end
+  puts "@pool_replicates is #{@pool_replicates}"
+  puts "@pool_options_string is #{@pool_options_string}"
+  puts "session[:pool_options_string] is #{session[:pool_options_string]}"
+  puts"session[:chart_types] is #{session[:chart_types]}"
+  puts "finalsubset is #{session[:finalsubset]}"
+  puts "hypothesis is #{session[:hypothesis]}"
+
   end
 
   def run
@@ -23,7 +23,7 @@ class GenerateController < ApplicationController
     @job.deleteoldfiles
     puts "old files deleted"
     @job.sendconfirm
-    Delayed::Job.enqueue(JobAnalyzer.new(@job.id, session[:chart_types], session[:pool_replicates], session[:pool_options_string]))
+    Delayed::Job.enqueue(JobAnalyzer.new(@job.id, session[:chart_types], session[:pool_replicates], session[:pool_options_string], session[:finalsubset],session[:hypothesis]))
     puts "beginning analysis"
     @job.update(status: "Job submitted")
     puts "Job status is #{@job.status}"
