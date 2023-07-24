@@ -50,7 +50,7 @@
             <p>Raw Data Plots (Per Well)</p>
           <% elsif chart_type == 'compare-parameters' %>
             <p>Compare Growth in Different Conditions</p>
-          <% else %>
+          <% elsif chart_type != 'fit_stats' && chart_type != 'raw_data' && chart_type != 'compare-parameters' %>
           <p>No analyses selected.</p>
           <% end %>
         <% end %>
@@ -67,9 +67,11 @@
         <%= link_to 'Edit', selectanalyses_path, class: 'edit-button' %>
 
         <h2>Compare Growth: Selected Options</h2>
-        <% if session[:chart_types].include?('compare-parameters') %>
+        <% if session[:chart_types].include?('compare-parameters') && session[:subsetoptions].present?%>
           <p>Growth will be compared by <%= session[:column] %> and subset on <%= session[:subsetoptions] %></p>
-          <% else %>
+          <% elsif session[:chart_types].include?('compare-parameters') && !session[:subsetoptions].present?%>
+          <p>Growth will be compared by <%= session[:column] %>. </p>
+          <% elsif !session[:chart_types].include?('compare-parameters')%>
           <p>N/A (Compare growth not requested)</p>
         <% end %>
         <%= link_to 'Edit', selectanalyses_path, class: 'edit-button' %>
