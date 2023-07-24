@@ -26,14 +26,16 @@ class ReviewController < ApplicationController
     final = {}
     subsetoptions.map{|option| final[option]=params[option]}
     final = final.map { |key, value| "#{key}:#{value}" }.join(',')
-    @column = params[:column]
+    @column = params[:column] || 'None'
     @condition1 = params[:condition1]
     @condition2 = params[:condition2]
+    session[:subsetoptions] = subsetoptions
     finalsubset = "'#{@column}:#{@condition1},#{@condition2};#{final}'"
     session[:finalsubset] = finalsubset
-    @hypothesis = "H0:Time;H1:Time+" + @column
+    @hypothesis = "H0:Time;H1:Time+" + @column || 'None'
     @hypothesis = "'#{@hypothesis}'"
     session[:hypothesis] = @hypothesis
+    session[:column] = @column
     puts "finalsubset is #{session[:finalsubset]}"
     puts "hypothesis is #{session[:hypothesis]}"
   end

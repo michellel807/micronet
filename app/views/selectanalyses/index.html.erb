@@ -73,7 +73,7 @@
   <div class="general-white-block">
     <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
       <%= check_box_tag 'chart_types[]', 'compare-parameters', @selected_chart_types.include?('compare-parameters') %>
-      Compare Growth in Different Conditions
+      Compare Growth
       <p> Note: Please <a href="/resources/#test-differential-growth">click here</a>  for more information about this test if it is your first time using it. </p>
     </label>
 
@@ -155,11 +155,6 @@
           }
         });
 
-      
-
-        $("<option />").text("Select a condition").appendTo("#condition1");
-        $("<option />").text("Select another condition").appendTo("#condition2");
-
         conditions.forEach(function(condition) {
           $("<option />").text(condition).appendTo("#condition1");
           $("<option />").text(condition).appendTo("#condition2");
@@ -207,12 +202,27 @@
       // Remove the selected options from the other select elements
     });
 
+  $('#review-button').on('click', function(e) {
+  var compareParametersChecked = $("input[name='chart_types[]'][value='compare-parameters']").is(":checked");
+  var columnSelected = $("#column").val();
+  var condition1Selected = $("#condition1").val();
+  var condition2Selected = $("#condition2").val();
+
+  if (compareParametersChecked && (!columnSelected || !condition1Selected || !condition2Selected)) {
+    e.preventDefault();
+    alert("Please select a variable and conditions to compare on for the 'Compare Growth' analysis.");
+  } else if (poolReplicates === 'yes' && selectedOptions === 0) {
+    e.preventDefault();
+    alert("Please select at least one parameter to pool on for the Fit Statistics analysis, or select 'No'.");
+  }
+});
+
+
     // Hide Fit Stats options initially
     $(".checkbox-container").hide();
 
     // Handle "No" and "Yes" radio button change events
     $("input[name='pool_replicates']").on("change", function() {
-      alert("FOUND")
       if ($(this).val() === "yes") {
         $(".checkbox-container").show();
       } else {

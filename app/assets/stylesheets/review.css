@@ -74,3 +74,26 @@
   box-shadow: 0 0 15px 0 rgba(0,0,0,.8) inset;
 }
 
+.edit-button {
+  background-color: #000750;
+  padding: 5px 15px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  color: white;
+  font-size: 30px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  display: inline-block;
+  text-align: center;
+  align-self: center;
+  filter: drop-shadow(3px 3px 4px #b4b4b4);
+}
+
+.edit-button:hover {
+  background-color: #405fad;
+  color: white;
+  text-decoration: none;
+}
+

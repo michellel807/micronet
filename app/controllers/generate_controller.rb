@@ -29,7 +29,7 @@ class GenerateController < ApplicationController
     puts "Job status is #{@job.status}"
     
   respond_to do |format|
-    format.html { redirect_to '/generate', notice: 'Email sent successfully.' }
+    format.html { redirect_to '/generate'}
     format.js 
     end
   end
