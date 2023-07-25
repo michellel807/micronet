@@ -1,6 +1,7 @@
 class UploadController < ApplicationController
 skip_before_action :verify_authenticity_token
 
+
 def delete_files
   # Clear data
   FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'data'))
@@ -48,7 +49,7 @@ def upload
     @data_file_paths << data_file.file_path.to_s # Add the file path to the instance variable
 
     unless data_file.valid?
-      flash.now.alert = data_file.error_message
+      flash.alert = data_file.error_message # Use flash instead of flash.now
       @mapping_file_paths = session[:mapping_file_paths] || [] # Reset mapping file paths
       @data_file_paths = [] # Clear data file paths
       return render :index
@@ -61,20 +62,36 @@ def upload
     @mapping_file_paths << mapping_file.file_path.to_s # Add the file path to the instance variable
 
     unless mapping_file.valid?
-      flash.now.alert = mapping_file.error_message
+      flash.alert = mapping_file.error_message # Use flash instead of flash.now
       @mapping_file_paths = [] # Clear mapping file paths
       @data_file_paths = session[:data_file_paths] || [] # Reset data file paths
       return render :index
     end
   end
 
-  session[:data_file_paths] = @data_file_paths
-  session[:mapping_file_paths] = @mapping_file_paths
+  # Call the Python script to compare the data and mapping files
+  if @data_file_paths.present? && @mapping_file_paths.present?
+    data_file_path = @data_file_paths[0] # Assuming you want to compare the first data file
+    mapping_file_path = @mapping_file_paths[0] # Assuming you want to compare the first mapping file
+    command = "python lib/scripts/otherscripts/comparedataandmapping.py #{data_file_path} #{mapping_file_path}"
+    success = system(command)
 
-  @upload_completed = true # Set flag for "Next" button to appear, etc
+    if success
+      # If the Python script ran successfully, set the session variables
+      session[:data_file_paths] = @data_file_paths
+      session[:mapping_file_paths] = @mapping_file_paths
+      flash.notice = "Files uploaded successfully." # Use flash instead of flash.now
+    else
+      # If the Python script failed, clear the session variables
+      session[:data_file_paths] = nil
+      session[:mapping_file_paths] = nil
+      flash.alert = "Files do not match. Please check your files and try again." # Use flash instead of flash.now
+    end
+  end
 
-  redirect_to '/upload', notice: 'Files uploaded successfully.'
+  redirect_to '/upload'
 end
+
 
   
   
@@ -91,7 +108,6 @@ def convert_asc_to_tab_delimited(file_path)
 
   output_file_path.to_s
 end
-
 
 
 require 'fileutils'
