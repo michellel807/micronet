@@ -18,6 +18,7 @@ class ReviewController < ApplicationController
       session[:pool_replicates] = params[:pool_replicates] || []
       session[:pool_options] = params[:pool_options] || []
       session[:chart_types] = params[:chart_types] || []
+      puts "session[:chart_types] is #{session[:chart_types]}"
       session[:email] = params[:email] || ""
       session[:data_files] = params[:data_files] || []
     end
