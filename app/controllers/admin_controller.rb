@@ -1,6 +1,6 @@
 # app/controllers/admin_controller.rb
 class AdminController < ApplicationController
-  before_action :authenticate_admin
+  before_action :authenticate_admin, except: :login
 
   def index
   end
@@ -16,7 +16,9 @@ class AdminController < ApplicationController
         session[:admin_id] = admin.id
         redirect_to admin_jobs_path
       else
-        flash.now[:error] = 'Invalid username or password'
+        flash.now[:error] = 'Invalid username or password. Please try again'
+        puts "Incorrect login"
+        render :login
       end
     end
   end
@@ -26,3 +28,4 @@ class AdminController < ApplicationController
     redirect_to login_path
   end
 end
+

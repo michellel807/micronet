@@ -122,3 +122,10 @@ color: #fff;
   border-radius: 4px;
   color: #fff;
   }
+
+  .admin-error{
+    font-size: 20px;
+    font-weight: 200;
+    color: orange;
+  }
+  
