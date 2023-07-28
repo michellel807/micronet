@@ -124,8 +124,39 @@ color: #fff;
   }
 
   .admin-error{
+    margin-left: 30px;
     font-size: 20px;
     font-weight: 200;
     color: orange;
   }
+  .admin-error2{
+    font-size: 20px;
+    font-weight: 200;
+    color: orange;
+  }
+  #updateinfo-button {
+    margin: auto;
+    padding: 30px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    color: white;
+    font-size: 20px;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    display: inline-block;
+    text-align: center;
+    width: 300px;
+    border: none;
+    color: #fff;
+  }
+  
+  #updateinfo-button:hover {
+    color: orange;
+    text-decoration: none;
+    }
+
+  #password-section {
+  margin-left: 30px;  }
   

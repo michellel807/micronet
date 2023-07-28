@@ -31,6 +31,14 @@
       });
     });
   });
+  document.addEventListener("DOMContentLoaded", function() {
+    const welcomeButton = document.getElementById('updateinfo-button');
+    const passwordSection = document.getElementById('password-section');
+
+    welcomeButton.addEventListener('click', function() {
+      passwordSection.style.display = (passwordSection.style.display === 'none') ? 'block' : 'none';
+    });
+  });
   </script>
 </head>
 <body>
@@ -61,6 +69,36 @@
     <% end %>
   </ul>
 
+  <p id="updateinfo-button">Update username/password </p>
+  
+  <div id="password-section" style="display: none;">
+  <%= form_tag(update_admin_credentials_path, method: :patch) do %>
+    <label for="current_password">Current Password:</label>
+    <%= password_field_tag :current_password %>
+
+    <label for="new_username">New Username:</label>
+    <%= text_field_tag :new_username %>
+
+    <label for="new_password">New Password:</label>
+    <%= password_field_tag :new_password %>
+
+    <%= submit_tag 'Update Credentials' %>
+    <% if flash.now[:error] %>
+
+  <% end %>
+
+</div>
+<div class="admin-error">
+<%= flash.now[:error] %>
+</div>
+<% end %>
+
+<% if flash.now[:success] %>
+<div class="admin-error">
+<%= flash.now[:success] %>
+</div>
+<% end %>
+  
   <%= button_to "Logout", admin_logout_path, method: :delete, data: { confirm: "Are you sure you want to logout?" }, id: "logout-button", class: "logout-button"%>
   </div>
   <footer>

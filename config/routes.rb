@@ -27,7 +27,8 @@ Rails.application.routes.draw do
   get "/help", to: "welcome#help"
   get "/admin", to: "admin#login"
 
-  
+  patch '/admin/update_credentials', to: 'admin#update_credentials', as: :update_admin_credentials
+
   scope '/admin' do
     get 'login', to: 'admin#login'
     post 'authenticate', to: 'admin#authenticate_admin', as: 'authenticate_admin' 
@@ -43,4 +44,5 @@ Rails.application.routes.draw do
       end
     end
   end
+
 end
