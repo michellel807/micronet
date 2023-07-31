@@ -28,6 +28,7 @@ Rails.application.routes.draw do
   get "/admin", to: "admin#login"
   get "/contact", to: "contacts#new"
   get '/download/:file_name', to: 'help#download_file', as: 'download_file'
+  get '/download_mapping/:file_name', to: 'help#download_mapping_file', as: 'download_mapping_file'
 
   patch '/admin/update_credentials', to: 'admin#update_credentials', as: :update_admin_credentials
 
