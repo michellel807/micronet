@@ -1,0 +1,16 @@
+<!-- app/views/feedback_mailer/new_feedback.html.erb -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>New Feedback Received</title>
+</head>
+<body>
+  <h1>New Feedback Received</h1>
+  <p><strong>Email:</strong> <%= @feedback.email %></p>
+  <p><strong>Like:</strong> <%= @feedback.like %></p>
+  <p><strong>Issue:</strong> <%= @feedback.issue %></p>
+  <p><strong>Recommend:</strong> <%= @feedback.recommend %></p>
+  <p><strong>Suggestions:</strong> <%= @feedback.suggestions %></p>
+</body>
+</html>
+

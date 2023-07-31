@@ -26,6 +26,7 @@ Rails.application.routes.draw do
   get '/resources', to: 'resources#index'
   get "/help", to: "welcome#help"
   get "/admin", to: "admin#login"
+  get "/contact", to: "contacts#new"
 
   patch '/admin/update_credentials', to: 'admin#update_credentials', as: :update_admin_credentials
 
