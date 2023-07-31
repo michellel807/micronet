@@ -24,9 +24,10 @@ Rails.application.routes.draw do
   post "/confirm/update", to: "confirm#update"
   get "/jobs/:id", to: "jobs#show"
   get '/resources', to: 'resources#index'
-  get "/help", to: "welcome#help"
+  get "/help", to: "help#index"
   get "/admin", to: "admin#login"
   get "/contact", to: "contacts#new"
+  get '/download/:file_name', to: 'help#download_file', as: 'download_file'
 
   patch '/admin/update_credentials', to: 'admin#update_credentials', as: :update_admin_credentials
 

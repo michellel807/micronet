@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Help page</title>
+  <%= stylesheet_link_tag 'help' %>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  </head>
+<body>
+  <div class="help">
+    <header>
+      <a href="https://genome.duke.edu/">
+        <%= image_tag 'logo.png', alt: 'Duke Logo' %>
+      </a>
+      <a class = "home_link" href="/"><h2 style = "color:white;" >THE SCHMID LAB MICROBIAL GROWTH MODEL</h2></a>
+      <nav>
+        <a class="wel_nav" href="/help">HELP</a>
+        <a class="wel_nav" href="/resources">RESOURCES</a>
+        <a class="wel_nav" href="/contact">CONTACT</a>
+        <a class="wel_nav" href="/admin">ADMIN</a>
+      </nav>
+    </header>
+
+    <div class="column skinny">
+      <% content_for :title, "Resources page" %>
+      <h1>Need Help?</h1>
+      <p>If you require assistance understanding how the Schmid Lab Microbial Growth App works, or would like to see examples of how input data must be formatted, we recommend stepping through the workflow using one of our toy datasets below.
+        Simply download both the "Data" and "Mapping" files, then upload them when prompted.
+      </p>
+
+      <div class="general-white-block">
+        <% data_files = [
+          { dataset_name: "Example Dataset 1", data: "exampledata1.asc", mapping: "examplemapping1.txt" },
+          { dataset_name: "Example Dataset 2", data: "exampledata2.asc", mapping: "examplemapping2.txt" }
+        ] %>
+
+        <% data_files.each do |data_file| %>
+          <h1><%= data_file[:dataset_name] %></h1>
+          <div id="downloadlinks">
+            <!-- Download link for Data File -->
+            <%= link_to "Download Data File", download_file_path(data_file[:data]), target: '_blank' %>
+            <!-- Download link for Mapping File -->
+            <%= link_to "Download Mapping File", download_file_path(data_file[:mapping]), target: '_blank' %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+      <footer>
+<a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>
+
+<h2 style= "margin-top:10px">&copy; Schmid Lab 2023</h2>
+<br/>
+</footer>
