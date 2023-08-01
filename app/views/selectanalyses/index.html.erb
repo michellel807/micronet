@@ -38,6 +38,7 @@
       <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
         <%= check_box_tag 'chart_types[]', 'fit_stats', @selected_chart_types.include?('fit_stats') %>
         Fit Statistics
+        <p> This analysis summarizes and models growth curves for your data, generating 5 commonly-used metrics as output: AUC (Area Under Curve), Growth Rate, Carrying Capacity, Lag Time, and Doubling Time. </p>
       </label>
 
     <div class="radio-container" style="display: none;">
