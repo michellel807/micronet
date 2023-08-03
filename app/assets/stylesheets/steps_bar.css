@@ -1,0 +1,97 @@
+.stepper-wrapper {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    /* Adjust width of each step */
+    width: 55%; /* You can adjust this value to spread out the steps */
+}
+
+.stepper-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+}
+
+.stepper-item::before,
+.stepper-item::after {
+    position: absolute;
+    content: "";
+    border-bottom: 2px solid #ccc;
+    width: calc(50% + (100% / 2)); /* Adjust the width to make the horizontal line longer */
+    top: 20px;
+    z-index: 2;
+}
+
+.stepper-item::before {
+    left: -50%;
+}
+
+.stepper-item::after {
+    left: 50%;
+}
+
+.stepper-item .step-counter {
+    /* Existing styles for the circle */
+    position: relative;
+    z-index: 5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #ccc;
+    margin-bottom: 6px;
+    /* Add the following to remove underline and blue color */
+    text-decoration: none; /* Remove underline */
+    color: white; /* Change the color of the text inside the circle to white */
+    /* End of new styles */
+}
+
+.stepper-item .step-counter:hover {
+    background-color: #007bff; /* Replace with your desired color */
+    color: #fff; /* Set the text color to white on hover */
+}
+
+.stepper-item.active {
+    font-weight: bold;
+    color:#000750;
+}
+
+.stepper-item.active .step-counter {
+    background-color: #000750; 
+  }
+
+.stepper-item.completed .step-counter {
+    background-color: #000750;
+}
+
+.stepper-item.completed::after {
+    position: absolute;
+    content: "";
+    border-bottom: 2px solid #000750;
+    width: 100%;
+    top: 20px;
+    left: 50%;
+    z-index: 3;
+}
+
+.stepper-item:first-child::before {
+    content: none;
+}
+
+.stepper-item:last-child::after {
+    content: none;
+}
+
+.stepper-item a {
+    text-decoration: none;
+}
+
+.stepper-item a:hover {
+    background: #405fad;
+    color: white;
+}
