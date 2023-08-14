@@ -1,2 +1,0 @@
-Filename	Subtract_Control	Subset	Hypothesis	LL0	LL1	Log_BF	FDR	M1_FDR_cutoff	M0_FDR_cutoff	Permuted_log_BF	Func_Diff_Mean	Func_Diff_CI
-2023-07-21_11-10-08	False	{'Concentration': ['Low', 'High'], 'Substrate': ['Glucose', 'Isolate']}	{'H0': ['Time'], 'H1': ['Time', 'Concentration']}	2585.4179105930352	2621.5420718322584	36.12416123922321	10				0.4993856945104688	(0.34954704269323483, 0.6492243463277028)

@@ -61,6 +61,11 @@
     color:#000750;
 }
 
+.stepper-item a .active:hover {
+    background: #405fad; /* Replace with your desired color */
+    color: white; /* Replace with your desired color */
+  }
+
 .stepper-item.active .step-counter {
     background-color: #000750; 
   }
@@ -76,8 +81,14 @@
     width: 100%;
     top: 20px;
     left: 50%;
-    z-index: 3;
-}
+    z-index: 3; 
+} /* for the line connecting the dots */
+
+.stepper-item a .completed:hover {
+    background: #405fad; /* Replace with your desired color */
+    color: white; /* Replace with your desired color */
+  }
+
 
 .stepper-item:first-child::before {
     content: none;

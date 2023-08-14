@@ -1,2 +1,0 @@
-Filename	Subtract_Control	Subset	Hypothesis	LL0	LL1	Log_BF	FDR	M1_FDR_cutoff	M0_FDR_cutoff	Permuted_log_BF	Func_Diff_Mean	Func_Diff_CI
-compare-parameters	False	{'Substrate': ['Glucose', 'Fructose']}	{'H0': ['Time'], 'H1': ['Time', 'Substrate']}	5008.570545942008	5052.876751809848	44.30620586784062	10				0.3396837390101207	(0.09537030406746658, 0.5839971739527748)
