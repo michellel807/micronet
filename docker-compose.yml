@@ -1,28 +1,31 @@
 version: '3'
 services:
-  postgres:
-    build:
-      context: ./
-      dockerfile: Dockerfile.db
-    environment:
-      POSTGRES_DB: mydb
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: password
+
+  db:
+    image: postgres
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: password
 
-  webapp:
+  web:
     build:
       context: ./
-      dockerfile: Dockerfile.app
+      dockerfile: Dockerfile
     command: rails server -b 0.0.0.0
+    volumes:
+      - bundle:/bundle
+      - .:/app
     ports:
       - "3000:3000"
     depends_on:
-      - postgres
+      - db
 
 volumes:
   postgres-data:
+  bundle:
 

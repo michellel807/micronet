@@ -48,3 +48,6 @@
 
 # Ignore application config.
 /.env
+
+# Ignore compiled python iles
+*.pyc
