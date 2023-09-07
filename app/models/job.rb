@@ -20,12 +20,12 @@ class Job < ApplicationRecord
       end
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "no"
-        system("source activate #{Rails.configuration.python_conda_location} && python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt -o fit")
+        system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt -o fit")
 
         # Check if fit_summary_modified.txt exists
         fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
         if File.exist?(fit_summary_path)
-          system("source activate #{Rails.configuration.python_conda_location} && python lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
+          system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
           @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
         else
           raise "fit_summary_modified.txt not found"
@@ -33,13 +33,13 @@ class Job < ApplicationRecord
       end
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes"
-        system("source activate #{Rails.configuration.python_conda_location} && python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt --pool-by '#{pool_options_string}' -o fit")
-        system("source activate #{Rails.configuration.python_conda_location} && python lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
+        system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt --pool-by '#{pool_options_string}' -o fit")
+        system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
         @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
       end
 
       if @selected_chart_types.include?('compare-parameters')
-        system("source activate #{Rails.configuration.python_conda_location} && python lib/scripts/amigagitsimplified/amiga.py test -i private/uploads/userexpt -s #{finalsubset} -y #{hypothesis} -o 'compare-parameters'")
+        system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/amigagitsimplified/amiga.py test -i private/uploads/userexpt -s #{finalsubset} -y #{hypothesis} -o 'compare-parameters'")
         @compare_params_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters', '*report.txt'))
         @compare_params_pdf_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters','*pdf'))
 

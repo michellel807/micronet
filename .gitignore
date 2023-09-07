@@ -51,3 +51,9 @@
 
 # Ignore compiled python iles
 *.pyc
+
+# exclude sqlite files
+*.sqlite3
+
+# ignore the uploads folder
+/private/uploads*

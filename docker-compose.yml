@@ -25,6 +25,17 @@ services:
     depends_on:
       - db
 
+  delayed_job:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    command: rake jobs:work
+    volumes:
+      - .:/app
+      - bundle:/bundlei
+    depends_on:
+      - db
+
 volumes:
   postgres-data:
   bundle:
