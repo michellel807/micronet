@@ -1,24 +1,17 @@
-# README
+# MicroNet App
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+## Development Using docker-compose
 
-Things you may want to cover:
+To get started with development you will need to build with docker.
 
-* Ruby version
+```
+docker-compose build web
+```
 
-* System dependencies
+After building an image, you will need to migrate the database.
 
-* Configuration
 
-* Database creation
+```shell
+docker-compose run --rm web bash -c "bin/rails db:migrate RAILS_ENV=development"
+```
 
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...

@@ -24,6 +24,7 @@ services:
       - "3000:3000"
     depends_on:
       - db
+      - delayed_job
 
   delayed_job:
     build:
