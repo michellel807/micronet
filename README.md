@@ -4,12 +4,23 @@
 
 To get started with development you will need to build with docker.
 
-```
+```shell
 docker-compose build web
 ```
 
-After building an image, you will need to migrate the database.
+Copy the .env.example into place.
 
+```shell
+cp .env.example .env
+```
+
+Create the database.
+
+```shell
+docker-compose run --rm web bash -c "bin/rails db:create"
+```
+
+Migrate the database.
 
 ```shell
 docker-compose run --rm web bash -c "bin/rails db:migrate RAILS_ENV=development"
