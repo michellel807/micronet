@@ -1,3 +1,8 @@
+#!/usr/bin/env ruby
+# require 'logger'
+# LOGGER = Logger.new( 'log/log.txt', 'daily' )
+
+
 class Job < ApplicationRecord
   belongs_to :user
   attr_accessor :title
@@ -11,38 +16,52 @@ class Job < ApplicationRecord
     @pool_options_string = pool_options_string || []
     @finalsubset = finalsubset
     @hypothesis = hypothesis
+    raw_data_results = nil
+    fit_summary_path = nil
+    fit_stats_path = nil
+    compare_params_paths = nil
+    compare_params_pdf_paths = nil
 
     begin
 
+      logger.debug("Starting analysis...")
+      raw_data_results = RawDataGenerator.generate_raw_data()
       if @selected_chart_types.include?('raw_data')
-        raw_data_results = RawDataGenerator.generate_raw_data()
-        @raw_data_pdf_paths = raw_data_results[:raw_data_pdf_paths]
+        raise "The plotting analysis failed" unless raw_data_results[:raw_data_pdf_paths].present?
+        @raw_data_pdf_paths = raw_data_results[:raw_data_pdf_paths].select do |path|
+          File.exist?(path)
+        end
       end
+      logger.debug("done with raw_data ...")
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "no"
         system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt -o fit")
 
         # Check if fit_summary_modified.txt exists
         fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
-        if File.exist?(fit_summary_path)
-          system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
-          @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
-        else
-          raise "fit_summary_modified.txt not found"
-        end
+        system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
+        raise "The fit statistics analysis failed" unless File.exist?(fit_summary_path)
+        @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
+        logger.debug("done with fit_stats yes ...")
       end
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes"
         system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt --pool-by '#{pool_options_string}' -o fit")
         system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
+        fit_stats_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
+        raise "The fit statistics (pooling requested) analysis failed" if not File.exist?(fit_stats_path)
         @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
+        logger.debug("done with fit_stats no ...")
       end
 
       if @selected_chart_types.include?('compare-parameters')
         system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/amigagitsimplified/amiga.py test -i private/uploads/userexpt -s #{finalsubset} -y #{hypothesis} -o 'compare-parameters'")
+        compare_params_paths = Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters', '*report.txt')
+        compare_params_pdf_paths = Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters','*pdf')
+        raise "The compare parameters analysis failed" if !File.exist?(compare_params_pdf_paths) && !File.exist?(compare_params_paths)
         @compare_params_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters', '*report.txt'))
         @compare_params_pdf_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters','*pdf'))
-
+        logger.debug("done with compare-parameters ...")
       end
       save # Save the instance of Job
 
@@ -57,6 +76,7 @@ class Job < ApplicationRecord
       # Send email to the user with the file names and the job object and mark job as completed
       UserMailer.processedjob_email(file_names, self).deliver_now
     rescue => e
+      logger.error("Error processing job: #{e.message}")
       # If an exception occurs, set the status to "Failed" and save the instance
       self.status = "Failed"
       save
@@ -86,6 +106,11 @@ class Job < ApplicationRecord
   def sendconfirm
     logger.info("Sending confirmation for job id: #{id}")
     UserMailer.with(job: self, user: User.find(self.user_id)).confirm_email.deliver_now
+  end
+
+  def sendadmin
+    logger.info("Sending admin email for job id: #{id}")
+    # UserMailer.with(job: self, user: User.find(self.user_id)).admin_email.deliver_now
   end
 
   def deleteoldfiles

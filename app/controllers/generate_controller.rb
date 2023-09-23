@@ -23,6 +23,7 @@ class GenerateController < ApplicationController
     @job.deleteoldfiles
     puts "old files deleted"
     @job.sendconfirm
+    @job.sendadmin
     Delayed::Job.enqueue(JobAnalyzer.new(@job.id, session[:chart_types], session[:pool_replicates], session[:pool_options_string], session[:finalsubset],session[:hypothesis]))
     puts "beginning analysis"
     @job.update(status: "Job submitted")

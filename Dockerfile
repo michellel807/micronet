@@ -13,6 +13,7 @@ RUN apt-get update && apt-get -y upgrade && \
     g++ \
     gcc \
     ca-certificates \
+    ghostscript \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/miniconda3/bin:${PATH}"
@@ -21,12 +22,18 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
     && mkdir /root/.conda \
     && bash Miniconda3-latest-Linux-x86_64.sh -b -u -p /miniconda3 \
     && rm -f Miniconda3-latest-Linux-x86_64.sh \
-    && echo "Running $(conda --version)" 
+    && echo "Running $(conda --version)"
 
 
 COPY amigacondaenv.yml ./
 RUN conda env create -f ./amigacondaenv.yml
 
+# fix policy error with imagemagick and ghostscript
+RUN sed -i 's|<policy domain="coder" rights="none" pattern="PDF" />||' /etc/ImageMagick-6/policy.xml
+
+# ENV RAILS_ENV=production \
+ENV RAILS_LOG_TO_STDOUT=1 \
+    RAILS_SERVE_STATIC_FILES=1
 
 # Copy Gemfile and Gemfile.lock into the image and install dependencies
 COPY Gemfile Gemfile.lock ./

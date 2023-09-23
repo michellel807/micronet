@@ -23,15 +23,19 @@ class UserMailer < ApplicationMailer
     @user = User.find(params[:job].user_id)
     @hash = hashids.encode(@user.id)
     @job = params[:job]
-
-    # The use of `Kernel#open` is a serious security risk.
-    #mfile = open("#{Rails.root}/private/#{params[:job].metafile_url}").read
-    #attachments["meta.csv"] = mfile
-
-    #ofile = open("#{Rails.root}/private/#{params[:job].odfile_url}").read
-    #attachments["od.csv"] = ofile
-
     mail(to: @user.email, subject: "Schmid Lab Microbial Growth Model: Job Submitted")
+  end
+
+
+  def failedjob_email(job, exception_message)
+    @job = job
+    @exception_message = ERB::Util.html_escape(exception_message)
+    mail(to: @job.user.email, subject: 'Schmid Lab Microbial Growth Model: Job Failed')
+  end
+
+
+  def admin_email
+    mail(to: 'hrd11@duke.edu', subject: 'Schmid Lab Microbial Growth Model: Job Submitted')
   end
 end
 
