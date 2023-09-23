@@ -27,6 +27,7 @@ services:
     depends_on:
       - db
       - delayed_job
+      - smtp
 
   delayed_job:
     build:
@@ -40,6 +41,13 @@ services:
       - bundle:/bundle
     depends_on:
       - db
+      - smtp
+  smtp:
+    image: inbucket/inbucket
+    ports:
+      - "9000:9000"
+      - "2500:2500"
+      - "1100:1100"
 
 volumes:
   postgres-data:

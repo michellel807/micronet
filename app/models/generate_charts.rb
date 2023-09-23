@@ -7,7 +7,7 @@ def generate_charts
 
   # Generate the desired charts based on the selected chart types
   if @selected_chart_types.include?('raw_data')
-  system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/amigagitsimplified/amiga.py summarize -i private/uploads/userexpt/")
+  Python.exec("lib/scripts/amigagitsimplified/amiga.py summarize -i private/uploads/userexpt/")
   @raw_data_pdf_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'figures', '*.pdf'))
 
     # Convert PDFs to PNGs
@@ -27,9 +27,9 @@ def generate_charts
   if @selected_chart_types.include?('fit_stats')
   selected_options_string = @selected_options.join(",") #convert to string so python can use it
     if selected_options_string
-      system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt --pool-by #{selected_options_string}")
+      Python.exec("lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt --pool-by #{selected_options_string}")
     else
-      system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt")
+      Python.exec("lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt")
     end
   @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', '*_summary.txt'))
   end

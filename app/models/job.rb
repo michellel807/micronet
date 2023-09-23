@@ -35,19 +35,19 @@ class Job < ApplicationRecord
       logger.debug("done with raw_data ...")
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "no"
-        system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt -o fit")
+        Python.exec("lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt -o fit")
 
         # Check if fit_summary_modified.txt exists
         fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
-        system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
+        Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
         raise "The fit statistics analysis failed" unless File.exist?(fit_summary_path)
         @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
         logger.debug("done with fit_stats yes ...")
       end
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes"
-        system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt --pool-by '#{pool_options_string}' -o fit")
-        system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
+        Python.exec("lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt --pool-by '#{pool_options_string}' -o fit")
+        Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
         fit_stats_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
         raise "The fit statistics (pooling requested) analysis failed" if not File.exist?(fit_stats_path)
         @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
@@ -55,7 +55,7 @@ class Job < ApplicationRecord
       end
 
       if @selected_chart_types.include?('compare-parameters')
-        system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/amigagitsimplified/amiga.py test -i private/uploads/userexpt -s #{finalsubset} -y #{hypothesis} -o 'compare-parameters'")
+        Python.exec("lib/scripts/amigagitsimplified/amiga.py test -i private/uploads/userexpt -s #{finalsubset} -y #{hypothesis} -o 'compare-parameters'")
         compare_params_paths = Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters', '*report.txt')
         compare_params_pdf_paths = Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters','*pdf')
         raise "The compare parameters analysis failed" if !File.exist?(compare_params_pdf_paths) && !File.exist?(compare_params_paths)

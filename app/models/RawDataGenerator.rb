@@ -1,7 +1,7 @@
 class RawDataGenerator
   def self.generate_raw_data()
     #FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'figures') #clear out figures first
-    system("bash", "-c", "source activate #{Rails.configuration.python_conda_location} && python lib/scripts/amigagitsimplified/amiga.py summarize -i private/uploads/userexpt")
+    Python.exec("lib/scripts/amigagitsimplified/amiga.py summarize -i private/uploads/userexpt")
 
     raw_data_pdf_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'figures', '*.pdf'))
 
