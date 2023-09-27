@@ -7,7 +7,7 @@ class UserMailer < ApplicationMailer
 
     file_names.each do |file_name|
       file_path = Rails.root.join('private', 'uploads', 'userexpt', 'figures', file_name)
-      attachments[file_name] = File.read(file_path) if File.exist?(file_path)
+      attachments[File.basename(file_name)] = File.read(file_path) if File.exist?(file_path)
     end
 
     mail(to: @user.email, subject: "Schmid Lab Microbial Growth Model: Processed Data")

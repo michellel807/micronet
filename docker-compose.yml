@@ -23,11 +23,11 @@ services:
       - bundle:/bundle
       - .:/app
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       - db
       - delayed_job
-      - smtp
+      - local-email
 
   delayed_job:
     build:
@@ -41,15 +41,18 @@ services:
       - bundle:/bundle
     depends_on:
       - db
-      - smtp
-  smtp:
+      - local-email
+  local-email:
     image: inbucket/inbucket
     ports:
-      - "9000:9000"
-      - "2500:2500"
-      - "1100:1100"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:2500:2500"
+      - "127.0.0.1:1100:1100"
+    volumes:
+      - inbucket-storage:/storage
 
 volumes:
   postgres-data:
   bundle:
+  inbucket-storage:
 
