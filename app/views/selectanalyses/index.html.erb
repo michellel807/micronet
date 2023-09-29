@@ -1,137 +1,120 @@
 <!DOCTYPE html>
 <html>
-
-<head>
-  <title>Parameter page</title>
-  <%= stylesheet_link_tag 'selectanalyses' %>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-</head>
+  <head>
+    <title>Parameter page</title>
+    <%= stylesheet_link_tag 'selectanalyses' %>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  </head>
 
 <body>
   <div class="selectanalyses">
-    <header>
-      <a href="https://genome.duke.edu/">
-        <%= image_tag 'logo.png', alt: 'Duke Logo' %>
-      </a>
-      <a class = "home_link" href="/"><h2 style = "color:white;" >MicroNet</h2></a>
-      <nav>
-        <a class="wel_nav" href="/help">HELP</a>
-        <a class="wel_nav" href="/resources">RESOURCES</a>
-        <a class="wel_nav" href="/contact">CONTACT</a>
-        <a class="wel_nav" href="/admin">ADMIN</a>
-      </nav>
-    </header>
+    <%= render "layouts/header" %>
 
-  <div class="column skinny">
-  <div class="stepper-wrapper">
-  <div class="stepper-item completed">
-    <a href="<%= upload_path %>" style="text-decoration: none; color: white"> 
-      <div class="step-counter">1</div>
-      <div class="step-name">Upload Files</div>
-    </a>
-  </div>
-  <div class="stepper-item active">
-    <a href="<%= selectanalyses_path %>">
-      <div class="step-counter">2</div>
-    </a>
-    <div class="step-name">Select Analyses</div>
-  </div>
-  <div class="stepper-item">
-    <div class="step-counter">3</div>
-    <div class="step-name">Review</div>
-  </div>
-  <div class="stepper-item">
-    <div class="step-counter">4</div>
-    <div class="step-name">Submit</div>
-  </div>
-</div>
-
-    <% content_for :title, "Parameters page" %>
-    <h1> Select Analyses </h1>
-    <p>Please select which results you would like to generate. For more details on each analysis, please see the "Resources" tab.</p>
-    <%= form_with url: '/review', method: :post do |form| %>
-    <div class="general-white-block">
-      <label>
-          <%= check_box_tag 'chart_types[]', 'raw_data', @selected_chart_types.include?('raw_data') %>
-          Raw Data Plot (Per Well)
-          <p> This analysis will generate a growth curve for each well in the experimental design individually. </p>
-      </label>
-    </div>
-    <div class="general-white-block">
-      <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
-        <%= check_box_tag 'chart_types[]', 'fit_stats', @selected_chart_types.include?('fit_stats') %>
-        Fit Statistics
-        <p> This analysis summarizes and models growth curves for your data, generating 5 commonly-used metrics as output: AUC (Area Under Curve), Growth Rate, Carrying Capacity, Lag Time, and Doubling Time. </p>
-      </label>
-
-    <div class="radio-container" style="display: none;">
-      <h2> Pool Replicates? </h2>
-      <label class="option-label">
-        <input type="radio" name="pool_replicates" value="no" checked>
-        No
-      </label>
-
-      <label class="option-label">
-        <input type="radio" name="pool_replicates" value="yes">
-        Yes
-      </label>
-    </div>
-
-    <div class="checkbox-container">
-      <div id="checkbox-content">
-        <h3 id="checkbox-header"></h3>
-        <div class="additional-text">
-          If necessary, please select the variable(s) to pool on. If selecting multiple variables, MicroNet will pool based on all unique combinations of the selected variables and model them jointly. For more information on this process, please <a href="http://firasmidani.github.io/amiga/doc/pooling.html">click here</a>.
+    <div class="column skinny">
+      <div class="stepper-wrapper">
+        <div class="stepper-item completed">
+          <a href="<%= upload_path %>" style="text-decoration: none; color: white"> 
+            <div class="step-counter">1</div>
+            <div class="step-name">Upload Files</div>
+          </a>
         </div>
-      <% @pool_options.each do |option| %>
-        <% next if option.downcase.include?('well') %>
-        <label>
-          <input type="checkbox" name="pool_options[]" value="<%= option %>">
-            <%= option %>
-        </label>
-      <% end %>
-    </div>
-  </div>
+        <div class="stepper-item active">
+          <a href="<%= selectanalyses_path %>">
+            <div class="step-counter">2</div>
+          </a>
+          <div class="step-name">Select Analyses</div>
+        </div>
+        <div class="stepper-item">
+          <div class="step-counter">3</div>
+          <div class="step-name">Review</div>
+        </div>
+        <div class="stepper-item">
+          <div class="step-counter">4</div>
+          <div class="step-name">Submit</div>
+        </div>
+      </div>
 
+      <% content_for :title, "Parameters page" %>
+      <h1> Select Analyses </h1>
+      <p>Please select which results you would like to generate. For more details on each analysis, please see the "Resources" tab.</p>
+      <%= form_with url: '/review', method: :post do |form| %>
+        <div class="general-white-block">
+          <label>
+              <%= check_box_tag 'chart_types[]', 'raw_data', @selected_chart_types.include?('raw_data') %>
+              Raw Data Plot (Per Well)
+              <p> This analysis will generate a growth curve for each well in the experimental design individually. </p>
+          </label>
+        </div>
+        <div class="general-white-block">
+          <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
+            <%= check_box_tag 'chart_types[]', 'fit_stats', @selected_chart_types.include?('fit_stats') %>
+            Fit Statistics
+            <p> This analysis summarizes and models growth curves for your data, generating 5 commonly-used metrics as output: AUC (Area Under Curve), Growth Rate, Carrying Capacity, Lag Time, and Doubling Time. </p>
+          </label>
+
+          <div class="radio-container" style="display: none;">
+            <h2> Pool Replicates? </h2>
+            <label class="option-label">
+              <input type="radio" name="pool_replicates" value="no" checked>
+              No
+            </label>
+
+            <label class="option-label">
+              <input type="radio" name="pool_replicates" value="yes">
+              Yes
+            </label>
           </div>
 
-  <div class="general-white-block">
-    <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
-      <%= check_box_tag 'chart_types[]', 'compare-parameters', @selected_chart_types.include?('compare-parameters') %>
-      Compare Growth
-      <p> Note: Please <a href="/resources/#test-differential-growth">click here</a>  for more information about this test if it is your first time using it. </p>
-    </label>
+          <div class="checkbox-container">
+            <div id="checkbox-content">
+            <h3 id="checkbox-header"></h3>
+            <div class="additional-text">
+              If necessary, please select the variable(s) to pool on. If selecting multiple variables, MicroNet will pool based on all unique combinations of the selected variables and model them jointly. For more information on this process, please <a href="http://firasmidani.github.io/amiga/doc/pooling.html">click here</a>.
+            </div>
+            <% @pool_options.each do |option| %>
+              <% next if option.downcase.include?('well') %>
+              <label>
+                <input type="checkbox" name="pool_options[]" value="<%= option %>">
+                  <%= option %>
+              </label>
+            <% end %>
+          </div>
+        </div>
 
-  <div class="compare-parameters-container" style="display: none;">
-    <p>Choose variable to compare on:</p>
-    <% if @mapping_file_paths.present? %>
-    <%= hidden_field_tag 'file_data', @file_data_json %>
-    <%= select_tag 'column', options_for_select(@columns), prompt: 'Select a column', id: 'column' %>
-  <% end %>
-            
-
-    <div class="compare-options-container" style="display: none;">
-      <p>Choose two to compare:</p>
-      <%= select_tag 'condition1', '', prompt: 'Select a condition' %>
-      <%= select_tag 'condition2', '', prompt: 'Select another condition' %>
     </div>
-  </div>
-  <div id="subset-dropdowns"></div>
-  <%= hidden_field_tag 'chart_types[]', @selected_chart_types %>
-</div>
-</div>
-        <div class="general-white-block">
-          <%= submit_tag 'Review', class: 'analysis-button', id: 'review-button' %>
+
+    <div class="general-white-block">
+      <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
+        <%= check_box_tag 'chart_types[]', 'compare-parameters', @selected_chart_types.include?('compare-parameters') %>
+        Compare Growth
+        <p> Note: Please <a href="/resources/#test-differential-growth">click here</a>  for more information about this test if it is your first time using it. </p>
+      </label>
+
+      <div class="compare-parameters-container" style="display: none;">
+        <p>Choose variable to compare on:</p>
+        <% if @mapping_file_paths.present? %>
+          <%= hidden_field_tag 'file_data', @file_data_json %>
+          <%= select_tag 'column', options_for_select(@columns), prompt: 'Select a column', id: 'column' %>
         <% end %>
+      </div>     
+
+      <div class="compare-options-container" style="display: none;">
+        <p>Choose two to compare:</p>
+        <%= select_tag 'condition1', '', prompt: 'Select a condition' %>
+        <%= select_tag 'condition2', '', prompt: 'Select another condition' %>
       </div>
     </div>
-
-    <footer>
-      <a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>
-      <h2 style= "margin-top:10px">&copy; Schmid Lab 2023</h2>
-      <br/>
-    </footer>
+    <div id="subset-dropdowns"></div>
+    <%= hidden_field_tag 'chart_types[]', @selected_chart_types %>
   </div>
+
+  <div class="general-white-block">
+    <%= submit_tag 'Review', class: 'analysis-button', id: 'review-button' %>
+    <% end %>
+  </div>
+
+ <%= render "layouts/footer" %>
+
 
   <script>
   $(document).ready(function() {
@@ -261,8 +244,6 @@
     }
   });
 </script>
-
-
 
 </body>
 </html> 

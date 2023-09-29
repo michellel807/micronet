@@ -10,28 +10,11 @@
 </html>
 
 <div class = "generatescreen">
-  <header>
-    <a href="https://genome.duke.edu/">
-      <%= image_tag 'logo.png', alt: 'Duke Logo' %>
-    </a>
-    <a class = "home_link" href="/"><h2 style = "color:white;" >MICRONET</h2></a>
-    <nav>
-    <a class = "wel_nav" href="/help" >HELP</a>
-    <a class = "wel_nav" href="/resources">RESOURCES</a>
-    <a class="wel_nav" href="/contact">CONTACT</a>
-    <a class = "wel_nav" href="/admin">ADMIN</a>
-    </nav>
-  </header>
-<h1> Submission successful! </h1>
+  <%= render "layouts/header" %>
+  <h1> Submission successful! </h1>
   <p> Your job is running, and you will receive an email containing a link to your  
-results when it is finished. Thank you for using MicroNet! 
+  results when it is finished. Thank you for using MicroNet! 
   </p>
 </div>
 
-<footer>
-<a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>
-
-<h2 style= "margin-top:10px">&copy; Schmid Lab 2023</h2>
-<br/>
-</footer>
-</div>
+<%= render "layouts/footer" %>

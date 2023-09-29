@@ -1,25 +1,14 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Help page</title>
-  <%= stylesheet_link_tag 'help' %>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <head>
+    <title>Help page</title>
+    <%= stylesheet_link_tag 'help' %>
+   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   </head>
+  
 <body>
   <div class="help">
-    <header>
-      <a href="https://genome.duke.edu/">
-        <%= image_tag 'logo.png', alt: 'Duke Logo' %>
-      </a>
-      <a class = "home_link" href="/"><h2 style = "color:white;" >MICRONET</h2></a>
-      <nav>
-        <a class="wel_nav" href="/help">HELP</a>
-        <a class="wel_nav" href="/resources">RESOURCES</a>
-        <a class="wel_nav" href="/contact">CONTACT</a>
-        <a class="wel_nav" href="/admin">ADMIN</a>
-      </nav>
-    </header>
-
+    <%= render "layouts/header" %>
     <div class="column skinny">
       <% content_for :title, "Resources page" %>
       <h1>Need Help?</h1>
@@ -29,8 +18,7 @@
       <div class="general-white-block">
       <% data_files = [
         { dataset_name: "Example Dataset 1", data: "exampledata1.asc", mapping: "examplemapping1.txt" },
-        { dataset_name: "Example Dataset 2", data: "exampledata2.asc", mapping: "examplemapping2.txt" }
-      ] %>
+        { dataset_name: "Example Dataset 2", data: "exampledata2.asc", mapping: "examplemapping2.txt" }] %>
     
       <% data_files.each do |data_file| %>
         <h1><%= data_file[:dataset_name] %></h1>
@@ -43,11 +31,6 @@
         </div>
       <% end %>
     </div>
-    </div>
-
-      <footer>
-<a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>
-
-<h2 style= "margin-top:10px">&copy; Schmid Lab 2023</h2>
-<br/>
-</footer>
+  </div>
+  <%= render "layouts/footer" %>
+</body>

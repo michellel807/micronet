@@ -1,50 +1,36 @@
 
 <div class = "welcomescreen">
-    <header>
-      <a href="https://genome.duke.edu/">
-        <%= image_tag 'logo.png', alt: 'Duke Logo' %>
-      </a>
-      <a class = "home_link" href="/"><h2 style = "color:white;" >MICRONET</h2></a>
-      <nav>
-        <a class = "wel_nav" href="/help" >HELP</a>
-        <a class = "wel_nav" href="/resources">RESOURCES</a>
-        <a class = "wel_nav" href="/contact">CONTACT</a>
-        <a class = "wel_nav" href="/admin">ADMIN</a>
-      </nav>
-    </header>
+    <%= render "layouts/header" %>
+
     <div class="column skinny">
-      <br>
+      </br>
       <h1>WELCOME!</h1>
-      <br>
+      </br>
       <p>
-      MicroNet is a webapp designed to help researchers visualize and model trends in microbial growth data. It utilizes a non-parametric modelling approach, implemented
+        MicroNet is a webapp designed to help researchers visualize and model trends in microbial growth data. It utilizes a non-parametric modelling approach, implemented
         via Gaussian Process regression, to estimate standard microbial growth parameters, and thus is particularly useful for cases in which growth deviates from the expected logistic or sigmoidal growth curves. 
         Results are usually reported within a few hours, and an automated email will be sent to you once your results are ready.
       </p>
       <p>To begin, please submit the email you would like results to be sent to, then select “Begin Now” to start your analysis. </p>
-      <br>
+      </br>
+
       <%= form_with url: "/", method: :post do |form|%>
         <%= form.label :email, "Input Email:", class: "input_email"%>
         <%= form.text_field :email%>
         <%= form.submit "Begin Now!"%>
       <% end %>
+
       <div class="email-alert"><%=flash[:notice]%></div>
       <%= link_to 'Need help?', "help", id: "help_link" %>
     </div>
     
     <% if flash[:alert].present? && flash[:alert] != "Need help?" %>      
-    <div class="unsavedjob-alert"><%=flash[:alert]%></div>  
-        <div class="button-group">
-        <%= button_to "Yes", resume_job_path, method: :post %>
-        <%= button_to "No", create_job_path, method: :post %>
-        </div>
+      <div class="unsavedjob-alert"><%=flash[:alert]%></div>  
+      <div class="button-group">
+      <%= button_to "Yes", resume_job_path, method: :post %>
+      <%= button_to "No", create_job_path, method: :post %>
+      </div>
     <% end %>
-  
 
-  <footer>
-    <a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>
-    
-    <h2 style= "margin-top:10px">&copy; Schmid Lab 2023</h2>
-    <br/>
-  </footer>
+    <%= render "layouts/footer" %>
 </div>

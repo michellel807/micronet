@@ -4,10 +4,6 @@
 */
 
 /* for the admin screen */
-* {
-  font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
-  font-weight: 300;
-}
 .adminscreen{
   color: white;
   background-image: linear-gradient(to top, #000750, #405fad);
@@ -48,7 +44,7 @@
   border: none;
   display: inline-block;
   text-align: center;
-s  width: 100px;
+  width: 100px;
   border: none;
   padding: 12px 48px 12px 24px;
   border-radius: 4px;
