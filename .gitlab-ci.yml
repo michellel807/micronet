@@ -27,8 +27,6 @@ include:
     - .common_env
 
 build_application_image_test:
-  variables:
-    DOCKERFILE_PATH: "Dockerfile.app"
   extends:
     - .test_env
     - .build_image_using_kaniko
