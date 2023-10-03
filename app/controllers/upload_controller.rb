@@ -72,8 +72,7 @@ def upload
   if @data_file_paths.present? && @mapping_file_paths.present?
     data_file_path = @data_file_paths[0] # Assuming you want to compare the first data file
     mapping_file_path = @mapping_file_paths[0] # Assuming you want to compare the first mapping file
-    command = "python lib/scripts/otherscripts/comparedataandmapping.py #{data_file_path} #{mapping_file_path}"
-    success = system(command)
+    success = Python.exec("lib/scripts/otherscripts/comparedataandmapping.py '#{data_file_path}' '#{mapping_file_path}'")
 
     if success
       # If the Python script ran successfully, set the session variables
@@ -92,16 +91,13 @@ def upload
 end
 
 
-  
-  
-
 helper_method :convert_asc_to_tab_delimited
 def convert_asc_to_tab_delimited(file_path)
   input_file_path = file_path
   output_file_path = Rails.root.join('private', 'uploads', 'userexpt', 'data', File.basename(file_path, '.*') + '.txt')
 
   # Call the Python script and check for errors
-  success = system("python lib/scripts/otherscripts/convertasc.py #{input_file_path} #{output_file_path}")
+  success = Python.exec("lib/scripts/otherscripts/convertasc.py #{input_file_path} #{output_file_path}")
 
   return nil unless success && File.exist?(output_file_path)
 

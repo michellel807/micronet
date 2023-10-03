@@ -11,7 +11,7 @@
       <a href="https://genome.duke.edu/">
         <%= image_tag 'logo.png', alt: 'Duke Logo' %>
       </a>
-      <a class = "home_link" href="/"><h2 style = "color:white;" >THE SCHMID LAB MICROBIAL GROWTH MODEL</h2></a>
+      <a class = "home_link" href="/"><h2 style = "color:white;" >MICRONETL</h2></a>
       <nav>
         <a class="wel_nav" href="/help">HELP</a>
         <a class="wel_nav" href="/resources">RESOURCES</a>
@@ -22,13 +22,13 @@
 
     <div class="column skinny">
       <% content_for :title, "Resources page" %>
-      <h1> The Schmid Lab Microbial Growth Model: Background <h1>
-      <p> The Schmid Lab Microbial Growth Model is built on the work of Peter Tonner and Firas Midani. In particular, it uses the
+      <h1> MicroNet: Background <h1>
+      <p> MicroNet is built on the work of Peter Tonner and Firas Midani. In particular, it uses the
       AMIGA pipeline developed by Firas, and partially based on work by Peter, that provides several frameworks for microbial
       growth analysis in Python. Please check out the in-depth vignette Firas has developed for AMIGA here: <a href="https://firasmidani.github.io/amiga/"> https://firasmidani.github.io/amiga/</a>.
 
-      The Schmid Lab Microbial Growth Model simplifies the AMIGA pipeline into a user-friendly webapp that doesn't require
-      command-line knowledge. It is intended for (INSERT MORE INFO HERE)
+      MicroNet simplifies the AMIGA pipeline into a user-friendly webapp that doesn't require
+      command-line knowledge. It is intended for researchers who would like to visualize their growth curves and/or perform basic analyses without resorting to command-line tools.
       </p>
 
 
@@ -42,7 +42,7 @@
       <p> This analysis uses a Gaussian Process regression to test for differential growth between conditions.
       To do so, it uses the "test" function of the AMIGA pipeline (see <a href="https://firasmidani.github.io/amiga/doc/hypothesistesting.html"> https://firasmidani.github.io/amiga/doc/hypothesistesting.html</a>
       for more about the command-line usage of this function). By default, the number of permutations is set to
-      99, and the time step is set to 3. In future iterations of the Schmid Lab Microbial Growth Model, you may be able to adjust
+      99, and the time step is set to 3. In future iterations of MicroNet, you may be able to adjust
       these parameters yourself; for the time being, if you seek additional control over these parameters, we recommend implementing
       AMIGA's "test" function on your own or indicating your interest in these features via our <a href="/feedback">Feedback</a>  page. 
 

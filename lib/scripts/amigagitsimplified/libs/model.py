@@ -10,7 +10,7 @@ __email__ = "midani@bcm.edu"
 # TABLE OF CONTENTS (1 function and 1 class with 7 sub-functions)
 
 # describeVariance
-# 
+#
 # Model (CLASS)
 #   __init__
 #   permute
@@ -22,7 +22,8 @@ __email__ = "midani@bcm.edu"
 
 import importlib
 import paramz
-modulename = importlib.machinery.SourceFileLoader('GPy','./lib/envs/amigacondaenv/lib/python3.8/site-packages/GPy/__init__.py').load_module()
+# Removed by outtenr - I don't think this was required and the hard coded path was causing issues
+# modulename = importlib.machinery.SourceFileLoader('GPy','./lib/envs/amigacondaenv/lib/python3.8/site-packages/GPy/__init__.py').load_module()
 import GPy
 import warnings
 import numpy as np
@@ -36,7 +37,7 @@ from libs.kernel import buildKernel,addFixedKernel
 from libs.curve import GrowthCurve
 from libs.utils import uniqueRandomString, subsetDf, getValue
 
-if getValue('Ignore_RuntimeWarning'): warnings.filterwarnings("ignore", category=RuntimeWarning) 
+if getValue('Ignore_RuntimeWarning'): warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
 def describeVariance(df,time='X0',od='Y'):
@@ -48,7 +49,7 @@ def describeVariance(df,time='X0',od='Y'):
     window = getValue('variance_smoothing_window')
     nX = len(df[time].drop_duplicates())
     if window < 1:  window = int(np.ceil(nX*window))
-    
+
     df = df.sort_values(time)
     df.reset_index(drop=True,inplace=True)
 
@@ -59,7 +60,7 @@ def describeVariance(df,time='X0',od='Y'):
     error = error.drop_duplicates().set_index(time).sort_index()
     error.loc[:,'error'] = filters.gaussian_filter1d(error.error.values,window)
     df = pd.merge(df,error,on=time,how='outer').sort_values([time])
-    
+
     return df
 
 
@@ -71,15 +72,15 @@ class GrowthModel(object):
         Data structure for Gaussian Process regression and related parameter inference.
 
         Attributes:
-            x (numpy.ndarray): independent variables (N x D), where N is the number of observations, and 
+            x (numpy.ndarray): independent variables (N x D), where N is the number of observations, and
                 D is the number of dimensions (or variables).
-            y (numpy.ndarray): dependent variables (N x 1), where N is the number of observations, and 
+            y (numpy.ndarray): dependent variables (N x 1), where N is the number of observations, and
                 the only column is the dependent or obesrved variable (often Optical Density or OD).
-            key (dict or pandas.DataFrame): dictionary (k) or pandas.DataFrame (1 x k) that describes 
+            key (dict or pandas.DataFrame): dictionary (k) or pandas.DataFrame (1 x k) that describes
                 k experimental variables about sample. Must include 'OD_Baseline' and 'Fold_Change' variables.
 
         Notes:
-            for growth curve analysis, it is assumed that y was log-transformeed and baseline-corrected. 
+            for growth curve analysis, it is assumed that y was log-transformeed and baseline-corrected.
 
         '''
 
@@ -114,7 +115,7 @@ class GrowthModel(object):
         time = new_df.Time.sort_values().unique()
         time = time[::int(nthin)]
         thin_df = new_df[new_df.Time.isin(time)]
-        
+
         # predictions of error and new are based on full dataframe
         tmp = new_df.drop(['OD'],axis=1).drop_duplicates()
         error_new = tmp.loc[:,['error']].values
@@ -130,7 +131,7 @@ class GrowthModel(object):
         self.x_keys = x_keys
         self.x_new = x_new
         self.x = x
-        self.y = y 
+        self.y = y
         self.error = error
         self.error_new = error_new
         self.baseline = baseline
@@ -159,11 +160,11 @@ class GrowthModel(object):
 
         kern = buildKernel(x_dim,x,y,ARD=self.ARD)
         mcopy = GPRegression(x,y,kern)
-  
+
         if self.heteroscedastic:
             kern = addFixedKernel(kern,y_dim,self.error)
             mcopy = GPRegression(x,y,kern)
-     
+
         mcopy.optimize()
 
         return mcopy.log_likelihood()

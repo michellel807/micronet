@@ -1,24 +1,34 @@
-# README
+# MicroNet App
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+## Development Using docker-compose
 
-Things you may want to cover:
+To get started with development you will need to build with docker.
 
-* Ruby version
+```shell
+docker-compose build web
+```
 
-* System dependencies
+Copy the .env.example into place.
 
-* Configuration
+```shell
+cp .env.example .env
+```
 
-* Database creation
+Create the database.
 
-* Database initialization
+```shell
+docker-compose run --rm web bash -c "bin/rails db:create"
+```
 
-* How to run the test suite
+Migrate the database.
 
-* Services (job queues, cache servers, search engines, etc.)
+```shell
+docker-compose run --rm web bash -c "bin/rails db:migrate RAILS_ENV=development"
+```
 
-* Deployment instructions
+### Checking email in Development
 
-* ...
+When running locally using the `docker-compose.yml` file included in the project,
+a instance of [InBucket](https://inbucket.org/) will be started in a container.
+In `config/development.rb`, the smtp server is set to use InBucket so to see if
+the email is working, visit [http://localhost:9000](http://localhost:9000).

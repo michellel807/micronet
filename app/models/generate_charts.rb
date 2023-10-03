@@ -4,10 +4,10 @@ def generate_charts
   # Remove the figures and summary directory before running analyses (otherwise the email will just send whatever figures are currently in the dir)
   FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'figures'))
   FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'summary'))
-  
+
   # Generate the desired charts based on the selected chart types
   if @selected_chart_types.include?('raw_data')
-  system("source activate lib/envs/amigacondaenv/ && lib/envs/amigacondaenv/bin/python lib/scripts/amigagitsimplified/amiga.py summarize -i private/uploads/userexpt/")
+  Python.exec("lib/scripts/amigagitsimplified/amiga.py summarize -i private/uploads/userexpt/")
   @raw_data_pdf_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'figures', '*.pdf'))
 
     # Convert PDFs to PNGs
@@ -27,9 +27,9 @@ def generate_charts
   if @selected_chart_types.include?('fit_stats')
   selected_options_string = @selected_options.join(",") #convert to string so python can use it
     if selected_options_string
-      system("source activate lib/envs/amigacondaenv/ && lib/envs/amigacondaenv/bin/python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt --pool-by #{selected_options_string}")
+      Python.exec("lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt --pool-by #{selected_options_string}")
     else
-      system("source activate lib/envs/amigacondaenv/ && lib/envs/amigacondaenv/bin/python lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt")
+      Python.exec("lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt")
     end
   @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', '*_summary.txt'))
   end
@@ -47,7 +47,7 @@ end
 def serve_image
   filename = params[:filename]
   file_path = Rails.root.join('private', 'uploads', 'userexpt', 'figures', filename)
-  
+
   if File.exist?(file_path) && File.file?(file_path)
     send_file file_path, disposition: 'inline'
   else
@@ -57,7 +57,7 @@ end
 
 def sendconfirm
   logger.info("Sending confirmation for job id: #{id}")
-  UserMailer.with(job: self, user: 
+  UserMailer.with(job: self, user:
 User.find(self.user_id)).confirm_email.deliver
 end
 end

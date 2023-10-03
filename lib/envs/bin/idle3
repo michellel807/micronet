@@ -1,5 +1,0 @@
-#!/hpc/home/hrd11/schmidlabhrd11/hannah_AMIGA/amigacondaenv/bin/python3.8
-
-from idlelib.pyshell import main
-if __name__ == '__main__':
-    main()

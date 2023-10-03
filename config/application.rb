@@ -25,3 +25,6 @@ module HannahsGrowthModelWebApp
     # config.eager_load_paths << Rails.root.join("extras")
   end
 end
+
+
+Rails.configuration.python_conda_location="/miniconda3/envs/amigacondaenv/"
