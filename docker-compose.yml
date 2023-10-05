@@ -16,6 +16,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
+      target: deps
     env_file:
       - .env
     command: rails server -b 0.0.0.0
@@ -33,6 +34,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
+      target: deps
     env_file:
       - .env
     command: rake jobs:work
@@ -42,6 +44,7 @@ services:
     depends_on:
       - db
       - local-email
+
   local-email:
     image: inbucket/inbucket
     ports:
