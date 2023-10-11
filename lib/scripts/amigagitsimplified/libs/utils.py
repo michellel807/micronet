@@ -105,7 +105,7 @@ def concatFileDfs(ls_files):
 
     df = []
     
-    for lf in ls_files: df.append(pd.read_csv(lf,sep='\t',header=0,index_col=0))
+    for lf in ls_files: df.append(pd.read_csv(lf,sep=',',header=0,index_col=0))
 
     return pd.concat(df,sort=False)
 

@@ -119,12 +119,13 @@ of the metadata file. </p>
     <div id="data-files-table-container">
     <% if @data_file_paths.present? %>
       <% @data_file_paths.each do |file_path| %>
-        <% converted_file_path = convert_asc_to_tab_delimited(file_path) %>
-        <% next unless converted_file_path && File.exist?(converted_file_path) %>
-        <% File.foreach(converted_file_path) do |line| %>
+        <%# <% converted_file_path = convert_asc_to_tab_delimited(file_path) %>  
+        <%# <% next unless converted_file_path && File.exist?(converted_file_path)  %> 
+        <% next unless File.exist?(file_path) %>
+        <% File.foreach(file_path) do |line| %>
           <table class="fit-stats-table">
             <tr>
-              <% line.split("\t").each do |cell| %>
+              <% line.split(",").each do |cell| %>
                 <td><%= cell %></td>
               <% end %>
             </tr>
@@ -142,7 +143,7 @@ of the metadata file. </p>
         <% File.foreach(@mapping_file_paths[0]) do |line| %>
             <table class="fit-stats-table">
               <tr>
-                <% line.split("\t").each do |cell| %>
+                <% line.split(",").each do |cell| %>
                   <td><%= cell %></td>
                 <% end %>
               </tr>

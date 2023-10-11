@@ -3,9 +3,9 @@ import pandas as pd
 
 def compare_files(data_file, mapping_file):
     try:
-        mapping_file = pd.read_csv(mapping_file,sep="\t",header=None)
+        mapping_file = pd.read_csv(mapping_file,sep=",",header=None)
         
-        data_file = pd.read_csv(data_file,sep="\t",header=None)
+        data_file = pd.read_csv(data_file,sep=",",header=None)
         
         mapping_file = mapping_file.iloc[1:]
         mapping_file.reset_index(drop=True, inplace=True)

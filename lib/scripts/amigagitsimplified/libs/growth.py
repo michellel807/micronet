@@ -388,7 +388,7 @@ class GrowthPlate(object):
             Saves a tab-separated file in desired location (argument).
         x'''
 
-        self.key.to_csv(save_path,sep='\t',header=True,index=True)
+        self.key.to_csv(save_path,sep=',',header=True,index=True)
 
 
     def plot(self,save_path='',plot_fit=False,plot_derivative=False,plot_raw_with_fit=False):
@@ -416,11 +416,11 @@ class GrowthPlate(object):
         time = self.time
 
         # make sure plate is 96-well version, otherwise skip plotting
-        if not self.isSingleMultiWellPlate():
-            msg = 'WARNING: GrowthPlate() object for {} is not a 96-well plate. '.format(self.key.Plate_ID.iloc[0])
-            msg += 'AMiGA can not plot it.\n'
-            print(msg)
-            return None
+        # if not self.isSingleMultiWellPlate():
+        #     msg = 'WARNING: GrowthPlate() object for {} is not a 96-well plate. '.format(self.key.Plate_ID.iloc[0])
+        #     msg += 'AMiGA can not plot it.\n'
+        #     print(msg)
+        #     return None
 
         self.addLocation()
 
@@ -694,7 +694,7 @@ class GrowthPlate(object):
 
             pid,well = self.key.loc[sample_id,['Plate_ID','Well']].values
 
-            smartPrint('Fitting {}\t{}'.format(pid,well),verbose)
+            smartPrint('Fitting {},{}'.format(pid,well),verbose)
 
             # extract sample
             args_dict = self.key.loc[sample_id,['Well','Plate_ID']].to_dict()
