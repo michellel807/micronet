@@ -62,7 +62,7 @@ def basicSummaryOnly(data,mapping,directory,args,verbose=False):
     for pid,data_df in data.items():
 
         # define paths where summary and plot will be saved
-        key_file_path = assemblePath(directory['summary'],pid,'.txt')
+        key_file_path = assemblePath(directory['summary'],pid,'.csv')
         key_fig_path = assemblePath(directory['figures'],pid,'.pdf')
 
         # grab plate-specific samples
@@ -91,15 +91,15 @@ def basicSummaryOnly(data,mapping,directory,args,verbose=False):
         if not args.dont_plot: plate.plot(key_fig_path)
 
         if args.merge_summary: list_keys.append(plate.key) 
-        else: plate.key.to_csv(key_file_path,sep='\t',header=True,index=False)
+        else: plate.key.to_csv(key_file_path,sep=',',header=True,index=False)
 
         smartPrint(pid,verbose=verbose)
 
     if args.merge_summary:
         filename = selectFileName(args.output)
-        summary_path = assembleFullName(directory['summary'],'summary',filename,'_basic','.txt')
+        summary_path = assembleFullName(directory['summary'],'summary',filename,'_basic','.csv')
         summary_df = pd.concat(list_keys,sort=False)
-        summary_df.to_csv(summary_path,sep='\t',header=True,index=False)
+        summary_df.to_csv(summary_path,sep=',',header=True,index=False)
 
     smartPrint('\nSee {} for summary text file(s).'.format(directory['summary']),verbose)
     smartPrint('See {} for figure PDF(s).\n'.format(directory['figures']),verbose)
@@ -173,13 +173,13 @@ def runGrowthFitting(data,mapping,directory,args,verbose=False):
         
         # define file paths where data will be written
         if args.merge_summary or args.output:
-            temp_path = assembleFullName(tmpdir,'',pid,'gp_data','.txt')
-            summ_path = assembleFullName(tmpdir,'',pid,'summary','.txt') 
-            diux_path = assembleFullName(tmpdir,'',pid,'diauxie','.txt') 
+            temp_path = assembleFullName(tmpdir,'',pid,'gp_data','.csv')
+            summ_path = assembleFullName(tmpdir,'',pid,'summary','.csv') 
+            diux_path = assembleFullName(tmpdir,'',pid,'diauxie','.csv') 
         else:
-            temp_path = assembleFullName(directory['derived'],'',pid,'gp_data','.txt')
-            summ_path = assembleFullName(directory['summary'],'',pid,'summary','.txt')
-            diux_path = assembleFullName(directory['summary'],'',pid,'diauxie','.txt')
+            temp_path = assembleFullName(directory['derived'],'',pid,'gp_data','.csv')
+            summ_path = assembleFullName(directory['summary'],'',pid,'summary','.csv')
+            diux_path = assembleFullName(directory['summary'],'',pid,'diauxie','.csv')
 
         # save data, if requested by user
         savePlateData(args.save_gp_data,sub_plate,temp_path,summ_path,diux_path)
@@ -361,22 +361,22 @@ def runCombinedGrowthFitting(data,mapping,directory,args,verbose=False):
         df_params.rename(columns=columns,inplace=True)
         df_diauxie.rename(columns=columns,inplace=True)
 
-    summ_path = assembleFullName(directory['summary'],'',filename,'summary','.txt')
-    diux_path = assembleFullName(directory['summary'],'',filename,'diauxie','.txt')
+    summ_path = assembleFullName(directory['summary'],'',filename,'summary','.csv')
+    diux_path = assembleFullName(directory['summary'],'',filename,'diauxie','.csv')
 
     # normalize parameters, if requested
     df_params = minimizeParameterReport(df_params)
 
     # save results
-    df_params.to_csv(summ_path,sep='\t',header=True,index=False)
+    df_params.to_csv(summ_path,sep=',',header=True,index=False)
     if df_diauxie.shape[0]>0:
-        df_diauxie.to_csv(diux_path,sep='\t',header=True,index=False)
+        df_diauxie.to_csv(diux_path,sep=',',header=True,index=False)
 
     # save latent functions
     if args.save_gp_data:
-        file_path = assembleFullName(directory['derived'],'',filename,'gp_data','.txt')
+        file_path = assembleFullName(directory['derived'],'',filename,'gp_data','.csv')
         gp_data = pd.concat(data_ls,sort=False).reset_index(drop=True)
-        gp_data.to_csv(file_path,sep='\t',header=True,index=True)
+        gp_data.to_csv(file_path,sep=',',header=True,index=True)
 
     return None
 
@@ -519,15 +519,15 @@ def savePlateData(store_data,plate,data_path,summ_path,diux_path):
 
 
     df_params.drop(['Subset'],axis=1,inplace=True)
-    df_params.to_csv(summ_path,sep='\t',header=True,index=False)
+    df_params.to_csv(summ_path,sep=',',header=True,index=False)
     if df_diauxie.shape[0]>0:
         df_diauxie.drop(['Subset'],axis=1,inplace=True)
-        df_diauxie.to_csv(diux_path,sep='\t',header=True,index=False)
+        df_diauxie.to_csv(diux_path,sep=',',header=True,index=False)
 
     if not store_data:
         return None
 
-    prepGpData(plate).to_csv(data_path,sep='\t',header=True,index=True)
+    prepGpData(plate).to_csv(data_path,sep=',',header=True,index=True)
 
 
 def mergeSummaryData(args,directory,ls_temp_files,ls_summ_files,ls_diux_files,filename):
@@ -547,20 +547,20 @@ def mergeSummaryData(args,directory,ls_temp_files,ls_summ_files,ls_diux_files,fi
 
         gp_data_df = concatFileDfs(ls_temp_files)
 
-        gp_data_path = assembleFullName(directory['derived'],'',filename,'gp_data','.txt')
+        gp_data_path = assembleFullName(directory['derived'],'',filename,'gp_data','.csv')
 
-        gp_data_df.to_csv(gp_data_path,sep='\t',header=True,index=True)
+        gp_data_df.to_csv(gp_data_path,sep=',',header=True,index=True)
 
     if args.merge_summary or args.output:
 
         summ_df = concatFileDfs(ls_summ_files)
         diux_df = concatFileDfs(ls_diux_files)
 
-        summ_path = assembleFullName(directory['summary'],'',filename,'summary','.txt')
-        diux_path = assembleFullName(directory['summary'],'',filename,'diauxie','.txt')
+        summ_path = assembleFullName(directory['summary'],'',filename,'summary','.csv')
+        diux_path = assembleFullName(directory['summary'],'',filename,'diauxie','.csv')
 
-        summ_df.to_csv(summ_path,sep='\t',header=True,index=True)
-        if diux_df.shape[0]>0: diux_df.to_csv(diux_path,sep='\t',header=True,index=True)
+        summ_df.to_csv(summ_path,sep=',',header=True,index=True)
+        if diux_df.shape[0]>0: diux_df.to_csv(diux_path,sep=',',header=True,index=True)
 
         # clean-up
         for f in ls_temp_files + ls_summ_files + ls_diux_files:

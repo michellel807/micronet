@@ -64,7 +64,7 @@ def main(args):
 	directory,filename = isFileOrFolder(directory,up=1)
 
 	if filename: ls_files = ['{}{}{}'.format(directory,os.sep,filename)]
-	else: ls_files = findPlateReaderFiles(directory,'.txt')
+	else: ls_files = findPlateReaderFiles(directory,'.csv')
 
 	full_df = read(ls_files)
 	sub_df = subsetDf(full_df,criteria)
@@ -83,15 +83,15 @@ def saveDf(full_df,sub_df,args,directory):
 	sub_df = subsetDf(full_df,{args.y_variable:list(sub_df.index.values),
 		                       args.x_variable:list(sub_df.keys().values)})
 
-	fpath = assembleFullName(directory,'',args.output,'filtered','.txt')
-	sub_df.to_csv(fpath,sep='\t',header=True,index=True)
+	fpath = assembleFullName(directory,'',args.output,'filtered','.csv')
+	sub_df.to_csv(fpath,sep=',',header=True,index=True)
 
 def read(ls_fpaths):
 
 	df_list = []
 
 	for fpath in ls_fpaths:
-		foo = pd.read_csv(fpath,sep='\t',header=0,index_col=0,low_memory=False)
+		foo = pd.read_csv(fpath,sep=',',header=0,index_col=0,low_memory=False)
 		df_list.append(foo)
 	df = pd.concat(df_list,sort=False)
 
@@ -220,10 +220,10 @@ def pivot(df,args,metric=None):
 		if len(rows_todrop) > 0 or len(cols_todrop): 
 			msg = 'User Warning: The heatmap data is missing values. '
 			msg += 'Pleae check the data for the following:\n\n'
-			msg += 'Columns:\t'
+			msg += 'Columns:,'
 			msg += ', '.join(cols_todrop) + '\n'
 			msg += '\n'
-			msg += 'Rows:\t'
+			msg += 'Rows:,'
 			msg += ', '.join(rows_todrop) + '\n'
 			msg += '\nThese variables will be dropped and not plotted unless if you requested that '
 			msg += 'they be kept with --keep-rows-missing-data or --keep-columns-missing-data.\n\n'
@@ -261,7 +261,7 @@ def get_color_legend(df,full_df,args,directory,axis='y'):
     	sys.exit(msg.format(axis))
 
     if colorfile is not None:
-    	colors_df = pd.read_csv(colorfile,sep='\t',header=0,index_col=0)
+    	colors_df = pd.read_csv(colorfile,sep=',',header=0,index_col=0)
     if colorscheme is not None:
     	colors_df = pd.DataFrame(colorscheme,index=['Color']).T
 

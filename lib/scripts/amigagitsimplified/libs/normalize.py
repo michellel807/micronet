@@ -43,18 +43,18 @@ def main(args):
 	directory,filename = isFileOrFolder(directory,up=1)
 
 	if filename: ls_files = ['{}{}{}'.format(directory,os.sep,filename)]
-	else: ls_files = findPlateReaderFiles(directory,'.txt')
+	else: ls_files = findPlateReaderFiles(directory,'.csv')
 
 	for lf in ls_files:
 
 		df = read(ls_files)
 
 		if ovewrrite:  new_name = lf
-		elif lf.endswith('.txt'): new_name = '{}_normalized.txt'.format(lf[:-4])
-		else: new_name = '{}.normalized.txt'.format(lf)
+		elif lf.endswith('.csv'): new_name = '{}_normalized.csv'.format(lf[:-4])
+		else: new_name = '{}.normalized.csv'.format(lf)
 		
 		df = normalizeParameters(args,df)
-		df.to_csv(new_name,sep='\t',header=True,index=True)
+		df.to_csv(new_name,sep=',',header=True,index=True)
 
 	msg = 'AMiGA compelted your request'
 
@@ -77,7 +77,7 @@ def read(ls_fpaths):
 	df_list = []
 
 	for fpath in ls_fpaths:
-		df_list.append(pd.read_csv(fpath,sep='\t',header=0,index_col=0))
+		df_list.append(pd.read_csv(fpath,sep=',',header=0,index_col=0))
 
 	df = pd.concat(df_list,sort=False)
 

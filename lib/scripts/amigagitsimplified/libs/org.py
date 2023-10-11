@@ -207,14 +207,14 @@ def mapFiles(directory):
     files  = {}
 
     # only single file of interest in 'mapping' sub-directory
-    files['meta'] = '{}{}{}.txt'.format(directory['mapping'],os.sep,'meta')
+    files['meta'] = '{}{}{}.csv'.format(directory['mapping'],os.sep,'meta')
 
     # format paths for files in the 'parameter' sub-directory
     children = ['flag','hypothesis','subset','interval']
 
     for child in children:
 
-        files[child] = assemblePath(directory['parameters'],child,'.txt')
+        files[child] = assemblePath(directory['parameters'],child,'.csv')
 
     return files
 
