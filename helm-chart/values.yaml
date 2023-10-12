@@ -1,0 +1,15 @@
+app_deployment:
+  storageNfsEnabled: true
+  nfsPersistentVolumeClaimName: micronet-app-data
+  storageNFS: micronet-app-data
+  nfsVolumeMountPath: /app/private
+
+storageNfs:
+  nfsPersistentVolumeClaimName: micronet-app-data
+  nfsAccessMode: ReadWriteMany
+  nfsStorageRequest: 10Gi
+
+delayed_job_deployment:
+  enabled: true
+  appDeploymentCMDEnabled: true
+  appDeploymentCMD: 'rake jobs:work'
