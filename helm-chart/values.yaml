@@ -12,4 +12,4 @@ storageNfs:
 delayed_job_deployment:
   enabled: true
   appDeploymentCMDEnabled: true
-  appDeploymentCMD: '["bundle exec rake jobs:work"]'
+  appDeploymentCMD: '["rake", "jobs:work"]'
