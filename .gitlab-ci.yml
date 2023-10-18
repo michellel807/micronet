@@ -1,6 +1,6 @@
 include:
   - project: 'essweb/gitlab-ci-base'
-    ref: 13-test-delayed-job-template
+    ref: main
     file: '/ci-base-template.yml'
 
 ##### COMMON ENV #####
