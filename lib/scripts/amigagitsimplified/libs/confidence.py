@@ -48,20 +48,20 @@ def main(args):
 
 	for lf in ls_files:
 
-		df = pd.read_csv(lf,sep='\t',header=0,index_col=0)
+		df = pd.read_csv(lf,sep=',',header=0,index_col=0)
 
 		# define file name for the updated dataframe
 		if overwrite:  new_name = lf
-		elif lf.endswith('.txt'): new_name = '{}_confidence.txt'.format(lf[:-4])
-		else: new_name = '{}_confidence.txt'.format(lf)
+		elif lf.endswith('.csv'): new_name = '{}_confidence.csv'.format(lf[:-4])
+		else: new_name = '{}_confidence.csv'.format(lf)
 
 		# compute confidecne intervals and save results
 		if args.type == 'Parameters':
 			df = get_parameter_confidence(df,z_value)
-			df.to_csv(new_name,sep='\t',header=True,index=True)
+			df.to_csv(new_name,sep=',',header=True,index=True)
 		elif args.type == 'Curves':
 			df = get_curve_confidence(df,z_value,add_noise)
-			df.to_csv(new_name,sep='\t',header=True,index=False)
+			df.to_csv(new_name,sep=',',header=True,index=False)
 
 
 def get_parameter_confidence(df,z_value):

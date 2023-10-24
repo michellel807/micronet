@@ -68,7 +68,7 @@ def assembleMappings(data,mapping_path,meta_path=None,save=False,verbose=False):
     list_filebases = data.keys()
 
     # list all potential mapping file paths
-    list_mapping_files = [assemblePath(mapping_path,ii,'.txt') for ii in list_filebases]
+    list_mapping_files = [assemblePath(mapping_path,ii,'.csv') for ii in list_filebases]
 
     # read meta.txt and list all plates described by it
     meta_df, meta_df_plates = checkMetaText(meta_path,verbose=verbose)   
@@ -85,7 +85,7 @@ def assembleMappings(data,mapping_path,meta_path=None,save=False,verbose=False):
         # see if user provided a mapping file that corresponds to this data file (filebase)
         if os.path.exists(mapping_file_path):
 
-            df_mapping = pd.read_csv(mapping_file_path,sep='\t',header=0,index_col=0, dtype={'Plate_ID':str,'Isolate':str})
+            df_mapping = pd.read_csv(mapping_file_path,sep=',',header=0,index_col=0, dtype={'Plate_ID':str,'Isolate':str})
             df_mapping = checkPlateIdColumn(df_mapping,filebase) # makes sure Plate_ID is a column
             df_mapping.index = [ii[0] + ii[1:].lstrip('0') for ii in df_mapping.index] # strip leading zeros in well names
 
@@ -125,7 +125,7 @@ def assembleMappings(data,mapping_path,meta_path=None,save=False,verbose=False):
         df_mapping_dict[filebase] = expandMappingParams(df_mapping,verbose=verbose)
 
         if save:
-            df_mapping_dict[filebase].to_csv(newfilepath,sep='\t',header=True,index=True)
+            df_mapping_dict[filebase].to_csv(newfilepath,sep=',',header=True,index=True)
 
     #df_mapping = df_mapping.reset_index(drop=False)
     smartPrint('',verbose=verbose)
@@ -173,7 +173,7 @@ def checkMetaText(filepath,verbose=False):
         df_meta = pd.DataFrame
         df_meta_plates = [];
     else:
-        df_meta = pd.read_csv(filepath,sep='\t',header=0,index_col=None,dtype={'Plate_ID':str,'Isolate':str})
+        df_meta = pd.read_csv(filepath,sep=',',header=0,index_col=None,dtype={'Plate_ID':str,'Isolate':str})
 
     # which plates were characterized in meta.txt?
     try:

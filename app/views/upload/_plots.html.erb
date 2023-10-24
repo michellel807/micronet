@@ -70,7 +70,7 @@ generate.</p>
       <table class="fit-stats-table">
         <% File.foreach(fit_stats_path) do |line| %>
           <tr>
-            <% line.split("\t").each do |cell| %>
+            <% line.split(",").each do |cell| %>
               <td><%= cell %></td>
             <% end %>
           </tr>

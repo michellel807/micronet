@@ -13,3 +13,10 @@
  *= require_tree .
  *= require_self
  */
+
+ * {
+    font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
+    font-weight: 300;
+    overscroll-behavior: none;
+  }
+

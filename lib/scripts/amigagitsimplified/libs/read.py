@@ -113,7 +113,7 @@ def findPlateReaderFiles(directory,extension=None):
 
     # you can modify this to include other extensions, but internal data must still be tab-delimited 
     if extension is None:
-        extension = ('.txt','TXT','tsv','TSV','asc','ASC')
+        extension = ('.txt','TXT','tsv','TSV','asc','ASC', '.csv', 'CSV', 'csv')
 
     # recursively walk through a directory, if nested
     list_files = []
@@ -181,7 +181,7 @@ def readPlateReaderData(filepath,interval,copydirectory,save=False):
     skiprows,skipfooter,index_col = findRowsAndIndex(filepath,encoding=encoding)
 
     # read tab-delimited data file
-    df = pd.read_csv(filepath,sep='\t',header=None,index_col=index_col,skiprows=skiprows,skipfooter=skipfooter,encoding=encoding,engine='python')
+    df = pd.read_csv(filepath,sep=',',header=None,index_col=index_col,skiprows=skiprows,skipfooter=skipfooter,encoding=encoding,engine='python')
 
     # explicitly define time series based on data size and time interval 
     df.columns = listTimePoints(interval=interval,numTimePoints=df.shape[1])
@@ -217,7 +217,7 @@ def readPlateReaderData(filepath,interval,copydirectory,save=False):
 
     # save derived data copy in proper location
     if save:
-        df.to_csv(newfilepath,sep='\t',header=True)  # does it save header index name (i.e. Time)
+        df.to_csv(newfilepath,sep=',',header=True)  # does it save header index name (i.e. Time)
 
     return df
 
@@ -270,7 +270,7 @@ def findRowsAndIndex(filepath,encoding):
 
     firstrow = 0
     for line in fid.readlines():
-        line_start = line.strip().split('\t')[0]
+        line_start = line.strip().split(',')[0]
         if isWellId(line_start):
             index_column = 0  # row names are the zero-indexed column
             break
@@ -290,7 +290,7 @@ def findRowsAndIndex(filepath,encoding):
 
     lastrow = 0
     for line in reversed(fid.readlines()):
-        line_start = line.strip().split('\t')[0]
+        line_start = line.strip().split(',')[0]
         if isWellId(line_start):
             break
         lastrow += 1

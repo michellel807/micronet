@@ -24,7 +24,7 @@ config['time_input_unit'] = 'seconds'
 config['time_output_unit'] = 'hours'
 
 # default time interval between OD measurments is set to 600 seconds
-config['interval'] = 600  # units ared based on 'time_input_unit' above  
+config['interval'] = 1800  # units ared based on 'time_input_unit' above  
 
 # whether to estimate OD at the first time point using a polynomial regression fit across replicates
 config['PolyFit'] = False

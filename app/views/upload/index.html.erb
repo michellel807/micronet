@@ -34,25 +34,11 @@
 
     });
   </script>
-  
-  
-
   </body>
 </html>
 
 <div class = "uploadscreen">
-<header>
-<a href="https://genome.duke.edu/">
-  <%= image_tag 'logo.png', alt: 'Duke Logo' %>
-</a>
-<a class = "home_link" href="/"><h2 style = "color:white;" >THE SCHMID LAB MICROBIAL GROWTH MODEL</h2></a>
-<nav>
-  <a class = "wel_nav" href="/help" >HELP</a>
-  <a class = "wel_nav" href="/resources">RESOURCES</a>
-  <a class="wel_nav" href="/contact">CONTACT</a>
-  <a class = "wel_nav" href="/admin">ADMIN</a>
-</nav>
-</header>
+  <%= render "layouts/header" %>
 
   <div class="column skinny">
   <div class="stepper-wrapper">
@@ -78,11 +64,9 @@
 </div>
 
     <h1>MicroNet: Upload Files</h1>
-       <p>The model takes plate reader data as input data file(s) in .asc format. 
-       <a href="https://tableconvert.com/csv-to-ascii" target="_blank">Click here</a> for a resource to convert .csv files to .asc. 
-       The model also requires a tab-delimited metadata/mapping file containing the metadata 
-associated with each well. Please <a href="https://firasmidani.github.io/amiga/doc/metadata.html" target="_blank">click here</a> to learn more about the mandatory formatting 
-of the metadata file. </p>
+       <p>The model takes plate reader data as an input data file and a metadata/mapping file containing the metadata 
+associated with each well. Valid file formats are .asc, .tsv, .txt, or .csv. Please <a href="https://firasmidani.github.io/amiga/doc/metadata.html" target="_blank">click here</a> to learn more about the mandatory formatting 
+of the metadata file. Please note that the application will convert the input files to .csv for the analysis</p>
   </div>
 
   <div class="general-white-block">
@@ -133,12 +117,11 @@ of the metadata file. </p>
     <div id="data-files-table-container">
     <% if @data_file_paths.present? %>
       <% @data_file_paths.each do |file_path| %>
-        <% converted_file_path = convert_asc_to_tab_delimited(file_path) %>
-        <% next unless converted_file_path && File.exist?(converted_file_path) %>
-        <% File.foreach(converted_file_path) do |line| %>
+        <% next unless File.exist?(file_path) %>
+        <% File.foreach(file_path) do |line| %>
           <table class="fit-stats-table">
             <tr>
-              <% line.split("\t").each do |cell| %>
+              <% line.split(",").each do |cell| %>
                 <td><%= cell %></td>
               <% end %>
             </tr>
@@ -156,7 +139,7 @@ of the metadata file. </p>
         <% File.foreach(@mapping_file_paths[0]) do |line| %>
             <table class="fit-stats-table">
               <tr>
-                <% line.split("\t").each do |cell| %>
+                <% line.split(",").each do |cell| %>
                   <td><%= cell %></td>
                 <% end %>
               </tr>
@@ -174,10 +157,5 @@ of the metadata file. </p>
 <div class="background-space"></div>
 
 </div>
-<footer>
-<a href="https://duke.edu"><img src="https://software.duke.edu/sites/default/themes/slic/logo.svg" alt="Duke University Logo"/></a>
-
-<h2 style= "margin-top:10px">&copy; Schmid Lab 2023</h2>
-<br/>
-</footer>
+  <%= render "layouts/footer" %>
 </div>

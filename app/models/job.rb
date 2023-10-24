@@ -38,19 +38,19 @@ class Job < ApplicationRecord
         Python.exec("lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt -o fit")
 
         # Check if fit_summary_modified.txt exists
-        fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
-        Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
+        fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.csv')
+        Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.csv")
         raise "The fit statistics analysis failed" unless File.exist?(fit_summary_path)
-        @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
+        @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.csv'))
         logger.debug("done with fit_stats yes ...")
       end
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes"
         Python.exec("lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt --pool-by '#{pool_options_string}' -o fit")
-        Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
-        fit_stats_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
+        Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.csv")
+        fit_stats_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.csv')
         raise "The fit statistics (pooling requested) analysis failed" if not File.exist?(fit_stats_path)
-        @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
+        @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.csv'))
         logger.debug("done with fit_stats no ...")
       end
 
