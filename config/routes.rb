@@ -1,7 +1,7 @@
 Rails.application.routes.draw do
   resources :feedbacks
   resources :jobs
-  
+
   # Other routes
 
   get "/", to: "welcome#index"
@@ -30,15 +30,17 @@ Rails.application.routes.draw do
   get '/download/:file_name', to: 'help#download_file', as: 'download_file'
   get '/download_mapping/:file_name', to: 'help#download_mapping_file', as: 'download_mapping_file'
 
+  get '/healthcheck' => 'healthcheck#index'
+
   patch '/admin/update_credentials', to: 'admin#update_credentials', as: :update_admin_credentials
 
   scope '/admin' do
     get 'login', to: 'admin#login'
-    post 'authenticate', to: 'admin#authenticate_admin', as: 'authenticate_admin' 
+    post 'authenticate', to: 'admin#authenticate_admin', as: 'authenticate_admin'
     delete 'logout', to: 'admin#logout'
     resources :jobs, module: 'admin', only: [:index, :destroy]
   end
-   
+
   namespace :admin do
     delete '/logout', to: 'admin#logout', as: 'logout'
     resources :jobs, only: [:index, :destroy] do

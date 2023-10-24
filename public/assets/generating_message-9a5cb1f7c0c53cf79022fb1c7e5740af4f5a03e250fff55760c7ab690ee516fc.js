@@ -1,2 +1,0 @@
-// generating_message.js
-;
