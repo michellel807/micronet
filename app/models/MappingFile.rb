@@ -3,16 +3,15 @@ class MappingFile
 
   def initialize(file)
     @file = file
-    @file_path = save_file(file)
-    # if File.extname(file.original_filename) == '.txt'
-    #   @file_path = save_file(file)
-    # else
-    #   @error_message = 'Invalid mapping file format. Please ensure that your mapping file is a .txt file and try again.'
-    # end
+    valid_extensions = ['.txt', '.asc', '.tsv', '.csv']
+    if valid_extensions.include?(File.extname(file.original_filename))
+      @file_path = save_file(file)
+    else
+      @error_message = 'Invalid mapping file format. Please ensure that your mapping file is a .asc, .txt, .tsv, or .csv file and try again.'
+    end
   end
 
   def valid?
-    # @file_path && File.exist?(@file_path) && File.file?(@file_path) && File.extname(@file.original_filename) == '.txt'
     @file_path && File.exist?(@file_path) && File.file?(@file_path) 
   end
   
@@ -25,7 +24,7 @@ class MappingFile
     original_filename = file.original_filename
     file_extension = File.extname(original_filename)
   
-    if file_extension.downcase == '.txt' || file_extension.downcase == '.asc'
+    if file_extension.downcase == '.txt' || file_extension.downcase == '.asc' || file_extension.downcase == '.tsv'
       csv_data = []
   
       File.open(file.path, 'r') do |file|
@@ -33,7 +32,6 @@ class MappingFile
           # Split each line using the tab character as the delimiter
           values = line.chomp.encode('UTF-8', 'ISO-8859-1').split("\t")
           if index == 0
-            # Change the first column's first row cell to a different word
             values[0] = "Well positions"
           end
           csv_data << values
