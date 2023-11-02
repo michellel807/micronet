@@ -20,7 +20,7 @@ include:
   variables:
     K8S_ENV: "okd4-dev"
     K8S_NAMESPACE: "essweb-micronet-app-test"
-    VAULT_OKD_ROLE: "essweb-micronet_app_test_okd4"
+    VAULT_OKD_ROLE: "ess-web-micronet_app_test_okd4"
     VAULT_SHIB_SECRET_PATH: "ess-web/kv/data/apps/micronet_app/shib/acceptance"
     IP_WHITELIST: "10.128.0.0/9-10.200.0.0/23-10.200.2.0/24-152.16.0.0/16-152.3.0.0/16-198.71.44.104/29-67.159.64.0/18"
   extends:
