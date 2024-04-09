@@ -29,7 +29,7 @@ include:
 build_application_image_test:
   extends:
     - .test_env
-    - .build_image_using_kaniko
+    - .build_image_using_library_template
 
 deploy_application_image_test:
   extends:
