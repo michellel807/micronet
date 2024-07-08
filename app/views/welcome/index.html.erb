@@ -1,0 +1,36 @@
+
+<div class = "welcomescreen">
+    <%= render "layouts/header" %>
+
+    <div class="column skinny">
+      </br>
+      <h1>WELCOME!</h1>
+      </br>
+      <p>
+        MicroNet is a webapp designed to help researchers visualize and model trends in microbial growth data. It utilizes a non-parametric modelling approach, implemented
+        via Gaussian Process regression, to estimate standard microbial growth parameters, and thus is particularly useful for cases in which growth deviates from the expected logistic or sigmoidal growth curves. 
+        Results are usually reported within a few hours, and an automated email will be sent to you once your results are ready.
+      </p>
+      <p>To begin, please submit the email you would like results to be sent to, then select “Begin Now” to start your analysis. </p>
+      </br>
+
+      <%= form_with url: "/", method: :post do |form|%>
+        <%= form.label :email, "Input Email:", class: "input_email"%>
+        <%= form.text_field :email%>
+        <%= form.submit "Begin Now!"%>
+      <% end %>
+
+      <div class="email-alert"><%=flash[:notice]%></div>
+      <%= link_to 'Need help?', "help", id: "help_link" %>
+    </div>
+    
+    <% if flash[:alert].present? && flash[:alert] != "Need help?" %>      
+      <div class="unsavedjob-alert"><%=flash[:alert]%></div>  
+      <div class="button-group">
+      <%= button_to "Yes", resume_job_path, method: :post %>
+      <%= button_to "No", create_job_path, method: :post %>
+      </div>
+    <% end %>
+
+    <%= render "layouts/footer" %>
+</div>

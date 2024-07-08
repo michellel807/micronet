@@ -1,0 +1,61 @@
+version: '3'
+services:
+
+  db:
+    image: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      # POSTGRES_DB: mydb
+      # POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: micronet_app_password
+
+  web:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      target: deps
+    env_file:
+      - .env
+    command: rails server -b 0.0.0.0
+    volumes:
+      - bundle:/bundle
+      - .:/app
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - db
+      - delayed_job
+      - local-email
+
+  delayed_job:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      target: deps
+    env_file:
+      - .env
+    command: rake jobs:work
+    volumes:
+      - .:/app
+      - bundle:/bundle
+    depends_on:
+      - db
+      - local-email
+
+  local-email:
+    image: inbucket/inbucket
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:2500:2500"
+      - "127.0.0.1:1100:1100"
+    volumes:
+      - inbucket-storage:/storage
+
+volumes:
+  postgres-data:
+  bundle:
+  inbucket-storage:
+

@@ -1,0 +1,22 @@
+class RawDataGenerator
+  def self.generate_raw_data()
+    #FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'figures') #clear out figures first
+    Python.exec("lib/scripts/amigagitsimplified/amiga.py summarize -i private/uploads/userexpt")
+
+    raw_data_pdf_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'figures', '*.pdf'))
+
+    raw_data_png_paths = []
+    raw_data_pdf_paths.each do |pdf_path|
+      png_path = pdf_path.sub('.pdf', '.png')
+      require "mini_magick"
+      MiniMagick::Tool::Convert.new do |convert|
+        convert << pdf_path
+        convert << png_path
+      end
+      raw_data_png_paths << png_path
+    end
+
+    { raw_data_pdf_paths: raw_data_pdf_paths, raw_data_png_paths: raw_data_png_paths }
+  end
+end
+

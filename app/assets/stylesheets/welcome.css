@@ -1,0 +1,100 @@
+
+/* for the welcome screen */
+.welcomescreen{
+  color: #ffffff;
+  min-height: 100%;
+  background-image: linear-gradient(to top, #000750, #405fad);
+  padding-bottom: 100px;
+  min-width:800px;
+  overflow:visible;
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  justify-content: flex-start;
+  background-color: #000750;
+} 
+.welcomescreen h1 {
+  font-size: 50px;
+}
+.welcomescreen p {
+  font-size: 25px;
+}
+.welcomescreen input[type=submit]{
+  background-color: #12105a;
+  padding: 7px;
+  color: white;
+  border-radius: 6px;
+  font-weight:300;
+  font-size: 20px;
+  cursor: pointer;
+  border: none;
+}
+
+.welcomescreen input[type=submit]:hover{
+  background-color: #0036b4;
+}
+.welcomescreen header{
+  background: transparent;
+  box-shadow: none;
+}
+.welcomescreen h2 {
+  font-size: 18px;
+}
+.welcomescreen input[type=text]{
+  width: 250px;
+  height: 25px;
+  font-size: 15px;
+}
+.welcomescreen label{
+  font-weight: normal;
+}
+.welcomescreen footer {
+  background: transparent;
+  margin-top: 90px;
+  margin-bottom: -100px;
+}
+
+#help_link{
+  color:white;
+  place-items: center;
+  font-weight: 300;
+  font-size: 20px;
+}
+
+#help_link:hover{
+  color: #1287ed;
+}
+
+.input_email{
+  font-size: 20px;
+  font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
+  font-weight: 300px;
+}
+
+.wel_nav:hover{
+  color: #52a8f3;
+}
+
+.unsavedjob-alert{
+  margin: auto;
+  color: orange;
+}
+.unsavedjob-alert p{
+  margin: auto;
+  color: orange;
+}
+
+.button-group {
+  display: flex;
+  justify-content: center;
+  margin: auto;
+}
+
+.home_link {
+ margin-top: 19px;
+ font-weight: 250px;
+ font-size: 40px;
+}
+.home_link:hover{
+  text-decoration: none;
+}

@@ -68,7 +68,7 @@ def assembleMappings(data,mapping_path,meta_path=None,save=False,verbose=False):
     list_filebases = data.keys()
 
     # list all potential mapping file paths
-    list_mapping_files = [assemblePath(mapping_path,ii,'.txt') for ii in list_filebases]
+    list_mapping_files = [assemblePath(mapping_path,ii,'.csv') for ii in list_filebases]
 
     # read meta.txt and list all plates described by it
     meta_df, meta_df_plates = checkMetaText(meta_path,verbose=verbose)   
@@ -85,7 +85,7 @@ def assembleMappings(data,mapping_path,meta_path=None,save=False,verbose=False):
         # see if user provided a mapping file that corresponds to this data file (filebase)
         if os.path.exists(mapping_file_path):
 
-            df_mapping = pd.read_csv(mapping_file_path,sep='\t',header=0,index_col=0, dtype={'Plate_ID':str,'Isolate':str})
+            df_mapping = pd.read_csv(mapping_file_path,sep=',',header=0,index_col=0, dtype={'Plate_ID':str,'Isolate':str})
             df_mapping = checkPlateIdColumn(df_mapping,filebase) # makes sure Plate_ID is a column
             df_mapping.index = [ii[0] + ii[1:].lstrip('0') for ii in df_mapping.index] # strip leading zeros in well names
 
@@ -95,7 +95,7 @@ def assembleMappings(data,mapping_path,meta_path=None,save=False,verbose=False):
         elif filebase in meta_df_plates:
 
             meta_info = meta_df[meta_df.Plate_ID==filebase]
-            msg = '{:.<30} Found meta-data in meta.txt '.format(filebase)
+            msg = '{:.<30} Found meta-data in meta.csv '.format(filebase)
 
             biolog = isBiologFromMeta(meta_info)  # does meta_df indicate this is a BIOLOG plate
 
@@ -125,7 +125,7 @@ def assembleMappings(data,mapping_path,meta_path=None,save=False,verbose=False):
         df_mapping_dict[filebase] = expandMappingParams(df_mapping,verbose=verbose)
 
         if save:
-            df_mapping_dict[filebase].to_csv(newfilepath,sep='\t',header=True,index=True)
+            df_mapping_dict[filebase].to_csv(newfilepath,sep=',',header=True,index=True)
 
     #df_mapping = df_mapping.reset_index(drop=False)
     smartPrint('',verbose=verbose)
@@ -135,13 +135,13 @@ def assembleMappings(data,mapping_path,meta_path=None,save=False,verbose=False):
 
 def checkBiologSize(df,filename):
     '''
-    If a Plate_ID or meta.txt suggest a file corresponds to a BIOLOG PM, double check
+    If a Plate_ID or meta.csv suggest a file corresponds to a BIOLOG PM, double check
         that it is at least a 96-well plate. 
     '''
     if df.shape[1] != 97: # (96 wells + 1 time) = 97 columns
 
         msg = 'The file "{}" is not formatted as a 96-well plate. '.format(filename)
-        msg += 'Either the file name or its information in meta.txt '
+        msg += 'Either the file name or its information in meta.csv '
         msg += 'suggsts that it is a BIOLOG PM plate. Please either correct the name '
         msg += 'of the file, the contents of the file, or correct its meta-data. '
         msg += 'If your file is missing Well IDs, you will need to add them in the first column. '
@@ -152,7 +152,7 @@ def checkBiologSize(df,filename):
 
 def checkMetaText(filepath,verbose=False):
     '''
-    Parses meta.txt file into a pandas.DataFrame.
+    Parses meta.csv file into a pandas.DataFrame.
 
     Args:
         filepath (str): path to meta.txt, must be tab-delimited with first column as "Plate_ID" (i.e. file name)
@@ -173,7 +173,7 @@ def checkMetaText(filepath,verbose=False):
         df_meta = pd.DataFrame
         df_meta_plates = [];
     else:
-        df_meta = pd.read_csv(filepath,sep='\t',header=0,index_col=None,dtype={'Plate_ID':str,'Isolate':str})
+        df_meta = pd.read_csv(filepath,sep=',',header=0,index_col=None,dtype={'Plate_ID':str,'Isolate':str})
 
     # which plates were characterized in meta.txt?
     try:

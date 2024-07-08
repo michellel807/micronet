@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin page</title>
+  <%= stylesheet_link_tag 'admin' %>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <div class="adminscreen">
+    <%= render "layouts/header" %>
+    <h1>Admin Login</h1>
+    <%= form_tag authenticate_admin_path, method: :post do %>
+      <div class ="login">
+        <%= label_tag :username %>
+        <%= text_field_tag :username %>
+      </div>
+      <div class="login">
+        <%= label_tag :password %>
+        <%= password_field_tag :password %>
+        
+        <% if flash.now[:error] %>
+          <div class="admin-error2">
+            <%= flash.now[:error] %>
+          </div>
+        <% end %>
+      </div>
+      <%= submit_tag 'Login',class:"login-button" %>
+
+      <%= render "layouts/footer" %>
+    <% end %>
+  </div>
+</body>
+

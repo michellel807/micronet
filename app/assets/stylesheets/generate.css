@@ -1,0 +1,38 @@
+/* ...
+*= require_self
+*= require_tree .
+*/
+
+/* for the generate screen */
+* {
+  font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
+  font-weight: 300;
+}
+.generatescreen{
+  color: white;
+  background-image: linear-gradient(to top, #000750, #405fad);
+  padding-bottom: 100px;
+  min-width:800px;
+  overflow:visible;
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  justify-content: flex-start;
+} 
+.generatescreen h1 {
+  font-size: 50px;
+  margin-top: 50px;
+  margin-left: 50px;
+}
+
+.generatescreen p {
+  font-size: 25px;
+  margin-left: 50px;
+  margin-right: 50px;
+}
+
+.background{
+  background-image: linear-gradient(to bottom, #000750, #000750);
+}
+
+

@@ -31,7 +31,7 @@ def main(args):
 
 def update(args,summ):
 
-	summ.to_csv(args.summary,sep='\t',header=True,index=False)
+	summ.to_csv(args.summary,sep=',',header=True,index=False)
 
 def find(args,tables):
 
@@ -64,8 +64,8 @@ def find(args,tables):
 
 def read(args):
 
-	data = pd.read_csv(args.gp_data,sep='\t',index_col=0)
-	summ = pd.read_csv(args.summary,sep='\t')
+	data = pd.read_csv(args.gp_data,sep=',',index_col=0)
+	summ = pd.read_csv(args.summary,sep=',')
 
 	tables = (data,summ)
 

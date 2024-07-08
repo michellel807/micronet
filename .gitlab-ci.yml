@@ -1,0 +1,42 @@
+include:
+  - project: 'essweb/gitlab-ci-base'
+    ref: main
+    file: '/ci-base-template.yml'
+
+##### COMMON ENV #####
+.common_env:
+  variables:
+    PROJECT_NAME: "micronet-app"
+    VAULT_PROVIDER_URL: "https://vault-mgmt.oit.duke.edu"
+    CONTAINER_PORT: "3000"
+
+##### TEST ENV #####
+.test_env:
+  only:
+    - okd4
+  environment:
+    url: https://micronet-test.oit.duke.edu
+    name: test
+  variables:
+    K8S_ENV: "okd4-dev"
+    K8S_NAMESPACE: "essweb-micronet-app-test"
+    VAULT_OKD_ROLE: "ess-web-micronet_app_test_okd4"
+    VAULT_SHIB_SECRET_PATH: "ess-web/kv/data/apps/micronet_app/shib/acceptance"
+    IP_WHITELIST: "10.128.0.0/9-10.200.0.0/23-10.200.2.0/24-152.16.0.0/16-152.3.0.0/16-198.71.44.104/29-67.159.64.0/18"
+  extends:
+    - .common_env
+
+build_application_image_test:
+  extends:
+    - .test_env
+    - .build_image_using_library_template
+
+deploy_application_image_test:
+  extends:
+    - .test_env
+    - .deploy_image_using_library_template
+
+deploy_shib_apache_image_test:
+  extends:
+    - .test_env
+    - .deploy_shib_apache

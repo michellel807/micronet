@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Parameter page</title>
+  <%= stylesheet_link_tag 'parameter' %>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <div class="parameterscreen">
+    <%= render "layouts/header" %>
+
+    <div class="column skinny">
+    <div class="stepper-wrapper">
+    <div class="stepper-item completed">
+      <a href="<%= upload_path %>" style="text-decoration: none; color: white"> 
+        <div class="step-counter completed">1</div>
+      </a>
+        <div class="step-name">Upload Files</div>
+    </div>
+    <div class="stepper-item completed">
+      <a href="<%= selectanalyses_path %>"style="text-decoration: none; color: white">
+        <div class="step-counter">2</div>
+      </a>
+      <div class="step-name">Select Analyses</div>
+    </div>
+    <div class="stepper-item active">
+      <div class="step-counter">3</div>
+      <a href="<%= review_path %>"style="text-decoration: none; color: white"> </a>
+      <div class="step-name">Review</div>
+    </div>
+    <div class="stepper-item">
+      <div class="step-counter">4</div>
+      <div class="step-name">Submit</div>
+    </div>
+  </div>
+
+      <% content_for :title, "Parameters page" %>
+      <%= form_with url: '/generate', method: :post do |form| %>
+      <h1>Review and Submit</h1>
+      <p>Please verify that your details are correct before submitting. When you click "Start My Job," you will receive an email confirming your submission.</p>
+      <div class="general-white-block">
+
+        <h2>Email</h2>
+        <p><%= @user.email %></p>
+
+        <h2>Data Files</h2>
+        <% @data_file_names.each do |data_file| %>
+          <p><%= data_file %></p>
+        <% end %>
+        <%= link_to 'Edit', upload_path, class: 'edit-button' %>
+
+
+        <h2>Mapping Files</h2>
+        <% @mapping_file_names.each do |mapping_file_path| %>
+          <p><%= mapping_file_path %></p>
+        <% end %>
+        <%= link_to 'Edit', upload_path, class: 'edit-button' %>
+
+        <h2>Analyses To Run</h2>
+        <% if session[:chart_types]==[""] %>
+        <p>No analyses selected.</p>
+      <% else %>
+        <% if session[:chart_types].include?('fit_stats') %>
+          <p>Fit Statistics</p>
+        <% end %>
+        <% if session[:chart_types].include?('raw_data') %>
+          <p>Raw Data Plots (Per Well)</p>
+        <% end %>
+        <% if session[:chart_types].include?('compare-parameters') %>
+          <% if session[:subsetoptions].present? %>
+            <p>Growth will be compared by <%= session[:column] %> and subset on <%= session[:subsetoptions] %></p>
+          <% else %>
+            <p>Growth will be compared by <%= session[:column] %>. </p>
+          <% end %>
+        <% end %>
+      <% end %>
+      
+        <%= link_to 'Edit', selectanalyses_path, class: 'edit-button' %>
+
+        <h2>Pool Replicates: Selected Options</h2>
+        <% if session[:chart_types].include?('fit_stats') && session[:pool_replicates] == "yes" && !session[:pool_options].empty? %>
+          <p>For fit statistics, replicates will be pooled by <%= session[:pool_options] %></p>
+        <% elsif session[:chart_types].include?('fit_stats') && session[:pool_replicates] == "no" %>
+          <p>For fit statistics, no pooling will be used.</p>
+        <% elsif !session[:chart_types].include?('fit_stats') %>
+        <p>N/A (Fit statistics not requested)</p>
+        <% end %>
+        <%= link_to 'Edit', selectanalyses_path, class: 'edit-button' %>
+
+        <h2>Compare Growth: Selected Options</h2>
+        <% if session[:chart_types].include?('compare-parameters') && session[:subsetoptions].present?%>
+          <p>Growth will be compared by <%= session[:column] %> and subset on <%= session[:subsetoptions] %></p>
+          <% elsif session[:chart_types].include?('compare-parameters') && !session[:subsetoptions].present?%>
+          <p>Growth will be compared by <%= session[:column] %>. </p>
+          <% elsif !session[:chart_types].include?('compare-parameters')%>
+          <p>N/A (Compare growth not requested)</p>
+        <% end %>
+        <%= link_to 'Edit', selectanalyses_path, class: 'edit-button' %>
+
+        <%= submit_tag 'Start My Job', class: 'analysis-button' %>
+        <p style="margin-top: 10px;"> Note: Submitting may take a few seconds. Please be patient. </p>
+        <% end %>
+      </div>
+    </div>
+    <%= render "layouts/footer" %>
+  </div>
+  <div class="background-space"></div>
+</body>
+</html>

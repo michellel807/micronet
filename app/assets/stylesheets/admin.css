@@ -1,0 +1,158 @@
+/* ...
+*= require_self
+*= require_tree .
+*/
+
+/* for the admin screen */
+.adminscreen{
+  color: white;
+  background-image: linear-gradient(to top, #000750, #405fad);
+
+} 
+.adminscreen h1 {
+  font-size: 50px;
+  margin-top: 20px;
+}
+
+.adminscreen h3 {
+  font-size: 30px;
+  margin-top: 20px;
+  margin: auto;
+}
+.adminscreen p {
+  font-size: 25px;
+}
+
+.background{
+  background-image: linear-gradient(to bottom, #000750, #000750);
+}
+
+.additional-text{
+  font-size: 20px;
+}
+
+.cancel-button {
+  margin: auto;
+  background-color: #fff;
+  padding: 30px;
+  margin-top: 10px;
+  border-radius: 6px;
+  color: white;
+  font-size: 20px;
+  text-decoration: nonse;
+  cursor: pointer;
+  border: none;
+  display: inline-block;
+  text-align: center;
+  width: 100px;
+  border: none;
+  padding: 12px 48px 12px 24px;
+  border-radius: 4px;
+  color: #000750;
+}
+
+.cancel-button:hover {
+  background-color: #405fad;
+  color: white;
+  text-decoration: none;
+}
+
+.option-label {
+  font-size: 30px;
+}
+
+.adminscreen footer{ 
+  background-color: #000750;
+  box-shadow: 0 0 15px 0 rgba(0,0,0,.8) inset;
+}
+
+.adminscreen h1{
+  margin:center;
+  margin-left: 50px;
+}
+
+.login{
+  margin-left: 50px;
+}
+
+.login-button{
+margin-left: 50px;
+background-color: #000750;
+padding: 30px;
+margin-top: 10px;
+margin-bottom: 10px;
+border-radius: 6px;
+color: white;
+font-size: 20px;
+text-decoration: none;
+cursor: pointer;
+border: none;
+display: inline-block;
+text-align: center;
+filter: drop-shadow(3px 3px 4px #b4b4b4);
+width: 90px;
+border: none;
+padding: 12px 48px 12px 24px;
+border-radius: 4px;
+color: #fff;
+}
+
+.logout-button{
+  margin-left: 30px;
+  background-color: #000750;
+  padding: 30px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  color: white;
+  font-size: 20px;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  display: inline-block;
+  text-align: center;
+  filter: drop-shadow(3px 3px 4px #b4b4b4);
+  width: 100px;
+  border: none;
+  padding: 12px 48px 12px 24px;
+  border-radius: 4px;
+  color: #fff;
+  }
+
+  .admin-error{
+    margin-left: 30px;
+    font-size: 20px;
+    font-weight: 200;
+    color: orange;
+  }
+  .admin-error2{
+    font-size: 20px;
+    font-weight: 200;
+    color: orange;
+  }
+  #updateinfo-button {
+    margin: auto;
+    padding: 30px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    color: white;
+    font-size: 20px;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    display: inline-block;
+    text-align: center;
+    width: 300px;
+    border: none;
+    color: #fff;
+  }
+  
+  #updateinfo-button:hover {
+    color: orange;
+    text-decoration: none;
+    }
+
+  #password-section {
+  margin-left: 30px;  }
+  

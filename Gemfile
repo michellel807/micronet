@@ -2,7 +2,12 @@ source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
 ruby "3.2.2"
-
+gem 'bcrypt' #handle password encryption for admin page
+gem 'daemons' #to start delayed jobs automatically
+gem 'delayed_job_active_record' #apparently need this for delayed jobs too
+gem 'delayed_job' #need for delayed jobs to run
+gem 'hashids' #apparently need for hash IDs
+gem 'carrierwave'
 gem 'mini_magick' #to convert PDFs to PNGs
 gem 'activerecord-session_store' #to avoid cookie overflow
 gem 'csv'  # for CSV file processing
@@ -15,6 +20,9 @@ gem "sprockets-rails"
 
 # Use sqlite3 as the database for Active Record
 gem "sqlite3", "~> 1.4"
+
+# Use postgresql as the database for Active Record
+gem "pg", "~> 1.3"
 
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", "~> 5.0"
@@ -44,7 +52,7 @@ gem "jbuilder"
 gem "tzinfo-data", platforms: %i[ mingw mswin x64_mingw jruby ]
 
 # Reduces boot times through caching; required in config/boot.rb
-gem "bootsnap", require: false
+# gem "bootsnap", require: false
 
 # Use Sass to process CSS
 # gem "sassc-rails"
@@ -60,7 +68,7 @@ end
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
-
+  gem "byebug"
   # Add speed badges [https://github.com/MiniProfiler/rack-mini-profiler]
   # gem "rack-mini-profiler"
 

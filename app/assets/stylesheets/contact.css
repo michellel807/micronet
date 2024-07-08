@@ -1,0 +1,73 @@
+/* ...
+*= require_self
+*= require_tree .
+*/
+
+/* for the contact screen */
+* {
+  font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
+  font-weight: 300;
+}
+.contact{
+  color: white;
+  background-image: linear-gradient(to top, #000750, #405fad);
+
+} 
+.contact h1 {
+  font-size: 50px;
+  margin-top: 20px;
+}
+
+.contact h3 {
+  font-size: 30px;
+  margin-top: 20px;
+  margin: auto;
+}
+.contact p {
+  font-size: 25px;
+}
+
+.contact label {
+  font-size: 30px;
+}
+
+.background{
+  background-image: linear-gradient(to bottom, #000750, #000750);
+}
+
+.analysis-button {
+  background-color: #000750;
+  padding: 5px 15px;
+  border-radius: 6px;
+  color: white;
+  font-size: 50px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  display: inline-block;
+  text-align: center;
+  align-self: center;
+  filter: drop-shadow(3px 3px 4px #b4b4b4);
+}
+
+.analysis-button:hover {
+  background-color: #405fad;
+  color: white;
+  text-decoration: none;
+}
+
+.contact footer{
+  background-color: #000750;
+  box-shadow: 0 0 15px 0 rgba(0,0,0,.8) inset;
+}
+.general-white-block {
+  padding: 20px;
+  border: 1px solid #ddd;
+  width: 80%; /* Adjust the width as per your requirement */
+  height: 10%; /* Adjust the maximum height as per your requirement */
+  overflow: auto; /* Add scrollbars if the content exceeds the maximum height */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}

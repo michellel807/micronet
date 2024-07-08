@@ -93,8 +93,8 @@ class HypothesisTest(object):
         if not os.path.exists(dir_path): os.mkdir(dir_path)      
 
         # running model on transformed results and recording results
-        file_path_key = assembleFullName(dir_path,'',file_name,'key','.txt')
-        file_path_input = assembleFullName(dir_path,'',file_name,'input','.txt')
+        file_path_key = assembleFullName(dir_path,'',file_name,'key','.csv')
+        file_path_input = assembleFullName(dir_path,'',file_name,'input','.csv')
 
         paths_dict={}
 
@@ -254,7 +254,7 @@ class HypothesisTest(object):
         plate.logData(to_do=self.args.log_transform)
         plate.subtractBaseline(to_do=True,poly=getValue('PolyFit'),groupby=list(self.non_time_varbs))
         plate.dropFlaggedWells(to_do=True)
-        plate.key.to_csv(self.paths_dict['key'],sep='\t',header=True,index=True)  # save model results
+        plate.key.to_csv(self.paths_dict['key'],sep=',',header=True,index=True)  # save model results
         self.plate = plate
         self.ntimepoints = plate.time.shape[0]
 
@@ -297,7 +297,7 @@ class HypothesisTest(object):
         data = data.drop(labels=drop_idx,axis=0)
         data = data.drop(['Subset'],axis=1)
 
-        if save_path: data.to_csv(save_path,sep='\t',header=True,index=True)
+        if save_path: data.to_csv(save_path,sep=',',header=True,index=True)
 
         # reduce dimensionality
         data = data.reindex(['OD']+variables,axis=1)
@@ -540,17 +540,17 @@ class HypothesisTest(object):
             df_params = prettyifyParameterReport(df_params,variable,confidence)
             df_params = articulateParameters(df_params,axis=0)
 
-        summ_path = assembleFullName(dir_path,'',file_name,'params','.txt')
-        diux_path = assembleFullName(dir_path,'',file_name,'diauxie','.txt')
+        summ_path = assembleFullName(dir_path,'',file_name,'params','.csv')
+        diux_path = assembleFullName(dir_path,'',file_name,'diauxie','.csv')
 
-        #plate_cond.to_csv(file_path,sep='\t',header=True,index=True)
-        df_params.to_csv(summ_path,sep='\t',header=True,index=posterior)
+        #plate_cond.to_csv(file_path,sep=',',header=True,index=True)
+        df_params.to_csv(summ_path,sep=',',header=True,index=posterior)
         if df_diauxie.shape[0]>0:
-            df_diauxie.to_csv(diux_path,sep='\t',header=True,index=False)
+            df_diauxie.to_csv(diux_path,sep=',',header=True,index=False)
 
         if save_latent:
-            file_path = assembleFullName(dir_path,'',file_name,'output','.txt')
-            x_out.to_csv(file_path,sep='\t',header=True,index=True)
+            file_path = assembleFullName(dir_path,'',file_name,'output','.csv')
+            x_out.to_csv(file_path,sep=',',header=True,index=True)
 
 
     def computeFullDifference(self):
@@ -648,7 +648,7 @@ class HypothesisTest(object):
         file_name = self.paths_dict['filename']      
         if save_latent:
             file_path = assembleFullName(dir_path,'',file_name,'func_diff','.txt')
-            df.to_csv(file_path,sep='\t',header=True,index=True)
+            df.to_csv(file_path,sep=',',header=True,index=True)
 
 
     def plotPredictions(self):
@@ -859,7 +859,7 @@ class HypothesisTest(object):
 
         file_path = assembleFullName(dir_path,'',file_name,'log','.txt')
         self.compactReport = oneLineRport(**report_args)
-        self.compactReport.to_csv(file_path,sep='\t',header=True,index=None)
+        self.compactReport.to_csv(file_path,sep=',',header=True,index=None)
 
         # save report of data
         file_path = assembleFullName(dir_path,'',file_name,'report','.txt')

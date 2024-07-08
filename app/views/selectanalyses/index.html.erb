@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Parameter page</title>
+    <%= stylesheet_link_tag 'selectanalyses' %>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  </head>
+
+<body>
+  <div class="selectanalyses">
+    <%= render "layouts/header" %>
+
+    <div class="column skinny">
+      <div class="stepper-wrapper">
+        <div class="stepper-item completed">
+          <a href="<%= upload_path %>" style="text-decoration: none; color: white"> 
+            <div class="step-counter">1</div>
+            <div class="step-name">Upload Files</div>
+          </a>
+        </div>
+        <div class="stepper-item active">
+          <a href="<%= selectanalyses_path %>">
+            <div class="step-counter">2</div>
+          </a>
+          <div class="step-name">Select Analyses</div>
+        </div>
+        <div class="stepper-item">
+          <div class="step-counter">3</div>
+          <div class="step-name">Review</div>
+        </div>
+        <div class="stepper-item">
+          <div class="step-counter">4</div>
+          <div class="step-name">Submit</div>
+        </div>
+      </div>
+
+      <% content_for :title, "Parameters page" %>
+      <h1> Select Analyses </h1>
+      <p>Please select which results you would like to generate. For more details on each analysis, please see the "Resources" tab.</p>
+      <%= form_with url: '/review', method: :post do |form| %>
+        <div class="general-white-block">
+          <label>
+              <%= check_box_tag 'chart_types[]', 'raw_data', @selected_chart_types.include?('raw_data') %>
+              Raw Data Plot (Per Well)
+              <p> This analysis will generate a growth curve for each well in the experimental design individually. </p>
+          </label>
+        </div>
+        <div class="general-white-block">
+          <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
+            <%= check_box_tag 'chart_types[]', 'fit_stats', @selected_chart_types.include?('fit_stats') %>
+            Fit Statistics
+            <p> This analysis summarizes and models growth curves for your data, generating 5 commonly-used metrics as output: AUC (Area Under Curve), Growth Rate, Carrying Capacity, Lag Time, and Doubling Time. </p>
+          </label>
+
+          <div class="radio-container" style="display: none;">
+            <h2> Pool Replicates? </h2>
+            <label class="option-label">
+              <input type="radio" name="pool_replicates" value="no" checked>
+              No
+            </label>
+
+            <label class="option-label">
+              <input type="radio" name="pool_replicates" value="yes">
+              Yes
+            </label>
+          </div>
+
+          <div class="checkbox-container">
+            <div id="checkbox-content">
+            <h3 id="checkbox-header"></h3>
+            <div class="additional-text">
+              If necessary, please select the variable(s) to pool on. If selecting multiple variables, MicroNet will pool based on all unique combinations of the selected variables and model them jointly. For more information on this process, please <a href="http://firasmidani.github.io/amiga/doc/pooling.html">click here</a>.
+            </div>
+            <% @pool_options.each do |option| %>
+              <% next if option.downcase.include?('well') %>
+              <label>
+                <input type="checkbox" name="pool_options[]" value="<%= option %>">
+                  <%= option %>
+              </label>
+            <% end %>
+          </div>
+        </div>
+
+    </div>
+
+    <div class="general-white-block">
+      <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
+        <%= check_box_tag 'chart_types[]', 'compare-parameters', @selected_chart_types.include?('compare-parameters') %>
+        Compare Growth
+        <p> Note: Please <a href="/resources/#test-differential-growth">click here</a>  for more information about this test if it is your first time using it. </p>
+      </label>
+
+      <div class="compare-parameters-container" style="display: none;">
+        <p>Choose variable to compare on:</p>
+        <% if @mapping_file_paths.present? %>
+          <%= hidden_field_tag 'file_data', @file_data_json %>
+          <%= select_tag 'column', options_for_select(@columns), prompt: 'Select a column', id: 'column' %>
+        <% end %>
+      </div>     
+
+      <div class="compare-options-container" style="display: none;">
+        <p>Choose two to compare:</p>
+        <%= select_tag 'condition1', '', prompt: 'Select a condition' %>
+        <%= select_tag 'condition2', '', prompt: 'Select another condition' %>
+      </div>
+    </div>
+    <div id="subset-dropdowns"></div>
+    <%= hidden_field_tag 'chart_types[]', @selected_chart_types %>
+  </div>
+
+  <div class="general-white-block">
+    <%= submit_tag 'Review', class: 'analysis-button', id: 'review-button' %>
+    <% end %>
+  </div>
+
+ <%= render "layouts/footer" %>
+
+
+  <script>
+  $(document).ready(function() {
+    $('#review-button').on('click', function(e) {
+        var poolReplicates = $("input[name='pool_replicates']:checked").val();
+        var selectedOptions = $("input[name='pool_options[]']:checked").length;
+        
+        if (poolReplicates === 'yes' && selectedOptions === 0) {
+          e.preventDefault();
+          alert("Please select at least one parameter to pool on for the Fit Statistics analysis, or select 'No'.");
+        }
+      });
+    $("input[name='chart_types[]'][value='compare-parameters']").on("change", function() {
+      if ($(this).is(":checked")) {
+        $(".compare-parameters-container").show();
+      } else {
+        $(".compare-parameters-container").hide();
+      }
+    });
+
+    $("input[name='chart_types[]'][value='fit_stats']").on("change", function() {
+      if ($(this).is(":checked")) {
+        $(".radio-container").show();
+        $("input[name='pool_replicates'][value='no']").prop("checked", true);
+      } else {
+        $(".radio-container").hide();
+      }
+    });
+
+    $("#column").on("change", function() {
+      var column = $(this).val();
+      var options = <%= raw @data_file_paths.to_json %>;
+
+      if (column) {
+        var conditions = [];
+        var fileData = JSON.parse($("#file_data").val());
+        var rows = fileData.trim().split("\n");
+        var header = rows.shift().split(",");
+        var columnIndex = header.indexOf(column);
+
+        rows.forEach(function(row) {
+          var values = row.split(",");
+          var condition = values[columnIndex];
+          if (condition && !conditions.includes(condition) && !column.toLowerCase().includes("well")) {
+            conditions.push(condition);
+          }
+        });
+
+        conditions.forEach(function(condition) {
+          $("<option />").text(condition).appendTo("#condition1");
+          $("<option />").text(condition).appendTo("#condition2");
+        });
+
+        $(".compare-options-container").show();
+
+        // Generate subset dropdowns for remaining columns
+        var remainingColumns = header.filter(function(col) {
+          return col !== column && !col.toLowerCase().includes("well");
+        });
+
+        var subsetDropdowns = $("#subset-dropdowns");
+        subsetDropdowns.empty();
+
+        $("<p />").text("Subset data so conditions can be directly compared (This is optional: choose as many subsettings as you wish):").appendTo(subsetDropdowns);
+
+        remainingColumns.forEach(function(col) {
+          var col = col.replace(/(\r\n|\n|\r)/gm, "");
+          var select = $("<select />").attr("name", col);
+          $("<option />").text("Select a value for " + col).appendTo(select);
+
+          rows.forEach(function(row) {
+            var values = row.split(",");
+            var value = values[header.indexOf(col)];
+
+            if (value && select.find("option[value='" + value + "']").length === 0) {
+              $("<option />").text(value).val(value).appendTo(select);
+            }
+          });
+
+          select.appendTo(subsetDropdowns);
+        });
+      } else {
+        $(".compare-options-container").hide();
+        $("#subset-dropdowns").empty();
+      }
+    });
+
+    $("#condition1, #condition2").on("change", function() {
+      var selectedConditions = [];
+      selectedConditions.push($("#condition1").val());
+      selectedConditions.push($("#condition2").val());
+
+      // Remove the selected options from the other select elements
+    });
+
+  $('#review-button').on('click', function(e) {
+  var compareParametersChecked = $("input[name='chart_types[]'][value='compare-parameters']").is(":checked");
+  var columnSelected = $("#column").val();
+  var condition1Selected = $("#condition1").val();
+  var condition2Selected = $("#condition2").val();
+
+  if (compareParametersChecked && (!columnSelected || !condition1Selected || !condition2Selected)) {
+    e.preventDefault();
+    alert("Please select a variable and conditions to compare on for the 'Compare Growth' analysis.");
+  } else if (poolReplicates === 'yes' && selectedOptions === 0) {
+    e.preventDefault();
+    alert("Please select at least one parameter to pool on for the Fit Statistics analysis, or select 'No'.");
+  }
+});
+
+
+    // Hide Fit Stats options initially
+    $(".checkbox-container").hide();
+
+    // Handle "No" and "Yes" radio button change events
+    $("input[name='pool_replicates']").on("change", function() {
+      if ($(this).val() === "yes") {
+        $(".checkbox-container").show();
+      } else {
+        $(".checkbox-container").hide();
+        clearCheckedOptions();
+      }
+    });
+
+    function clearCheckedOptions() {
+      $("input[name='pool_options[]']").prop("checked", false);
+    }
+  });
+</script>
+
+</body>
+</html> 

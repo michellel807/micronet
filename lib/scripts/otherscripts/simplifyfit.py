@@ -1,0 +1,38 @@
+import sys
+import pandas as pd
+
+# Check if the input file argument is provided
+if len(sys.argv) < 2:
+    print("Please provide the input file name as an argument.")
+    sys.exit(1)
+
+# Get the input file name from the command-line argument
+input_file = sys.argv[1]
+
+# Specify the columns to drop
+columns_to_drop = ['OD_Baseline', 'OD_Min', 'OD_Max', 'OD_Emp_AUC', 'Fold_Change', 
+'OD_Offset', 'auc_log', 'k_log', 'death_lin', 'death_log', 'dr', 'lagP', 't_gr', 't_dr', 't_k', 
+'diauxie','MSE','K_Error > 20%']
+
+# Read the input file into a DataFrame
+df = pd.read_csv(input_file, delimiter=',') 
+
+# Drop the specified columns if they exist
+columns_to_drop_existing = [col for col in columns_to_drop if col in df.columns]
+df = df.drop(columns=columns_to_drop_existing)
+
+# Rename the columns
+df = df.rename(columns={
+    'auc_lin': 'AUC in units of OD',
+    'gr': 'Growth Rate',
+    'k_lin': 'Linear Carrying Capacity in units of OD',
+    'lagC': 'Lag Time',
+    'td': 'Doubling Time'
+})
+
+# Create the output file name by removing the '.txt' extension from the input file
+output_file = input_file[:-4] + "_modified.csv"
+
+# Save the modified DataFrame to a new file  
+df.to_csv(output_file, sep=',', index=False)
+

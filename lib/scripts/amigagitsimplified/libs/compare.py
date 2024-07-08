@@ -45,7 +45,7 @@ def main(args):
 def save(args,df):
 
 	df = articulateParameters(df,axis=0)
-	df.to_csv('{}.txt'.format(args.output),sep='\t',header=False,index=True)
+	df.to_csv('{}.csv'.format(args.output),sep=',',header=False,index=True)
 
 
 def read(args):
@@ -53,7 +53,7 @@ def read(args):
 	ls_df = []
 
 	for ii in args.input:
-		ls_df.append(pd.read_csv(ii,sep='\t',header=0,index_col=None))
+		ls_df.append(pd.read_csv(ii,sep=',',header=0,index_col=None))
 
 	df = pd.concat(ls_df,sort=False).reset_index(drop=True)
 

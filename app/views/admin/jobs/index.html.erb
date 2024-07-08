@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin page</title>
+  <%= stylesheet_link_tag 'admin' %>
+  <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+  <%= javascript_include_tag 'application', 'data-turbolinks-track': 'reload' %>
+  <%= csrf_meta_tags %>
+
+</head>
+<body>
+  <div class="adminscreen">
+    <%= render "layouts/header" %>
+    <% @jobs = @jobs.to_a.reject { |job| job.status == 'Completed' } %>
+
+    <h1>Currently Running Jobs</h1>
+    <ul>
+      <% @jobs.each do |job| %>
+        <%= "User: #{job.user_id} | "  %>
+        <%= "Job: #{job.id} | " %>
+        <%= "Status: #{job.status} | " %>
+        <%= "Start Time: #{job.start_time} | " %>
+        <% if job.admin_can_manage_jobs?(current_admin) %>
+        <%= button_to 'Cancel', cancel_admin_job_path(job), method: :patch, class: 'cancel-button', 'data-confirm-message': 'Are you sure you want to cancel this job?' %>
+        <% end %>
+    <% end %>
+  </ul>
+
+  <p id="updateinfo-button">Update username/password </p>
+
+  <div id="password-section" style="display: none;">
+  <%= form_tag(update_admin_credentials_path, method: :patch) do %>
+    <label for="current_password">Current Password:</label>
+    <%= password_field_tag :current_password %>
+
+    <label for="new_username">New Username:</label>
+    <%= text_field_tag :new_username %>s
+
+    <label for="new_password">New Password:</label>
+    <%= password_field_tag :new_password %>
+
+    <%= submit_tag 'Update Credentials' %>
+    <% if flash.now[:error] %>
+
+  <% end %>
+
+</div>
+<div class="admin-error">
+<%= flash.now[:error] %>
+</div>
+<% end %>
+
+<% if flash.now[:success] %>
+<div class="admin-error">
+<%= flash.now[:success] %>
+</div>
+<% end %>
+
+  <%= button_to "Logout", admin_logout_path, method: :delete, data: { confirm: "Are you sure you want to logout?" }, id: "logout-button", class: "logout-button"%>
+  </div>
+  <%= render "layouts/footer" %>
+</body>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  var cancelButton = document.querySelector('.cancel-button');
+  cancelButton.addEventListener('click', function(event) {
+    event.preventDefault();
+    var confirmation = confirm(this.dataset.confirmMessage);
+    if (confirmation) {
+      var form = this.closest('form');
+      form.submit(); // Submit the form
+    }
+  });
+
+  var navLinks = document.querySelectorAll('nav a, .home_link');
+  navLinks.forEach(function(link) {
+    link.addEventListener('click', function(event) {
+      event.preventDefault();
+      var confirmation = confirm('Please log out before navigating away from the admin page');
+      if (confirmation) {
+        if (this.href === 'https://genome.duke.edu/') {
+          window.open(this.href, '_blank'); // Open the external link in a new tab
+        }
+      }
+    });
+  });
+
+
+});
+window.addEventListener('load', function () {
+  const welcomeButton = document.getElementById('updateinfo-button');
+  console.log("welcomeButton",welcomeButton)
+  const passwordSection = document.getElementById('password-section');
+
+  welcomeButton.addEventListener('click', function() {
+    passwordSection.style.display = (passwordSection.style.display === 'none') ? 'block' : 'none';
+  });
+});
+</script>
+
+</html>
+
