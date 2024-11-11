@@ -1,7 +1,7 @@
 include:
-  - project: 'essweb/gitlab-ci-base'
+  - project: "essweb/gitlab-ci-base"
     ref: main
-    file: '/ci-base-template.yml'
+    file: "/ci-base-template.yml"
 
 ##### COMMON ENV #####
 .common_env:
@@ -13,7 +13,7 @@ include:
 ##### TEST ENV #####
 .test_env:
   only:
-    - okd4
+    - main
   environment:
     url: https://micronet-test.oit.duke.edu
     name: test
@@ -22,7 +22,7 @@ include:
     K8S_NAMESPACE: "essweb-micronet-app-test"
     VAULT_OKD_ROLE: "ess-web-micronet_app_test_okd4"
     VAULT_SHIB_SECRET_PATH: "ess-web/kv/data/apps/micronet_app/shib/acceptance"
-    IP_WHITELIST: "10.128.0.0/9-10.200.0.0/23-10.200.2.0/24-152.16.0.0/16-152.3.0.0/16-198.71.44.104/29-67.159.64.0/18"
+    # IP_WHITELIST: "10.128.0.0/9-10.200.0.0/23-10.200.2.0/24-152.16.0.0/16-152.3.0.0/16-198.71.44.104/29-67.159.64.0/18"
   extends:
     - .common_env
 
@@ -40,3 +40,4 @@ deploy_shib_apache_image_test:
   extends:
     - .test_env
     - .deploy_shib_apache
+
