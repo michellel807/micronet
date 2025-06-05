@@ -68,7 +68,8 @@ def assembleMappings(data,mapping_path,meta_path=None,save=False,verbose=False):
     list_filebases = data.keys()
 
     # list all potential mapping file paths
-    list_mapping_files = [assemblePath(mapping_path,ii,'.csv') for ii in list_filebases]
+    # TODO: incorrect mapping file path/name
+    list_mapping_files = [assemblePath(mapping_path, "examplemapping1",'.csv') for ii in list_filebases] # "examplemapping1"
 
     # read meta.txt and list all plates described by it
     meta_df, meta_df_plates = checkMetaText(meta_path,verbose=verbose)   
@@ -171,7 +172,7 @@ def checkMetaText(filepath,verbose=False):
 
     if not exists:
         df_meta = pd.DataFrame
-        df_meta_plates = [];
+        df_meta_plates = []
     else:
         df_meta = pd.read_csv(filepath,sep=',',header=0,index_col=None,dtype={'Plate_ID':str,'Isolate':str})
 
