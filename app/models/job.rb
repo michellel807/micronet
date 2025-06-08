@@ -56,20 +56,11 @@ class Job < ApplicationRecord
 
       if @selected_chart_types.include?('compare-parameters')
         Python.exec("lib/scripts/amigagitsimplified/amiga.py test -i private/uploads/userexpt -s #{finalsubset} -y #{hypothesis} -o 'compare-parameters'")
-        
-        # Get matching files
-        compare_params_txts = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'compare-parameters', '*report.txt'))
-        compare_params_pdfs = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'compare-parameters', '*.pdf'))
-
-        # Raise if no output files found
-        if compare_params_txts.empty? && compare_params_pdfs.empty?
-          raise "The compare parameters analysis failed"
-        end
-
-        # Set instance variables
-        @compare_params_paths = compare_params_txts
-        @compare_params_pdf_paths = compare_params_pdfs
-
+        compare_params_paths = Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters', '*report.txt')
+        compare_params_pdf_paths = Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters','*pdf')
+        raise "The compare parameters analysis failed" if !File.exist?(compare_params_pdf_paths) && !File.exist?(compare_params_paths)
+        @compare_params_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters', '*report.txt'))
+        @compare_params_pdf_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters','*pdf'))
         logger.debug("done with compare-parameters ...")
       end
       save # Save the instance of Job

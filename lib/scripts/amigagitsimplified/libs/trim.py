@@ -143,8 +143,7 @@ def trimMergeData(data_dict,master_mapping,nskip=0,verbose=False):
     for pid,data in data_dict.items():
 
         # grab plate-specific samples
-        # mapping_df = master_mapping[master_mapping.Plate_ID==pid] # TODO: incorrect Plate ID
-        mapping_df = master_mapping[master_mapping.Plate_ID=='2020-06-22-R1']
+        mapping_df = master_mapping[master_mapping.Plate_ID==pid]
         
         # if no plate-specific samples are included in master_mapping, skip
         if mapping_df.shape[0]==0:
@@ -169,7 +168,6 @@ def trimMergeData(data_dict,master_mapping,nskip=0,verbose=False):
     #     will take this output and merge it with third dataFrame in list, and so on
     
     try: 
-        print("Reducing")
         master_data = reduce(lambda ll,rr: pd.merge(ll,rr,on='Time',how='outer'),new_data_dict.values())
     except TypeError:
         msg = "\nFATAL USER ERROR: AMiGA could not subset data based on user input. "
