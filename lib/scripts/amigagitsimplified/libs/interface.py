@@ -95,7 +95,7 @@ def initializeParameter(filepath,arg,sep=',',integerize=False):
     elif len(arg)>0: param_dict = checkParameterCommand(arg,sep=sep)
 
     # otherwise, initialize empty dictionary
-    else: param_dict = {};
+    else: param_dict = {}
 
     # if argument parameters should be converted to integers (e.g. time interval)
     if integerize and isinstance(param_dict,dict): 
@@ -123,7 +123,7 @@ def checkParameterCommand(command,sep=','):
     if command is None: return None
 
     # strip flanking semicolons and whitespaces then split by semicolons 
-    lines = command.strip('; ').split(';');
+    lines = command.strip('; ').split(';')
 
     # get names of variables (left of semicolons)
     lines_keys = [ii.split(':')[0].strip() for ii in lines]
