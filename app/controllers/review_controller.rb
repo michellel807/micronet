@@ -4,10 +4,14 @@ class ReviewController < ApplicationController
   def index
     @job = Job.find(session[:current_user_id])
     @user = User.find(@job.user_id)
+
     @data_file_paths = session[:data_file_paths]
     @mapping_file_paths = session[:mapping_file_paths]
-    @data_file_names = @data_file_paths.map { |file_path| File.basename(file_path) }
-    @mapping_file_names = @mapping_file_paths.map { |file_path| File.basename(file_path) }
+    @usr_data_file_paths = session[:usr_data_file_paths]
+    @usr_mapping_file_paths = session[:usr_mapping_file_paths]
+    
+    @usr_data_file_names = @usr_data_file_paths.map { |file_path| File.basename(file_path) }
+    @usr_mapping_file_names = @usr_mapping_file_paths.map { |file_path| File.basename(file_path) }
 
     if @mapping_file_paths.present?
       first_file_path = @mapping_file_paths.first

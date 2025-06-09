@@ -207,6 +207,8 @@ def mapFiles(directory):
     files  = {}
 
     # only single file of interest in 'mapping' sub-directory
+
+    # Strange: shouldn't fix the path to the mapping directory?
     files['meta'] = '{}{}{}.csv'.format(directory['mapping'],os.sep,'meta')
 
     # format paths for files in the 'parameter' sub-directory

@@ -25,45 +25,50 @@ def index
   @selected_chart_types = [] # Initialize the selected_chart_types variable
   @charts_data = {}
   DirectoryInitializer.create_upload_directory()
-  @data_file_paths = [] # Initialize @data_file_paths as an empty array
-  @data_file_paths = session[:data_file_paths] if session[:data_file_paths].present?
-  session[:data_file_paths] = @data_file_paths
-  @mapping_file_paths = session[:mapping_file_paths] || [] # Assign an empty array if session value is nil
-  session[:mapping_file_paths] ||= @mapping_file_paths # Set the session value if it's nil
-  @data_file_names = @data_file_paths.map { |file_path| File.basename(file_path) }
-  @mapping_file_names = @mapping_file_paths.map { |file_path| File.basename(file_path) }
+
+  @data_file_paths = session[:data_file_paths] || []     # Assign an empty array if session value is nil
+  session[:data_file_paths] = @data_file_paths           # Set the session value if it's nil
+  @mapping_file_paths = session[:mapping_file_paths] || [] 
+  session[:mapping_file_paths] ||= @mapping_file_paths 
+  @usr_data_file_paths = session[:usr_data_file_paths] || []
+  session[:usr_data_file_paths] ||= @usr_data_file_paths
+  @usr_mapping_file_paths = session[:usr_mapping_file_paths] || []
+  session[:usr_mapping_file_paths] ||= @usr_mapping_file_paths
+
+  @usr_data_file_names = @usr_data_file_paths.map { |file_path| File.basename(file_path) }
+  @usr_mapping_file_names = @usr_mapping_file_paths.map { |file_path| File.basename(file_path) }
 end
 
 
 def upload
   @data_file_paths = []
+  @usr_data_file_paths = []
   @mapping_file_paths = []
+  @usr_mapping_file_paths = []
 
   data_files = Array(params[:data_files])
   mapping_files = Array(params[:mapping_files])
 
-  # Handle data files
-  data_files.each do |file|
-    data_file = DataFile.new(file)
-    @data_file_paths << data_file.file_path.to_s # Add the file path to the instance variable
+  data_files.zip(mapping_files).each do |data_file_input, mapping_file_input|
+    data_file = DataFile.new(data_file_input)
+    mapping_file = MappingFile.new(mapping_file_input, data_file_input.original_filename)
+
+    @usr_data_file_paths << data_file_input.original_filename.to_s
+    @usr_mapping_file_paths << mapping_file_input.original_filename.to_s
+    @data_file_paths << data_file.file_path.to_s
+    @mapping_file_paths << mapping_file.file_path.to_s
 
     unless data_file.valid?
-      flash.alert = data_file.error_message # Use flash instead of flash.now
-      @mapping_file_paths = session[:mapping_file_paths] || [] # Reset mapping file paths
-      @data_file_paths = [] # Clear data file paths
+      flash.alert = data_file.error_message
+      @mapping_file_paths = session[:mapping_file_paths] || []
+      @data_file_paths = [] # Clear invalid data file paths
       return render :index
     end
-  end
-
-  # Handle mapping files
-  mapping_files.each do |file|
-    mapping_file = MappingFile.new(file)
-    @mapping_file_paths << mapping_file.file_path.to_s # Add the file path to the instance variable
 
     unless mapping_file.valid?
-      flash.alert = mapping_file.error_message # Use flash instead of flash.now
-      @mapping_file_paths = [] # Clear mapping file paths
-      @data_file_paths = session[:data_file_paths] || [] # Reset data file paths
+      flash.alert = mapping_file.error_message
+      @mapping_file_paths = [] # Clear invalid mapping file paths
+      @data_file_paths = session[:data_file_paths] || []
       return render :index
     end
   end
@@ -78,11 +83,15 @@ def upload
       # If the Python script ran successfully, set the session variables
       session[:data_file_paths] = @data_file_paths
       session[:mapping_file_paths] = @mapping_file_paths
+      session[:usr_data_file_paths] = @usr_data_file_paths
+      session[:usr_mapping_file_paths] = @usr_mapping_file_paths
       flash.notice = "Files uploaded successfully." # Use flash instead of flash.now
     else
       # If the Python script failed, clear the session variables
       session[:data_file_paths] = nil
       session[:mapping_file_paths] = nil
+      session[:usr_data_file_paths] = nil
+      session[:usr_mapping_file_paths] = nil
       flash.alert = "Files do not match. Please check your files and try again." # Use flash instead of flash.now
     end
   end
