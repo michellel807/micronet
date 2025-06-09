@@ -1,11 +1,12 @@
 class MappingFile
   attr_reader :file_path, :error_message
 
-  def initialize(file)
+  def initialize(file, data_file_name)
     @file = file
     valid_extensions = ['.txt', '.asc', '.tsv', '.csv']
     if valid_extensions.include?(File.extname(file.original_filename))
-      @file_path = save_file(file)
+      print("Valid mapping file detected: #{file.original_filename}\n")
+      @file_path = save_file(file, data_file_name)
     else
       @error_message = 'Invalid mapping file format. Please ensure that your mapping file is a .asc, .txt, .tsv, or .csv file and try again.'
     end
@@ -17,7 +18,7 @@ class MappingFile
   
   private
 
-  def save_file(file)
+  def save_file(file, data_file_name)
     directory_path = Rails.root.join('private', 'uploads', 'userexpt', 'mapping')
     FileUtils.mkdir_p(directory_path) unless Dir.exist?(directory_path)
   
@@ -40,7 +41,7 @@ class MappingFile
       end
   
       # Write the CSV data to a new CSV file
-      new_filename = "#{File.basename(original_filename, '.*')}.csv"
+      new_filename = "#{File.basename(data_file_name, '.*')}-mapping.csv"
       csv_file = directory_path.join(new_filename)
   
       CSV.open(csv_file, 'w') do |csv|
