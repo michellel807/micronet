@@ -68,8 +68,7 @@ def assembleMappings(data,mapping_path,meta_path=None,save=False,verbose=False):
     list_filebases = data.keys()
 
     # list all potential mapping file paths
-    # TODO: incorrect mapping file path/name
-    list_mapping_files = [assemblePath(mapping_path, ii+'-mapping','.csv') for ii in list_filebases] # "examplemapping1"
+    list_mapping_files = [assemblePath(mapping_path, ii,'.csv') for ii in list_filebases] # "examplemapping1"
 
     # read meta.txt and list all plates described by it
     meta_df, meta_df_plates = checkMetaText(meta_path,verbose=verbose)

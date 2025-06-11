@@ -6,7 +6,7 @@ class MappingFile
     valid_extensions = ['.txt', '.asc', '.tsv', '.csv']
     if valid_extensions.include?(File.extname(file.original_filename))
       print("Valid mapping file detected: #{file.original_filename}\n")
-      @file_path = save_file(file, data_file_name)
+      @file_path = save_file(file)
     else
       @error_message = 'Invalid mapping file format. Please ensure that your mapping file is a .asc, .txt, .tsv, or .csv file and try again.'
     end
@@ -24,6 +24,7 @@ class MappingFile
   
     original_filename = file.original_filename
     file_extension = File.extname(original_filename)
+    plate_id = ""
   
     if file_extension.downcase == '.txt' || file_extension.downcase == '.asc' || file_extension.downcase == '.tsv'
       csv_data = []
@@ -35,13 +36,12 @@ class MappingFile
           if index == 0
             values[0] = "Well positions"
           end
+          plate_id = values[1]
           csv_data << values
-          
         end
       end
-  
       # Write the CSV data to a new CSV file
-      new_filename = "#{File.basename(data_file_name, '.*')}-mapping.csv"
+      new_filename = "#{File.basename(plate_id, '.*')}.csv"
       csv_file = directory_path.join(new_filename)
   
       CSV.open(csv_file, 'w') do |csv|

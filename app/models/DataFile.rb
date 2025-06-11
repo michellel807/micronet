@@ -3,11 +3,11 @@ require 'csv'
 class DataFile
   attr_reader :file_path, :error_message
 
-  def initialize(file)
+  def initialize(file, mapping_path)
     @file = file
     valid_extensions = ['.txt', '.asc', '.tsv', '.csv']
     if valid_extensions.include?(File.extname(file.original_filename))
-      @file_path = save_file(file)
+      @file_path = save_file(file, mapping_path)
     else
       @error_message = 'Invalid data file format. Please ensure that your data file is a .asc, .txt, .tsv, or .csv file and try again.'
     end
@@ -19,7 +19,7 @@ class DataFile
   
   private
   
-  def save_file(file)
+  def save_file(file, mapping_path)
     directory_path = Rails.root.join('private', 'uploads', 'userexpt', 'data')
     FileUtils.mkdir_p(directory_path) unless Dir.exist?(directory_path)
   
@@ -45,7 +45,7 @@ class DataFile
       end
   
       # Write the CSV data to a new CSV file
-      new_filename = "#{File.basename(original_filename, '.*')}.csv"
+      new_filename = "#{File.basename(mapping_path, '.*')}.csv"
       csv_file = directory_path.join(new_filename)
   
       CSV.open(csv_file, 'w') do |csv|
