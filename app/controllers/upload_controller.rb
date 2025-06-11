@@ -50,8 +50,8 @@ def upload
   mapping_files = Array(params[:mapping_files])
 
   data_files.zip(mapping_files).each do |data_file_input, mapping_file_input|
-    data_file = DataFile.new(data_file_input)
-    mapping_file = MappingFile.new(mapping_file_input, data_file_input.original_filename)
+    mapping_file = MappingFile.new(mapping_file_input)
+    data_file = DataFile.new(data_file_input, mapping_file.file_path.to_s)
 
     @usr_data_file_paths << data_file_input.original_filename.to_s
     @usr_mapping_file_paths << mapping_file_input.original_filename.to_s
