@@ -1,7 +1,7 @@
 class MappingFile
   attr_reader :file_path, :error_message
 
-  def initialize(file, data_file_name)
+  def initialize(file)
     @file = file
     valid_extensions = ['.txt', '.asc', '.tsv', '.csv']
     if valid_extensions.include?(File.extname(file.original_filename))
@@ -18,7 +18,7 @@ class MappingFile
   
   private
 
-  def save_file(file, data_file_name)
+  def save_file(file)
     directory_path = Rails.root.join('private', 'uploads', 'userexpt', 'mapping')
     FileUtils.mkdir_p(directory_path) unless Dir.exist?(directory_path)
   
