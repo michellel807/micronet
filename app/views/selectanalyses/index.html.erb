@@ -152,11 +152,11 @@
         var conditions = [];
         var fileData = JSON.parse($("#file_data").val());
         var rows = fileData.trim().split("\n");
-        var header = rows.shift().split(",");
+        var header = rows.shift().split("\t");
         var columnIndex = header.indexOf(column);
 
         rows.forEach(function(row) {
-          var values = row.split(",");
+          var values = row.split("\t");
           var condition = values[columnIndex];
           if (condition && !conditions.includes(condition) && !column.toLowerCase().includes("well")) {
             conditions.push(condition);
@@ -186,7 +186,7 @@
           $("<option />").text("Select a value for " + col).appendTo(select);
 
           rows.forEach(function(row) {
-            var values = row.split(",");
+            var values = row.split("\t");
             var value = values[header.indexOf(col)];
 
             if (value && select.find("option[value='" + value + "']").length === 0) {

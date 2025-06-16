@@ -15,7 +15,7 @@ columns_to_drop = ['OD_Baseline', 'OD_Min', 'OD_Max', 'OD_Emp_AUC', 'Fold_Change
 'diauxie','MSE','K_Error > 20%']
 
 # Read the input file into a DataFrame
-df = pd.read_csv(input_file, delimiter=',') 
+df = pd.read_csv(input_file, delimiter='\t') 
 
 # Drop the specified columns if they exist
 columns_to_drop_existing = [col for col in columns_to_drop if col in df.columns]
@@ -31,8 +31,8 @@ df = df.rename(columns={
 })
 
 # Create the output file name by removing the '.txt' extension from the input file
-output_file = input_file[:-4] + "_modified.csv"
+output_file = input_file[:-4] + "_modified.txt"
 
 # Save the modified DataFrame to a new file  
-df.to_csv(output_file, sep=',', index=False)
+df.to_csv(output_file, sep='\t', index=False)
 

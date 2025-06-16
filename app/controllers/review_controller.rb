@@ -16,7 +16,7 @@ class ReviewController < ApplicationController
     if @mapping_file_paths.present?
       first_file_path = @mapping_file_paths.first
       file_data = File.read(first_file_path, encoding: 'iso-8859-1:utf-8')
-      @columns = file_data.lines.first.chomp.split(",")
+      @columns = file_data.lines.first.chomp.split("\t")
       @pool_options = @columns.reject { |column| column.downcase.include?('well') }
 
       session[:pool_replicates] = params[:pool_replicates] || []
@@ -26,11 +26,11 @@ class ReviewController < ApplicationController
       session[:email] = params[:email] || ""
       session[:data_files] = params[:data_files] || []
     end
-    subsetoptions = CSV.read(@mapping_file_paths[0], col_sep: ",")[0]
+    subsetoptions = CSV.read(@mapping_file_paths[0], col_sep: "\t")[0]
     subsetoptions.keep_if {|option| params[option] != "Select a value for #{option}" && params[option] !=nil }
     final = {}
     subsetoptions.map{|option| final[option]=params[option]}
-    final = final.map { |key, value| "#{key}:#{value}" }.join(',')
+    final = final.map { |key, value| "#{key}:#{value}" }.join(",")
     @column = params[:column] || 'None'
     @condition1 = params[:condition1]
     @condition2 = params[:condition2]
