@@ -14,14 +14,6 @@ RUN apt-get update && apt-get -y upgrade && \
     gcc \
     ca-certificates \
     ghostscript \
-    python3.11 \
-    python3.11-dev \
-    python3.11-venv \
-    python3-pip \
-    gfortran \
-    libopenblas-dev \
-    liblapack-dev \
-    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/miniconda3/bin:${PATH}"
@@ -42,6 +34,7 @@ ENV PATH="/miniconda3/envs/amigacondaenv/bin:${PATH}"
 RUN sed -i 's|<policy domain="coder" rights="none" pattern="PDF" />||' /etc/ImageMagick-6/policy.xml
 
 ENV RAILS_LOG_TO_STDOUT=1
+
 
 # Copy Gemfile and Gemfile.lock into the image and install dependencies
 COPY Gemfile Gemfile.lock ./
@@ -71,9 +64,6 @@ RUN mkdir -p tmp/pids \
 COPY . /app
 
 RUN SKIP_VAULT=true SKIP_VALIDATION=true SECRET_KEY_BASE=fakeassetbuildersecret bundle exec rake assets:precompile
-
-# Remove any existing server.pid file
-RUN rm -f /app/tmp/pids/server.pid
 
 # Command to run the Rails server
 CMD ["rails", "server", "-b", "0.0.0.0"]
