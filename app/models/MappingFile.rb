@@ -51,8 +51,6 @@ class MappingFile
       end
   
       file_path = txt_file
-  
-      file_path = txt_file
     else
       # If the file doesn't have a .txt or .asc extension, simply copy it to the directory
       file_path = directory_path.join(original_filename)
