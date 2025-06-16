@@ -44,15 +44,15 @@
         <p><%= @user.email %></p>
 
         <h2>Data Files</h2>
-        <% @data_file_names.each do |data_file| %>
+        <% @usr_data_file_names.each do |data_file| %>
           <p><%= data_file %></p>
         <% end %>
         <%= link_to 'Edit', upload_path, class: 'edit-button' %>
 
 
         <h2>Mapping Files</h2>
-        <% @mapping_file_names.each do |mapping_file_path| %>
-          <p><%= mapping_file_path %></p>
+        <% @usr_mapping_file_names.each do |mapping_file| %>
+          <p><%= mapping_file %></p>
         <% end %>
         <%= link_to 'Edit', upload_path, class: 'edit-button' %>
 

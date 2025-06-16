@@ -102,10 +102,10 @@ of the metadata file. Please note that the application will convert the input fi
     </p>
     <div class="upload-notice" style="color: blue; font-weight: 300;">
       <p>
-        <span class="current">Currently uploaded data file(s): <%= @data_file_names %></span>
+        <span class="current">Currently uploaded data file(s): <%= @usr_data_file_names %></span>
       </p>
       <p>
-        <span class="current">Currently uploaded mapping file(s): <%= @mapping_file_names %></span>
+        <span class="current">Currently uploaded mapping file(s): <%= @usr_mapping_file_names %></span>
       </p>
     </div>
   </div>
@@ -118,15 +118,18 @@ of the metadata file. Please note that the application will convert the input fi
     <% if @data_file_paths.present? %>
       <% @data_file_paths.each do |file_path| %>
         <% next unless File.exist?(file_path) %>
-        <% File.foreach(file_path) do |line| %>
-          <table class="fit-stats-table">
+        <table class="fit-stats-table">
+          <% File.foreach(file_path) do |line| %>
             <tr>
-              <% line.split(",").each do |cell| %>
+              <% line.split("\t").each do |cell| %>
                 <td><%= cell %></td>
               <% end %>
             </tr>
-          </table>
-        <% end %>
+            <% if line.include?("H12") %>
+              <% break %>
+            <% end %>
+          <% end %>
+        </table>
       <% end %>
     <%else%>
       <p> No data files to display. </p>
@@ -136,15 +139,15 @@ of the metadata file. Please note that the application will convert the input fi
     <h3 id="mapping-files-header" style="text-align: center; margin-top: 10px; margin-bottom: 10px;">Your Mapping Files</h3>
     <div id="mapping-files-table-container">
       <% if @mapping_file_paths.present? && File.exist?(@mapping_file_paths[0]) %>
-        <% File.foreach(@mapping_file_paths[0]) do |line| %>
-            <table class="fit-stats-table">
+        <table class="fit-stats-table">
+          <% File.foreach(@mapping_file_paths[0]) do |line| %>
               <tr>
-                <% line.split(",").each do |cell| %>
+                <% line.split("\t").each do |cell| %>
                   <td><%= cell %></td>
                 <% end %>
               </tr>
-            </table>
-        <% end %>
+          <% end %>
+        </table>
       <%else%>
         <p> No mapping files to display. </p>
       <%end%>

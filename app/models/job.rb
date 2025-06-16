@@ -35,32 +35,41 @@ class Job < ApplicationRecord
       logger.debug("done with raw_data ...")
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "no"
-        Python.exec("lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt -o fit")
+        system("amiga fit -i private/uploads/userexpt -o fit")
 
         # Check if fit_summary_modified.txt exists
-        fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.csv')
-        Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.csv")
+        fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
+        Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
         raise "The fit statistics analysis failed" unless File.exist?(fit_summary_path)
-        @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.csv'))
+        @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
         logger.debug("done with fit_stats yes ...")
       end
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes"
-        Python.exec("lib/scripts/amigagitsimplified/amiga.py fit -i private/uploads/userexpt --pool-by '#{pool_options_string}' -o fit")
-        Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.csv")
-        fit_stats_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.csv')
+        system("amiga fit -i private/uploads/userexpt --pool-by '#{pool_options_string}' -o fit")
+        Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
+        fit_stats_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
         raise "The fit statistics (pooling requested) analysis failed" if not File.exist?(fit_stats_path)
-        @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.csv'))
+        @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
         logger.debug("done with fit_stats no ...")
       end
 
       if @selected_chart_types.include?('compare-parameters')
-        Python.exec("lib/scripts/amigagitsimplified/amiga.py test -i private/uploads/userexpt -s #{finalsubset} -y #{hypothesis} -o 'compare-parameters'")
-        compare_params_paths = Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters', '*report.txt')
-        compare_params_pdf_paths = Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters','*pdf')
-        raise "The compare parameters analysis failed" if !File.exist?(compare_params_pdf_paths) && !File.exist?(compare_params_paths)
-        @compare_params_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters', '*report.txt'))
-        @compare_params_pdf_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models','compare-parameters','*pdf'))
+        system("amiga test -i private/uploads/userexpt -s #{finalsubset} -y #{hypothesis} -o 'compare-parameters'")
+        
+        # Get matching files
+        compare_params_txts = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'compare-parameters', '*report.txt'))
+        compare_params_pdfs = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'compare-parameters', '*.pdf'))
+
+        # Raise if no output files found
+        if compare_params_txts.empty? && compare_params_pdfs.empty?
+          raise "The compare parameters analysis failed"
+        end
+
+        # Set instance variables
+        @compare_params_paths = compare_params_txts
+        @compare_params_pdf_paths = compare_params_pdfs
+
         logger.debug("done with compare-parameters ...")
       end
       save # Save the instance of Job
