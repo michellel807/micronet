@@ -121,7 +121,7 @@ of the metadata file. Please note that the application will convert the input fi
         <table class="fit-stats-table">
           <% File.foreach(file_path) do |line| %>
             <tr>
-              <% line.split(",").each do |cell| %>
+              <% line.split("\t").each do |cell| %>
                 <td><%= cell %></td>
               <% end %>
             </tr>
@@ -142,7 +142,7 @@ of the metadata file. Please note that the application will convert the input fi
         <table class="fit-stats-table">
           <% File.foreach(@mapping_file_paths[0]) do |line| %>
               <tr>
-                <% line.split(",").each do |cell| %>
+                <% line.split("\t").each do |cell| %>
                   <td><%= cell %></td>
                 <% end %>
               </tr>

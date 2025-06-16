@@ -44,17 +44,17 @@ class DataFile
         end
       end
   
-      # Write the CSV data to a new CSV file
-      new_filename = "#{File.basename(mapping_path, '.*')}.csv"
-      csv_file = directory_path.join(new_filename)
+      # Write the CSV data to a new TXT file
+      new_filename = "#{File.basename(mapping_path, '.*')}.txt"
+      txt_file = directory_path.join(new_filename)
   
-      CSV.open(csv_file, 'w') do |csv|
+      File.open(txt_file, 'w') do |file|
         csv_data.each do |row|
-          csv << row
+          file.puts row.join("\t")
         end
       end
   
-      file_path = csv_file
+      file_path = txt_file
     else
       # If the file doesn't have a .txt or .asc  or .tsv extension, simply copy it to the directory
       file_path = directory_path.join(original_filename)
