@@ -62,3 +62,4 @@ class MappingFile
     txt_file.to_s
   end
 end
+
