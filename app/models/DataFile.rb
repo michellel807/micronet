@@ -6,7 +6,7 @@ class DataFile
   def initialize(file, mapping_path)
     @file = file
     valid_extensions = ['.txt', '.asc', '.tsv', '.csv']
-    if valid_extensions.include?(File.extname(file.original_filename))
+    if valid_extensions.include?(File.extname(file.original_filename).downcase)
       @file_path = save_file(file, mapping_path)
     else
       @error_message = 'Invalid data file format. Please ensure that your data file is a .asc, .txt, .tsv, or .csv file and try again.'
@@ -24,45 +24,35 @@ class DataFile
     FileUtils.mkdir_p(directory_path) unless Dir.exist?(directory_path)
   
     original_filename = file.original_filename
-    file_extension = File.extname(original_filename)
+    file_extension = File.extname(original_filename).downcase
+    csv_data = []
   
-    if file_extension.downcase == '.txt' || file_extension.downcase == '.asc' || file_extension.downcase == '.tsv'
-      csv_data = []
-  
-      File.open(file.path, "r:ISO-8859-1") do |file|
-        file.each_line.with_index do |line, index|
-          # Remove or replace non-ASCII characters
-          new_line = line.encode('UTF-8', 'ISO-8859-1', invalid: :replace, replace: '')
-          cleaned_line = new_line.gsub!(/\x00/, '')
-          # Split the cleaned line using the tab character as the delimiter
-          values = cleaned_line.chomp.split("\t")
-            if index == 0
-              values[0] = "Well positions"
-            end
-    
-            csv_data << values
-        end
+    if file_extension == '.csv'
+      # Parse CSV file and convert to tab-separated format
+      CSV.foreach(file.path, encoding: 'UTF-8') do |row|
+        csv_data << row
       end
-  
-      # Write the CSV data to a new TXT file
-      new_filename = "#{File.basename(mapping_path, '.*')}.txt"
-      txt_file = directory_path.join(new_filename)
-  
-      File.open(txt_file, 'w') do |file|
-        csv_data.each do |row|
-          file.puts row.join("\t")
-        end
-      end
-  
-      file_path = txt_file
     else
-      # If the file doesn't have a .txt or .asc  or .tsv extension, simply copy it to the directory
-      file_path = directory_path.join(original_filename)
-      File.open(file_path, 'wb') do |f|
-        f.write(file.read)
+      # Handle .txt, .tsv, .asc as tab-separated files
+      File.open(file.path, "r:ISO-8859-1") do |f|
+        f.each_line.with_index do |line, index|
+          new_line = line.encode('UTF-8', 'ISO-8859-1', invalid: :replace, replace: '')
+          cleaned_line = new_line.gsub(/\x00/, '')
+          values = cleaned_line.chomp.split("\t")
+          values[0] = "Well positions" if index == 0
+          csv_data << values
+        end
       end
     end
-  
-    file_path.to_s
+
+    # Save everything as .txt (tab-separated)
+    new_filename = "#{File.basename(mapping_path, '.*')}.txt"
+    txt_file = directory_path.join(new_filename)
+
+    File.open(txt_file, 'w') do |f|
+      csv_data.each { |row| f.puts row.join("\t") }
+    end
+
+    txt_file.to_s
   end
 end
