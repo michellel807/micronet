@@ -46,8 +46,26 @@ def upload
   @mapping_file_paths = []
   @usr_mapping_file_paths = []
 
+  # Get uploaded files
   data_files = Array(params[:data_files])
   mapping_files = Array(params[:mapping_files])
+
+  # Get the order arrays from the hidden input fields
+  ordered_data_names = JSON.parse(params[:ordered_data_files]) rescue []
+  ordered_mapping_names = JSON.parse(params[:ordered_mapping_files]) rescue []
+
+  # Reorder the uploaded files to match the submitted order
+  ordered_data_files = ordered_data_names.map do |name|
+    data_files.find { |file| file.original_filename == name }
+  end.compact
+
+  ordered_mapping_files = ordered_mapping_names.map do |name|
+    mapping_files.find { |file| file.original_filename == name }
+  end.compact
+
+  # Use these for processing
+  data_files = ordered_data_files
+  mapping_files = ordered_mapping_files
 
   data_files.zip(mapping_files).each do |data_file_input, mapping_file_input|
     mapping_file = MappingFile.new(mapping_file_input)
@@ -98,6 +116,21 @@ def upload
 
   redirect_to '/upload'
 end
+
+
+def create
+  # Save uploaded files as needed...
+  # Example: store original uploaded files (Rails' file upload logic depends on storage system)
+
+  # Store the drag-and-drop order
+  @usr_data_file_names = JSON.parse(params[:ordered_data_files] || "[]")
+  @usr_mapping_file_names = JSON.parse(params[:ordered_mapping_files] || "[]")
+
+  # Do something with the files and their order...
+  flash.now[:notice] = "Files uploaded and order recorded."
+  render :index
+end
+
 
 
 helper_method :convert_asc_to_tab_delimited

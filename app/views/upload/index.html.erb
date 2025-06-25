@@ -63,44 +63,56 @@
   </div>
 </div>
 
-    <h1>MicroNet: Upload Files</h1>
-       <p>The model takes plate reader data as an input data file and a metadata/mapping file containing the metadata 
-associated with each well. Valid file formats are .asc, .tsv, .txt, or .csv. Please <a href="https://firasmidani.github.io/amiga/doc/metadata.html" target="_blank">click here</a> to learn more about the mandatory formatting 
-of the metadata file. Please note that the application will convert the input files to .csv for the analysis</p>
+<h1>MicroNet: Upload Files</h1>
+<p>
+  The model takes plate reader data as input and a metadata/mapping file for each well.
+  Valid formats: <code>.asc</code>, <code>.tsv</code>, <code>.txt</code>, <code>.csv</code>.  
+  <a href="https://firasmidani.github.io/amiga/doc/metadata.html" target="_blank">Click here</a> to learn more.
+</p>
+
+<p style="font-weight: 500; color: white; margin-top: 10px;">
+  <em>Note:</em> Before clicking <strong>"Upload"</strong>, please drag and arrange your files to ensure that each data file matches its corresponding mapping file.
+</p>
+
+<form id="upload-form" method="post" enctype="multipart/form-data" action="<%= upload_path %>">
+  <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+  <input type="hidden" name="ordered_data_files" id="ordered_data_files">
+  <input type="hidden" name="ordered_mapping_files" id="ordered_mapping_files">
+
+  <div style="display: flex; gap: 40px; margin-top: 30px;">
+    <!-- Data Files Column -->
+    <div>
+      <h2>Data Files</h2>
+      <ul id="data-files-list" class="sortable-list"></ul>
+      <input type="file" id="data-file-input" multiple name="data_files[]">
+    </div>
+
+    <!-- Mapping Files Column -->
+    <div>
+      <h2>Mapping Files</h2>
+      <ul id="mapping-files-list" class="sortable-list"></ul>
+      <input type="file" id="mapping-file-input" multiple name="mapping_files[]">
+    </div>
   </div>
 
-  <div class="general-white-block">
-  <h2>Upload Data and Metadata File(s)</h2>
-  <%= form_tag(upload_path, multipart: true) do %>
-    <p>
-      <label for="data_files">Data File:</label>
-      <%= file_field_tag 'data_files[]', multiple: true %>
-    </p>
-    <p>
-      <label for="mapping_files">Mapping File:</label>
-      <%= file_field_tag 'mapping_files[]', multiple: true %>
-    </p>
-    <%= submit_tag 'Upload', class: 'upload-button' %>
-  <% end %>
+  <input type="submit" value="Upload" class="upload-button" style="margin-top: 20px;">
+</form>
 
-  <% if flash.now[:alert] %>
-  <div class="error">
-    <%= flash.now[:alert] %>
-  </div>
+<% if flash.now[:alert] %>
+  <div class="error"><%= flash.now[:alert] %></div>
 <% end %>
 
 <% if flash.now[:error] %>
-<div class="error">
-  <%= flash.now[:error] %>
-</div>
+  <div class="error"><%= flash.now[:error] %></div>
 <% end %>
+
 
   <% if @data_file_paths.present? && @mapping_file_paths.present? %>
   <div class="notice">
     <p>
-      <span class="success" style="color: black; font-weight: 500;">Files uploaded successfully. </span>
+      <span class="success" style="color: green; font-weight: 500;">Files uploaded successfully! </span>
     </p>
-    <div class="upload-notice" style="color: blue; font-weight: 300;">
+    <div class="upload-notice" style="color: white; font-weight: 300;">
       <p>
         <span class="current">Currently uploaded data file(s): <%= @usr_data_file_names %></span>
       </p>
@@ -111,48 +123,72 @@ of the metadata file. Please note that the application will convert the input fi
   </div>
 <% end %>
 
-  <button id="view-files-button" style="margin-top: 20px; margin-bottom: 40px;">View Files</button>
-  <div id="data-files-container" style="display: none;">
-  <h3 id="data-files-header" style="text-align: center; margin-top: 10px; margin-bottom: 10px;">Your Data Files</h3>
-    <div id="data-files-table-container">
-    <% if @data_file_paths.present? %>
-      <% @data_file_paths.each do |file_path| %>
-        <% next unless File.exist?(file_path) %>
-        <table class="fit-stats-table">
-          <% File.foreach(file_path) do |line| %>
-            <tr>
-              <% line.split("\t").each do |cell| %>
-                <td><%= cell %></td>
-              <% end %>
-            </tr>
-            <% if line.include?("H12") %>
-              <% break %>
-            <% end %>
-          <% end %>
-        </table>
-      <% end %>
-    <%else%>
-      <p> No data files to display. </p>
-    <% end %>
-    </div>
-    
-    <h3 id="mapping-files-header" style="text-align: center; margin-top: 10px; margin-bottom: 10px;">Your Mapping Files</h3>
-    <div id="mapping-files-table-container">
-      <% if @mapping_file_paths.present? && File.exist?(@mapping_file_paths[0]) %>
-        <table class="fit-stats-table">
-          <% File.foreach(@mapping_file_paths[0]) do |line| %>
-              <tr>
-                <% line.split("\t").each do |cell| %>
-                  <td><%= cell %></td>
-                <% end %>
-              </tr>
-          <% end %>
-        </table>
-      <%else%>
-        <p> No mapping files to display. </p>
-      <%end%>
-    </div>
-    </div>
+
+<style>
+  .sortable-list {
+    list-style: none;
+    padding: 10px;
+    min-height: 50px;
+    width: 300px;
+    border: 1px solid #ccc;
+    background: #f9f9f9;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    overflow-x: hidden;
+  }
+
+  .sortable-item {
+    padding: 8px 12px;
+    margin: 4px 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #222;
+    font-size: 14px;
+    word-wrap: break-word;
+    cursor: grab;
+  }
+
+  .sortable-item:hover {
+    background: #eef;
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    new Sortable(document.getElementById('data-files-list'), { animation: 150 });
+    new Sortable(document.getElementById('mapping-files-list'), { animation: 150 });
+
+    function handleFileInput(inputId, listId) {
+      const input = document.getElementById(inputId);
+      const list = document.getElementById(listId);
+
+      input.addEventListener('change', () => {
+        list.innerHTML = '';
+        Array.from(input.files).forEach(file => {
+          const li = document.createElement('li');
+          li.className = 'sortable-item';
+          li.innerText = file.name;
+          list.appendChild(li);
+        });
+      });
+    }
+
+    handleFileInput('data-file-input', 'data-files-list');
+    handleFileInput('mapping-file-input', 'mapping-files-list');
+
+    // On form submission, capture file order
+    const form = document.getElementById('upload-form');
+    form.addEventListener('submit', (e) => {
+      const dataList = Array.from(document.querySelectorAll('#data-files-list .sortable-item')).map(el => el.innerText);
+      const mappingList = Array.from(document.querySelectorAll('#mapping-files-list .sortable-item')).map(el => el.innerText);
+
+      document.getElementById('ordered_data_files').value = JSON.stringify(dataList);
+      document.getElementById('ordered_mapping_files').value = JSON.stringify(mappingList);
+    });
+  });
+</script>
 
   <% if @data_file_paths.present? && @mapping_file_paths.present? && File.exist?(@mapping_file_paths[0]) %>
   <%= link_to "Next", 'selectanalyses', class: "next-button" %>

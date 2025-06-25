@@ -1,10 +1,12 @@
+require 'csv'
+
 class MappingFile
   attr_reader :file_path, :error_message
 
   def initialize(file)
     @file = file
     valid_extensions = ['.txt', '.asc', '.tsv', '.csv']
-    if valid_extensions.include?(File.extname(file.original_filename))
+    if valid_extensions.include?(File.extname(file.original_filename).downcase)
       print("Valid mapping file detected: #{file.original_filename}\n")
       @file_path = save_file(file)
     else
@@ -25,43 +27,39 @@ class MappingFile
     original_filename = file.original_filename
     file_extension = File.extname(original_filename)
     plate_id = ""
+    csv_data = []
   
-    if file_extension.downcase == '.txt' || file_extension.downcase == '.asc' || file_extension.downcase == '.tsv'
-      csv_data = []
-  
-      File.open(file.path, 'r') do |file|
-        file.each_line.with_index do |line,index|
-          # Split each line using the tab character as the delimiter
-          values = line.chomp.encode('UTF-8', 'ISO-8859-1').split("\t")
-          if index == 0
-            values[0] = "Well positions"
-          end
-          plate_id = values[1]
+    if file_extension == '.csv'
+      # Handle comma-separated CSV
+      CSV.foreach(file.path, encoding: 'UTF-8') do |row|
+        row[0] = "Well positions" if csv_data.empty?
+        plate_id = row[1] if row[1] && !row[1].strip.empty?
+        csv_data << row
+      end
+    else
+      # Handle tab-separated files (.txt, .tsv, .asc)
+      File.open(file.path, 'r:ISO-8859-1') do |f|
+        f.each_line.with_index do |line, index|
+          line_utf8 = line.encode('UTF-8', 'ISO-8859-1', invalid: :replace, replace: '')
+          values = line_utf8.chomp.gsub(/\x00/, '').split("\t")
+          values[0] = "Well positions" if index == 0
+          plate_id = values[1] if values[1] && !values[1].strip.empty?
           csv_data << values
         end
       end
-      # Write the CSV data to a new TXT file
-      new_filename = "#{File.basename(plate_id, '.*')}.txt"
-      txt_file = directory_path.join(new_filename)
-  
-      File.open(txt_file, 'w') do |file|
-        csv_data.each do |row|
-          file.puts row.join("\t")
-        end
-      end
-  
-      file_path = txt_file
-  
-      file_path = txt_file
-    else
-      # If the file doesn't have a .txt or .asc extension, simply copy it to the directory
-      file_path = directory_path.join(original_filename)
-      File.open(file_path, 'wb') do |f|
-        f.write(file.read)
+    end
+
+    # Normalize filename to .txt
+    new_filename = "#{File.basename(plate_id, '.*')}.txt"
+    txt_file = directory_path.join(new_filename)
+
+    File.open(txt_file, 'w') do |f|
+      csv_data.each do |row|
+        f.puts row.join("\t")
       end
     end
-  
-    file_path.to_s
-  end
 
+    txt_file.to_s
+  end
 end
+
