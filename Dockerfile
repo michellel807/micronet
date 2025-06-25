@@ -18,11 +18,16 @@ RUN apt-get update && apt-get -y upgrade && \
 
 ENV PATH="/miniconda3/bin:${PATH}"
 ARG PATH="/miniconda3/bin:${PATH}"
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-    && mkdir /root/.conda \
-    && bash Miniconda3-latest-Linux-x86_64.sh -b -u -p /miniconda3 \
-    && rm -f Miniconda3-latest-Linux-x86_64.sh \
-    && echo "Running $(conda --version)"
+RUN arch=$(uname -m) && \
+    if [ "$arch" = "x86_64" ]; then \
+      wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; \
+    else \
+      wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh -O miniconda.sh; \
+    fi && \
+    mkdir /root/.conda && \
+    bash miniconda.sh -b -u -p /miniconda3 && \
+    rm miniconda.sh && \
+    echo "Running $(/miniconda3/bin/conda --version)"
 
 
 COPY amigacondaenv.yml ./
