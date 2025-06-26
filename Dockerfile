@@ -24,9 +24,18 @@ RUN apt-get update && apt-get -y upgrade && \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Create and activate virtual environment
-RUN python3.11 -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+ENV PATH="/miniconda3/bin:${PATH}"
+ARG PATH="/miniconda3/bin:${PATH}"
+RUN arch=$(uname -m) && \
+    if [ "$arch" = "x86_64" ]; then \
+      wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; \
+    else \
+      wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh -O miniconda.sh; \
+    fi && \
+    mkdir /root/.conda && \
+    bash miniconda.sh -b -u -p /miniconda3 && \
+    rm miniconda.sh && \
+    echo "Running $(/miniconda3/bin/conda --version)"
 
 # Upgrade pip and install wheel
 RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel
