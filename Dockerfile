@@ -29,17 +29,12 @@ RUN arch=$(uname -m) && \
     rm miniconda.sh && \
     echo "Running $(/miniconda3/bin/conda --version)"
 
-
 COPY amigacondaenv.yml ./
 RUN conda env create -f ./amigacondaenv.yml
-ENV CONDA_DEFAULT_ENV=amiga
-ENV PATH="/miniconda3/envs/amigacondaenv/bin:${PATH}"
 
-# fix policy error with imagemagick and ghostscript
 RUN sed -i 's|<policy domain="coder" rights="none" pattern="PDF" />||' /etc/ImageMagick-6/policy.xml
 
 ENV RAILS_LOG_TO_STDOUT=1
-
 
 # Copy Gemfile and Gemfile.lock into the image and install dependencies
 COPY Gemfile Gemfile.lock ./
@@ -69,6 +64,9 @@ RUN mkdir -p tmp/pids \
 COPY . /app
 
 RUN SKIP_VAULT=true SKIP_VALIDATION=true SECRET_KEY_BASE=fakeassetbuildersecret bundle exec rake assets:precompile
+
+# Remove any existing server.pid file
+RUN rm -f /app/tmp/pids/server.pid
 
 # Command to run the Rails server
 CMD ["rails", "server", "-b", "0.0.0.0"]
