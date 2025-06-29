@@ -71,7 +71,7 @@
 </p>
 
 <p style="font-weight: 500; color: white; margin-top: 10px;">
-  <em>Note:</em> Before clicking <strong>"Upload"</strong>, please drag and arrange your files to ensure that each data file matches its corresponding mapping file.
+  <em>Note:</em> Before clicking <strong>Upload</strong>, please drag and arrange your files to ensure that each data file matches its corresponding mapping file.
 </p>
 
 <form id="upload-form" method="post" enctype="multipart/form-data" action="<%= upload_path %>">
@@ -79,7 +79,7 @@
   <input type="hidden" name="ordered_data_files" id="ordered_data_files">
   <input type="hidden" name="ordered_mapping_files" id="ordered_mapping_files">
 
-  <div style="display: flex; gap: 40px; margin-top: 30px;">
+  <div style="display: flex; gap: 40px; justify-content: center; margin-top: 30px;">
     <!-- Data Files Column -->
     <div>
       <h2>Data Files</h2>
@@ -95,7 +95,17 @@
     </div>
   </div>
 
-  <input type="submit" value="Upload" class="upload-button" style="margin-top: 20px;">
+<p style="font-weight: 500; color: white; margin-top: 40px;">
+  If you have a meta file, please upload it below. Valid formats: <code>.txt</code>, <code>.tsv</code>, <code>.csv</code>, <code>.asc</code>.
+</p>
+
+  <!-- Meta Files Upload -->
+  <div style="margin-top: 30px;">
+    <h2>Meta File (Optional)</h2>
+    <input type="file" id="meta-file-input" name="meta_files" accept=".txt,.tsv,.csv,.asc">
+  </div>
+
+  <input type="submit" value="Upload" class="upload-button" style="margin-top: 40px;">
 </form>
 
 <% if flash.now[:alert] %>
@@ -112,47 +122,20 @@
     <p>
       <span class="success" style="color: green; font-weight: 500;">Files uploaded successfully! </span>
     </p>
-    <div class="upload-notice" style="color: white; font-weight: 300;">
+    <div class="upload-notice" style="color: white; font-weight: light; text-align: left;">
       <p>
-        <span class="current">Currently uploaded data file(s): <%= @usr_data_file_names %></span>
+        <span class="current", style="font-size: 20px;">Currently uploaded data file(s): <%= @usr_data_file_names %></span>
       </p>
       <p>
-        <span class="current">Currently uploaded mapping file(s): <%= @usr_mapping_file_names %></span>
+        <span class="current", style="font-size: 20px;">Currently uploaded mapping file(s): <%= @usr_mapping_file_names %></span>
+      </p>
+      <p>
+        <span class="current", style="font-size: 20px;">Currently uploaded meta file: <%= @usr_meta_file_name %></span>
       </p>
     </div>
   </div>
 <% end %>
 
-
-<style>
-  .sortable-list {
-    list-style: none;
-    padding: 10px;
-    min-height: 50px;
-    width: 300px;
-    border: 1px solid #ccc;
-    background: #f9f9f9;
-    border-radius: 6px;
-    margin-bottom: 10px;
-    overflow-x: hidden;
-  }
-
-  .sortable-item {
-    padding: 8px 12px;
-    margin: 4px 0;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    color: #222;
-    font-size: 14px;
-    word-wrap: break-word;
-    cursor: grab;
-  }
-
-  .sortable-item:hover {
-    background: #eef;
-  }
-</style>
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
