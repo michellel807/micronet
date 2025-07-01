@@ -1,7 +1,7 @@
 require 'csv'
 
 class MappingFile
-  attr_reader :file_path, :error_message
+  attr_reader :file_path, :plate_id, :error_message
 
   def initialize(file)
     @file = file
@@ -59,6 +59,7 @@ class MappingFile
       end
     end
 
+    @plate_id = plate_id 
     txt_file.to_s
   end
 end
