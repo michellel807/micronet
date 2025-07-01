@@ -96,6 +96,23 @@ def upload
     redirect_to upload_path and return
   end
 
+  # Get the order arrays from the hidden input fields
+  ordered_data_names = JSON.parse(params[:ordered_data_files]) rescue []
+  ordered_mapping_names = JSON.parse(params[:ordered_mapping_files]) rescue []
+
+  # Reorder the uploaded files to match the submitted order
+  ordered_data_files = ordered_data_names.map do |name|
+    data_files.find { |file| file.original_filename == name }
+  end.compact
+
+  ordered_mapping_files = ordered_mapping_names.map do |name|
+    mapping_files.find { |file| file.original_filename == name }
+  end.compact
+
+  # Use these for processing
+  data_files = ordered_data_files
+  mapping_files = ordered_mapping_files
+
   data_files.zip(mapping_files).each do |data_file_input, mapping_file_input|
     mapping_file = MappingFile.new(mapping_file_input)
     data_file = DataFile.new(data_file_input, mapping_file.plate_id)
