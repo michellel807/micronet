@@ -31,6 +31,8 @@ RUN arch=$(uname -m) && \
 
 COPY amigacondaenv.yml ./
 RUN conda env create -f ./amigacondaenv.yml
+ENV CONDA_DEFAULT_ENV=amiga
+ENV PATH="/miniconda3/envs/amigacondaenv/bin:${PATH}"
 
 RUN sed -i 's|<policy domain="coder" rights="none" pattern="PDF" />||' /etc/ImageMagick-6/policy.xml
 
@@ -64,9 +66,6 @@ RUN mkdir -p tmp/pids \
 COPY . /app
 
 RUN SKIP_VAULT=true SKIP_VALIDATION=true SECRET_KEY_BASE=fakeassetbuildersecret bundle exec rake assets:precompile
-
-# Remove any existing server.pid file
-RUN rm -f /app/tmp/pids/server.pid
 
 # Command to run the Rails server
 CMD ["rails", "server", "-b", "0.0.0.0"]
