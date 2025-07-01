@@ -159,3 +159,32 @@ table tr td:first-child {
   background-color: #000750;
   box-shadow: 0 0 15px 0 rgba(0,0,0,.8) inset;
 }
+
+
+.sortable-list {
+  list-style: none;
+  padding: 10px;
+  min-height: 50px;
+  width: 300px;
+  border: 1px solid #ccc;
+  background: #f9f9f9;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  overflow-x: hidden;
+}
+
+.sortable-item {
+  padding: 8px 12px;
+  margin: 4px 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #222;
+  font-size: 14px;
+  word-wrap: break-word;
+  cursor: grab;
+}
+
+.sortable-item:hover {
+  background: #eef;
+}

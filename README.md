@@ -26,6 +26,12 @@ Migrate the database.
 docker-compose run --rm web bash -c "bin/rails db:migrate RAILS_ENV=development"
 ```
 
+Run the tests. (Optional)
+
+```shell
+docker-compose run --rm test
+```
+
 ### Checking email in Development
 
 When running locally using the `docker-compose.yml` file included in the project,
