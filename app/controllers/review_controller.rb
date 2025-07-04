@@ -6,15 +6,19 @@ class ReviewController < ApplicationController
     @user = User.find(@job.user_id)
 
     @data_file_paths = session[:data_file_paths]
-    @mapping_file_paths = session[:mapping_file_paths]
-    @meta_file_path = session[:meta_file_path]
     @usr_data_file_paths = session[:usr_data_file_paths]
+    @mapping_file_paths = session[:mapping_file_paths]
     @usr_mapping_file_paths = session[:usr_mapping_file_paths]
+    @meta_file_path = session[:meta_file_path]
     @usr_meta_file_path = session[:usr_meta_file_path]
+    @interval_file_path = session[:interval_file_path]
+    @usr_interval_file_path = session[:usr_interval_file_path]
+    
     
     @usr_data_file_names = @usr_data_file_paths.map { |file_path| File.basename(file_path) }
     @usr_mapping_file_names = @usr_mapping_file_paths.map { |file_path| File.basename(file_path) }
     @usr_meta_file_name = File.basename(@usr_meta_file_path) if @usr_meta_file_path.present?
+    @usr_interval_file_name = File.basename(@usr_interval_file_path) if @usr_interval_file_path.present?
 
     if @mapping_file_paths.present?
       first_file_path = @mapping_file_paths.first

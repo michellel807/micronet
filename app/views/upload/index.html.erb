@@ -65,13 +65,9 @@
 
 <h1>MicroNet: Upload Files</h1>
 <p>
-  The model takes plate reader data as input and a metadata/mapping file for each well.
+  Please upload your data and mapping files here and drag to arrange them so that each data file matches its corresponding mapping file.
   Valid formats: <code>.asc</code>, <code>.tsv</code>, <code>.txt</code>, <code>.csv</code>.  
-  <a href="https://firasmidani.github.io/amiga/doc/metadata.html" target="_blank">Click here</a> to learn more.
-</p>
-
-<p style="font-weight: 500; color: white; margin-top: 10px;">
-  <em>Note:</em> Before clicking <strong>Upload</strong>, please drag and arrange your files to ensure that each data file matches its corresponding mapping file.
+  Go to <a href="/help" target="_blank"><strong>Help</strong></a> to download the example formats.
 </p>
 
 <form id="upload-form" method="post" enctype="multipart/form-data" action="<%= upload_path %>">
@@ -79,7 +75,7 @@
   <input type="hidden" name="ordered_data_files" id="ordered_data_files">
   <input type="hidden" name="ordered_mapping_files" id="ordered_mapping_files">
 
-  <div style="display: flex; gap: 40px; justify-content: center; margin-top: 30px;">
+  <div style="display: flex; gap: 40px; justify-content: center; margin-top: 25px;">
     <!-- Data Files Column -->
     <div>
       <h2>Data Files</h2>
@@ -96,13 +92,24 @@
   </div>
 
 <p style="font-weight: 500; color: white; margin-top: 40px;">
-  If you have a meta file, please upload it below. Valid formats: <code>.txt</code>, <code>.tsv</code>, <code>.csv</code>, <code>.asc</code>.
+  If you have a meta file, please upload it below. Valid formats: <code>.asc</code>, <code>.tsv</code>, <code>.txt</code>, <code>.csv</code>.
 </p>
 
   <!-- Meta Files Upload -->
   <div style="margin-top: 30px;">
     <h2>Meta File (Optional)</h2>
     <input type="file" id="meta-file-input" name="meta_files" accept=".txt,.tsv,.csv,.asc">
+  </div>
+
+<p style="font-weight: 500; color: white; margin-top: 40px;">
+  The default measurement interval is set to 600s. If you want to specify specific time intervals, please upload the file below. 
+  Valid formats: <code>.asc</code>, <code>.tsv</code>, <code>.txt</code>, <code>.csv</code>.<br>
+</p>
+
+    <!-- Interval Files Upload -->
+  <div style="margin-top: 30px;">
+    <h2>Interval File (Optional)</h2>
+    <input type="file" id="interval-file-input" name="interval_files" accept=".txt,.tsv,.csv,.asc">
   </div>
 
   <input type="submit" value="Upload" class="upload-button" style="margin-top: 40px;">
@@ -131,6 +138,9 @@
       </p>
       <p>
         <span class="current", style="font-size: 20px;">Currently uploaded meta file: <%= @usr_meta_file_name %></span>
+      </p>
+      <p>
+        <span class="current", style="font-size: 20px;">Currently uploaded interval file: <%= @usr_interval_file_name %></span>
       </p>
     </div>
   </div>

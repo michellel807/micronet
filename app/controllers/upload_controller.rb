@@ -10,16 +10,20 @@ def delete_files
   session[:data_file_paths] = nil
   session[:mapping_file_paths] = nil
   session[:meta_file_path] = nil
+  session[:interval_file_path] = nil
   @data_file_paths = session[:data_file_paths]
   @mapping_file_paths = session[:mapping_file_paths]
   @meta_file_path = session[:meta_file_path]
+  @interval_file_path = session[:interval_file_path]
 
   puts "Session[:data_file_paths] is #{session[:data_file_paths] }"
   puts "Session[:mapping_file_paths] is #{session[:mapping_file_paths] }"
   puts "Session[:meta_file_path] is #{session[:meta_file_path] }"
+  puts "Session[:interval_file_path] is #{session[:interval_file_path] }"
   puts "@data_file_paths is #{@data_file_paths}"
   puts "@mapping_file_paths is #{@mapping_file_paths}"
   puts "@meta_file_path is #{@meta_file_path}"
+  puts "@interval_file_path is #{@interval_file_path}"
   redirect_to '/upload', notice: 'No files currently uploaded.'
 
 end
@@ -36,16 +40,21 @@ def index
   session[:mapping_file_paths] ||= @mapping_file_paths 
   @meta_file_path = session[:meta_file_path] || nil
   session[:meta_file_path] ||= @meta_file_path 
+  @interval_file_path = session[:interval_file_path] || nil
+  session[:interval_file_path] ||= @interval_file_path 
   @usr_data_file_paths = session[:usr_data_file_paths] || []
   session[:usr_data_file_paths] ||= @usr_data_file_paths
   @usr_mapping_file_paths = session[:usr_mapping_file_paths] || []
   session[:usr_mapping_file_paths] ||= @usr_mapping_file_paths
   @usr_meta_file_path = session[:usr_meta_file_path] || nil
   session[:usr_meta_file_path] ||= @usr_meta_file_path
+  @usr_interval_file_path = session[:usr_interval_file_path] || nil
+  session[:usr_interval_file_path] ||= @usr_interval_file_path
 
   @usr_data_file_names = @usr_data_file_paths.map { |file_path| File.basename(file_path) }
   @usr_mapping_file_names = @usr_mapping_file_paths.map { |file_path| File.basename(file_path) }
   @usr_meta_file_name = File.basename(@usr_meta_file_path) if @usr_meta_file_path.present?
+  @usr_interval_file_name = File.basename(@usr_interval_file_path) if @usr_interval_file_path.present?
 end
 
 
@@ -56,11 +65,25 @@ def upload
   @usr_mapping_file_paths = []
   @meta_file_path = nil
   @usr_meta_file_path = nil
+  @interval_file_path = nil
+  @usr_interval_file_path = nil
 
   # Get uploaded files
   data_files = Array(params[:data_files])
   mapping_files = Array(params[:mapping_files])
   meta_files = params[:meta_files]
+  interval_files = params[:interval_files]
+
+  if interval_files.present?
+    interval_file = IntervalFile.new(interval_files)
+    unless interval_file.valid?
+      flash[:alert] = interval_file.error_message
+      @interval_file_path = nil
+      return render :index
+    end
+    @usr_interval_file_path = interval_files.original_filename.to_s
+    @interval_file_path = interval_file.file_path.to_s
+  end
 
   if meta_files.present?
     meta_file = MetaFile.new(meta_files)
@@ -69,7 +92,6 @@ def upload
       @meta_file_path = nil
       return render :index
     end
-
     @usr_meta_file_path = meta_files.original_filename.to_s
     @meta_file_path = meta_file.file_path.to_s
   end
@@ -158,6 +180,8 @@ def upload
       session[:usr_mapping_file_paths] = @usr_mapping_file_paths
       session[:meta_file_path] = @meta_file_path
       session[:usr_meta_file_path] = @usr_meta_file_path
+      session[:interval_file_path] = @interval_file_path
+      session[:usr_interval_file_path] = @usr_interval_file_path
       flash.notice = "Files uploaded successfully." # Use flash instead of flash.now
     else
       # If the Python script failed, clear the session variables
@@ -167,6 +191,8 @@ def upload
       session[:usr_mapping_file_paths] = nil
       session[:meta_file_path] = nil
       session[:usr_meta_file_path] = nil
+      session[:interval_file_path] = nil
+      session[:usr_interval_file_path] = nil
       flash.alert = "Files do not match. Please check your files and try again." # Use flash instead of flash.now
       delete_files # Clear the uploaded files
       return
