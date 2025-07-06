@@ -72,6 +72,11 @@
   justify-content: center;
 }
 
+.help ul li a {
+  font-size: 1.25em;
+  font-weight: bold;
+}
+
 #downloadlinks {
   font-size: 30px;
 }

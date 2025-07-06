@@ -29,6 +29,8 @@ Rails.application.routes.draw do
   get "/contact", to: "contacts#new"
   get '/download/:file_name', to: 'help#download_file', as: 'download_file'
   get '/download_mapping/:file_name', to: 'help#download_mapping_file', as: 'download_mapping_file'
+  get '/download_meta/:file_name', to: 'help#download_meta_file', as: 'download_meta_file'
+  get '/download_interval/:file_name', to: 'help#download_interval_file', as: 'download_interval_file'
 
   get '/healthcheck' => 'healthcheck#index'
 

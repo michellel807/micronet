@@ -62,6 +62,12 @@
         <% end %>
         <%= link_to 'Edit', upload_path, class: 'edit-button' %>
 
+        <h2>Interval File</h2>
+        <% if @usr_interval_file_name.present? %>
+          <p><%= @usr_interval_file_name %></p>
+        <% end %>
+        <%= link_to 'Edit', upload_path, class: 'edit-button' %>
+
         <h2>Analyses To Run</h2>
         <% if session[:chart_types]==[""] %>
         <p>No analyses selected.</p>
