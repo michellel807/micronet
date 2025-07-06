@@ -65,9 +65,12 @@
 
 <h1>MicroNet: Upload Files</h1>
 <p>
-  Please upload your data and mapping files here and drag to arrange them so that each data file matches its corresponding mapping file.
-  Valid formats: <code>.asc</code>, <code>.tsv</code>, <code>.txt</code>, <code>.csv</code>.  
-  Go to <a href="/help" target="_blank"><strong>Help</strong></a> to download the example formats.
+  Valid formats: <code>.asc</code>, <code>.tsv</code>, <code>.txt</code>, <code>.csv</code>. <br>
+  Go to <a href="/help" target="_blank"><strong>HELP</strong></a> to download the example files.
+</p>
+
+<p style="text-align: left;">
+  If you are uploading data files with mapping files, please drag and arrange them to match each data file with its corresponding mapping file.
 </p>
 
 <form id="upload-form" method="post" enctype="multipart/form-data" action="<%= upload_path %>">
@@ -75,7 +78,7 @@
   <input type="hidden" name="ordered_data_files" id="ordered_data_files">
   <input type="hidden" name="ordered_mapping_files" id="ordered_mapping_files">
 
-  <div style="display: flex; gap: 40px; justify-content: center; margin-top: 25px;">
+  <div style="display: flex; gap: 40px; justify-content: center; margin-top: 10px;">
     <!-- Data Files Column -->
     <div>
       <h2>Data Files</h2>
@@ -91,19 +94,32 @@
     </div>
   </div>
 
-<p style="font-weight: 500; color: white; margin-top: 40px;">
-  If you have a meta file, please upload it below. Valid formats: <code>.asc</code>, <code>.tsv</code>, <code>.txt</code>, <code>.csv</code>.
+<p style="margin-top: 50px; text-align: left;">
+  You can upload a meta file to provide plate-level information or to add additional details that complement your existing mapping files. <br>
+  If you are only uploading a meta file, please arrange your data files to match the order of <strong style="font-weight: bold;">Plate_IDs</strong> shown in the preview window below, and leave the mapping file upload blank.
 </p>
 
   <!-- Meta Files Upload -->
-  <div style="margin-top: 30px;">
-    <h2>Meta File (Optional)</h2>
+  <div style="margin-top: 10px;">
+    <h2>Meta File</h2>
+    <div id="meta-file-preview"
+     style="margin: 20px auto;
+            background: #f4f4f4;
+            color: #333;
+            padding: 10px;
+            white-space: pre-wrap;
+            border-radius: 6px;
+            height: 50px;
+            width: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            text-align: left;">
+      </div>
     <input type="file" id="meta-file-input" name="meta_files" accept=".txt,.tsv,.csv,.asc">
   </div>
 
-<p style="font-weight: 500; color: white; margin-top: 40px;">
-  The default measurement interval is set to 600s. If you want to specify specific time intervals, please upload the file below. 
-  Valid formats: <code>.asc</code>, <code>.tsv</code>, <code>.txt</code>, <code>.csv</code>.<br>
+<p style="font-weight: 500; color: white; margin-top: 50px; text-align: left;">
+  The default measurement interval is set to 600s. If you want to specify specific time intervals, please upload the interval file below. 
 </p>
 
     <!-- Interval Files Upload -->
@@ -124,7 +140,8 @@
 <% end %>
 
 
-  <% if @data_file_paths.present? && @mapping_file_paths.present? %>
+  <% if (@data_file_paths.present? &&
+      (@mapping_file_paths.present? || @meta_file_path.present?)) %>
   <div class="notice">
     <p>
       <span class="success" style="color: green; font-weight: 500;">Files uploaded successfully! </span>
@@ -146,6 +163,47 @@
   </div>
 <% end %>
 
+<script>
+document.getElementById('meta-file-input').addEventListener('change', function(event) {
+  const file = event.target.files[0];
+  const preview = document.getElementById('meta-file-preview');
+  
+  preview.textContent = ''; // Clear previous preview
+  
+  // Reset height to small default before loading new content
+  preview.style.height = '50px';
+
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    const lines = e.target.result.split('\n').slice(0, 50); // Show max 50 lines
+    const firstColumnLines = lines.map(line => {
+      const cells = line.includes('\t') ? line.split('\t') : line.split(',');
+      return cells[0]?.trim();
+    }).filter(cell => cell !== undefined && cell !== '');
+
+    preview.textContent = firstColumnLines.join('\n');
+
+    // Expand height based on content length, but max at 500px for example
+    const lineCount = firstColumnLines.length;
+    const lineHeightPx = 18; // Approximate line height in px (adjust if needed)
+    let newHeight = lineCount * lineHeightPx + 20; // 20px for padding
+
+    if (newHeight > 500) newHeight = 500;
+
+    preview.style.height = newHeight + 'px';
+  };
+
+  reader.onerror = function() {
+    preview.textContent = 'Error reading file.';
+    preview.style.height = '50px'; // keep small on error
+  };
+
+  reader.readAsText(file);
+});
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
@@ -183,7 +241,12 @@
   });
 </script>
 
-  <% if @data_file_paths.present? && @mapping_file_paths.present? && File.exist?(@mapping_file_paths[0]) %>
+  <% if (
+      @data_file_paths.present? &&
+      (
+        (@mapping_file_paths.present?) || (@meta_file_path.present?)
+      )
+    ) %>
   <%= link_to "Next", 'selectanalyses', class: "next-button" %>
   <% end %>
 <div class="background-space"></div>

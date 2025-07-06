@@ -34,9 +34,9 @@ class IntervalFile
       if file_extension == '.csv'
         # Parse CSV file
         CSV.foreach(file.path, encoding: 'UTF-8') do |row|
-          out.puts row.join("\t")
           first_cell = row[0]&.strip
           next if first_cell && first_cell.match?(/plate[_ ]?id/i)  # skip header (case-insensitive)
+          out.puts row.join("\t")
           @plate_id_values << first_cell if first_cell && !first_cell.empty?
         end
       else
@@ -45,9 +45,9 @@ class IntervalFile
           f.each_line.with_index do |line, index|
             utf8_line = line.encode('UTF-8', 'ISO-8859-1', invalid: :replace, replace: '')
             cleaned = utf8_line.gsub(/\x00/, '')
-            out.puts cleaned
             first_cell = cleaned.strip.split("\t")[0]&.strip
             next if first_cell && first_cell.match?(/plate[_ ]?id/i)  # skip header (case-insensitive)
+            out.puts cleaned
             @plate_id_values << first_cell if first_cell && !first_cell.empty?
           end
         end
