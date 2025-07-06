@@ -28,22 +28,27 @@ class DataFile
     csv_data = []
   
     if file_extension == '.csv'
-      # Parse CSV file and convert to tab-separated format
-      CSV.foreach(file.path, encoding: 'UTF-8') do |row|
-        csv_data << row
-      end
+    raw_data = CSV.read(file.path, encoding: 'UTF-8')
     else
-      # Handle .txt, .tsv, .asc as tab-separated files
+      raw_data = []
       File.open(file.path, "r:ISO-8859-1") do |f|
-        f.each_line.with_index do |line, index|
+        f.each_line do |line|
           new_line = line.encode('UTF-8', 'ISO-8859-1', invalid: :replace, replace: '')
           cleaned_line = new_line.gsub(/\x00/, '')
           values = cleaned_line.chomp.split("\t")
-          values[0] = "Well positions" if index == 0
-          csv_data << values
+          raw_data << values
         end
       end
     end
+
+    # Remove first line if it contains "Well"
+    raw_data.shift if raw_data.first&.any? { |v| v.to_s.downcase.include?("well") }
+
+    # Remove last line if it contains "Date"
+    i = raw_data.rindex { |row| row.any?(&:present?) }
+    raw_data.delete_at(i) if i && raw_data[i].any? { |v| v.to_s.downcase.include?("date") }
+
+    csv_data = raw_data
 
     # Save everything as .txt (tab-separated)
     new_filename = "#{File.basename(mapping_plate_id.to_s, '.*')}.txt"
