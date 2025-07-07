@@ -1,7 +1,7 @@
 # MicroNet App
 
 ## Development Using docker-compose
-(For wins, change the bin/rails into LF)
+(For Windows, change the bin/rails into LF)
 
 To get started with development you will need to build with docker.
 
