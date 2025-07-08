@@ -54,21 +54,33 @@ class Job < ApplicationRecord
           # Ensure figures directory exists
           figures_dir = Rails.root.join('private', 'uploads', 'userexpt', 'figures')
           FileUtils.mkdir_p(figures_dir) unless Dir.exist?(figures_dir)
-          heatmap_filename = "#{safe_title}.#{heatmap_format}"
-          heatmap_output = figures_dir.join(heatmap_filename).to_s
-          summary_file = fit_summary_path
-          cmd = "amiga heatmap -i #{summary_file} -o #{heatmap_output} -x #{heatmap_x} -y #{heatmap_y} -v \"#{heatmap_v}\" --title \"#{heatmap_title}\" --format #{heatmap_format} 2>&1"
-          logger.debug("Running heatmap command: #{cmd}")
-          heatmap_result = `#{cmd}`
-          if File.exist?(heatmap_output)
-            @heatmap_path = heatmap_output.to_s
+          heatmap_basename = safe_title # no extension
+          heatmap_output_dir = figures_dir
+          # AMiGA version (commented out)
+          # cmd = "amiga heatmap -i #{fit_summary_path} -o #{heatmap_output_dir}/#{heatmap_basename} -x #{heatmap_x} -y #{heatmap_y} -v \"#{heatmap_v}\" --title \"#{heatmap_title}\" --format #{heatmap_format} 2>&1"
+          # logger.debug("Running heatmap command: #{cmd}")
+          # heatmap_result = `#{cmd}`
+          # if File.exist?(heatmap_output_dir + "/" + heatmap_basename + "." + heatmap_format)
+          #   @heatmap_path = heatmap_output_dir + "/" + heatmap_basename + "." + heatmap_format
+          #   logger.debug("Heatmap generated at #{@heatmap_path}")
+          #   file_names << @heatmap_path
+          #   @heatmap_relative_path = "uploads/userexpt/figures/#{heatmap_basename}.#{heatmap_format}"
+          # else
+          #   logger.error("Heatmap generation failed. AMiGA output: #{heatmap_result}")
+          #   raise "The heatmap analysis failed. AMiGA output: #{heatmap_result}"
+          # end
+          # Python version (active)
+          py_cmd = "python3 lib/scripts/otherscripts/generate_heatmap.py -i #{fit_summary_path} -o #{heatmap_output_dir}/#{heatmap_basename} -x #{heatmap_x} -y #{heatmap_y} -v \"#{heatmap_v}\" --title \"#{heatmap_title}\" --format #{heatmap_format} 2>&1"
+          logger.debug("Running heatmap command: #{py_cmd}")
+          heatmap_result = `#{py_cmd}`
+          if File.exist?(heatmap_output_dir.to_s + "/" + heatmap_basename + "." + heatmap_format)
+            @heatmap_path = heatmap_output_dir.to_s + "/" + heatmap_basename + "." + heatmap_format
             logger.debug("Heatmap generated at #{@heatmap_path}")
             file_names << @heatmap_path
-            # Store relative path for email link
-            @heatmap_relative_path = "uploads/userexpt/figures/#{heatmap_filename}"
+            @heatmap_relative_path = "uploads/userexpt/figures/#{heatmap_basename}.#{heatmap_format}"
           else
-            logger.error("Heatmap generation failed. AMiGA output: #{heatmap_result}")
-            raise "The heatmap analysis failed. AMiGA output: #{heatmap_result}"
+            logger.error("Heatmap generation failed. Python output: #{heatmap_result}")
+            raise "The heatmap analysis failed. Python output: #{heatmap_result}"
           end
         end
       end
@@ -91,21 +103,33 @@ class Job < ApplicationRecord
           # Ensure figures directory exists
           figures_dir = Rails.root.join('private', 'uploads', 'userexpt', 'figures')
           FileUtils.mkdir_p(figures_dir) unless Dir.exist?(figures_dir)
-          heatmap_filename = "#{safe_title}.#{heatmap_format}"
-          heatmap_output = figures_dir.join(heatmap_filename).to_s
-          summary_file = fit_stats_path
-          cmd = "amiga heatmap -i #{summary_file} -o #{heatmap_output} -x #{heatmap_x} -y #{heatmap_y} -v \"#{heatmap_v}\" --title \"#{heatmap_title}\" --format #{heatmap_format} 2>&1"
-          logger.debug("Running heatmap command: #{cmd}")
-          heatmap_result = `#{cmd}`
-          if File.exist?(heatmap_output)
-            @heatmap_path = heatmap_output.to_s
+          heatmap_basename = safe_title # no extension
+          heatmap_output_dir = figures_dir
+          # AMiGA version (commented out)
+          # cmd = "amiga heatmap -i #{fit_stats_path} -o #{heatmap_output_dir}/#{heatmap_basename} -x #{heatmap_x} -y #{heatmap_y} -v \"#{heatmap_v}\" --title \"#{heatmap_title}\" --format #{heatmap_format} 2>&1"
+          # logger.debug("Running heatmap command: #{cmd}")
+          # heatmap_result = `#{cmd}`
+          # if File.exist?(heatmap_output_dir + "/" + heatmap_basename + "." + heatmap_format)
+          #   @heatmap_path = heatmap_output_dir + "/" + heatmap_basename + "." + heatmap_format
+          #   logger.debug("Heatmap generated at #{@heatmap_path}")
+          #   file_names << @heatmap_path
+          #   @heatmap_relative_path = "uploads/userexpt/figures/#{heatmap_basename}.#{heatmap_format}"
+          # else
+          #   logger.error("Heatmap generation failed. AMiGA output: #{heatmap_result}")
+          #   raise "The heatmap analysis failed. AMiGA output: #{heatmap_result}"
+          # end
+          # Python version (active)
+          py_cmd = "python3 lib/scripts/otherscripts/generate_heatmap.py -i #{fit_stats_path} -o #{heatmap_output_dir}/#{heatmap_basename} -x #{heatmap_x} -y #{heatmap_y} -v \"#{heatmap_v}\" --title \"#{heatmap_title}\" --format #{heatmap_format} 2>&1"
+          logger.debug("Running heatmap command: #{py_cmd}")
+          heatmap_result = `#{py_cmd}`
+          if File.exist?(heatmap_output_dir.to_s + "/" + heatmap_basename + "." + heatmap_format)
+            @heatmap_path = heatmap_output_dir.to_s + "/" + heatmap_basename + "." + heatmap_format
             logger.debug("Heatmap generated at #{@heatmap_path}")
             file_names << @heatmap_path
-            # Store relative path for email link
-            @heatmap_relative_path = "uploads/userexpt/figures/#{heatmap_filename}"
+            @heatmap_relative_path = "uploads/userexpt/figures/#{heatmap_basename}.#{heatmap_format}"
           else
-            logger.error("Heatmap generation failed. AMiGA output: #{heatmap_result}")
-            raise "The heatmap analysis failed. AMiGA output: #{heatmap_result}"
+            logger.error("Heatmap generation failed. Python output: #{heatmap_result}")
+            raise "The heatmap analysis failed. Python output: #{heatmap_result}"
           end
         end
       end
