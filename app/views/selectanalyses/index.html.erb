@@ -99,11 +99,11 @@
             </label>
             <label>Value (V):
               <select id="heatmap-v" name="heatmap_v">
-                <option value="OD_Baseline">OD_Baseline</option>
-                <option value="OD_Min">OD_Min</option>
-                <option value="OD_Max">OD_Max</option>
-                <option value="OD_Emp_AUC">OD_Emp_AUC</option>
-                <option value="Fold_Change">Fold_Change</option>
+                <option value="AUC in units of OD">AUC in units of OD</option>
+                <option value="Linear Carrying Capacity in units of OD">Linear Carrying Capacity in units of OD</option>
+                <option value="Growth Rate">Growth Rate</option>
+                <option value="Doubling Time">Doubling Time</option>
+                <option value="Lag Time">Lag Time</option>
               </select>
             </label>
             <label>Format:
@@ -291,18 +291,28 @@
       xSelect.empty();
       ySelect.empty();
       columns.forEach(function(opt) {
-        xSelect.append(`<option value="${opt}">${opt}</option>`);
-        ySelect.append(`<option value="${opt}">${opt}</option>`);
+        if (!/well/i.test(opt)) { // Exclude columns containing 'well' (case-insensitive)
+          xSelect.append(`<option value="${opt}">${opt}</option>`);
+          ySelect.append(`<option value="${opt}">${opt}</option>`);
+        }
       });
       xSelect.on('change', function() {
         let selected = $(this).val();
         ySelect.find('option').show();
         ySelect.find(`option[value="${selected}"]`).hide();
+        // Special case: if Plate_ID is selected in X, hide it in Y
+        if (selected === 'Plate_ID') {
+          ySelect.find(`option[value="Plate_ID"]`).hide();
+        }
       });
       ySelect.on('change', function() {
         let selected = $(this).val();
         xSelect.find('option').show();
         xSelect.find(`option[value="${selected}"]`).hide();
+        // Special case: if Plate_ID is selected in Y, hide it in X
+        if (selected === 'Plate_ID') {
+          xSelect.find(`option[value="Plate_ID"]`).hide();
+        }
       });
     }
     $('input[name="generate_heatmap"]').on('change', function() {
