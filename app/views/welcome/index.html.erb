@@ -16,7 +16,7 @@
 
       <%= form_with url: "/", method: :post do |form|%>
         <%= form.label :email, "Input Email:", class: "input_email"%>
-        <%= form.text_field :email%>
+        <%= form.text_field :email, value: (params[:email] || session[:email]) %>
         <%= form.submit "Begin Now!"%>
       <% end %>
 
