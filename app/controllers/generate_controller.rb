@@ -4,6 +4,7 @@ class GenerateController < ApplicationController
    @user = User.find_or_create_by(email: params[:email])
   @pool_replicates= session[:pool_replicates]
   @pool_options = session[:pool_options] || []
+  @compare_parameters_pool = session[:compare_parameters_pool]
   if !@pool_options.empty?
     @pool_options_string = "'#{ @pool_options.join(",") }'"
   end
@@ -14,7 +15,8 @@ class GenerateController < ApplicationController
   puts"session[:chart_types] is #{session[:chart_types]}"
   puts "finalsubset is #{session[:finalsubset]}"
   puts "hypothesis is #{session[:hypothesis]}"
-
+  puts "compare_parameters_pool is #{session[:compare_parameters_pool]}"
+  puts "finalsubset_pooled is #{session[:finalsubset_pooled]}"
   end
 
   def run
@@ -24,7 +26,7 @@ class GenerateController < ApplicationController
     puts "old files deleted"
     @job.sendconfirm
     @job.sendadmin
-    Delayed::Job.enqueue(JobAnalyzer.new(@job.id, session[:chart_types], session[:pool_replicates], session[:pool_options_string], session[:finalsubset],session[:hypothesis]))
+    Delayed::Job.enqueue(JobAnalyzer.new(@job.id, session[:chart_types], session[:pool_replicates], session[:pool_options_string], session[:finalsubset],session[:hypothesis], session[:compare_parameters_pool], session[:finalsubset_pooled]))
     puts "beginning analysis"
     @job.update(status: "Job submitted")
     puts "Job status is #{@job.status}"

@@ -8,7 +8,7 @@ class Job < ApplicationRecord
   attr_accessor :title
 
 
-  def analyze(chart_types, pool_replicates, pool_options_string, finalsubset, hypothesis)
+  def analyze(chart_types, pool_replicates, pool_options_string, finalsubset, hypothesis, compare_parameters_pool, finalsubset_pooled)
     self.status = "Analyzing..."
     self.start_time = DateTime.now
     @selected_chart_types = chart_types || []
@@ -16,11 +16,14 @@ class Job < ApplicationRecord
     @pool_options_string = pool_options_string || []
     @finalsubset = finalsubset
     @hypothesis = hypothesis
+    @compare_parameters_pool = compare_parameters_pool
+    @finalsubset_pooled = finalsubset_pooled
     raw_data_results = nil
     fit_summary_path = nil
     fit_stats_path = nil
     compare_params_paths = nil
-    compare_params_pdf_paths = nil
+    test_hypothesis_paths = nil
+    test_hypothesis_pdf_paths = nil
 
     begin
 
@@ -46,7 +49,7 @@ class Job < ApplicationRecord
       end
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes"
-        system("amiga fit -i private/uploads/userexpt --pool-by '#{pool_options_string}' -o fit")
+        system("amiga fit -i private/uploads/userexpt --pool-by #{pool_options_string} -o fit")
         Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
         fit_stats_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
         raise "The fit statistics (pooling requested) analysis failed" if not File.exist?(fit_stats_path)
@@ -55,32 +58,55 @@ class Job < ApplicationRecord
       end
 
       if @selected_chart_types.include?('compare-parameters')
-        system("amiga test -i private/uploads/userexpt -s #{finalsubset} -y #{hypothesis} -o 'compare-parameters'")
-        
-        # Get matching files
-        compare_params_txts = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'compare-parameters', '*report.txt'))
-        compare_params_pdfs = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'compare-parameters', '*.pdf'))
+        system("amiga fit -i private/uploads/userexpt --sample-posterior --pool-by #{compare_parameters_pool} -o fit")
+        system("amiga compare -i private/uploads/userexpt/summary/fit_summary.txt -o compare-parameters -s #{finalsubset_pooled} --verbose")
 
-        # Raise if no output files found
-        if compare_params_txts.empty? && compare_params_pdfs.empty?
+        old_path = "compare-parameters.txt"
+        new_path = "private/uploads/userexpt/models/compare-parameters.txt"
+        File.rename(old_path, new_path)
+
+        fit_stats_sample_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary.txt'))
+        compare_params_txts = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', '*.txt'))
+        logger.debug("compare_params_txts: #{compare_params_txts}")
+        
+        if compare_params_txts.empty? && fit_stats_sample_paths.empty?
           raise "The compare parameters analysis failed"
         end
 
         # Set instance variables
         @compare_params_paths = compare_params_txts
-        @compare_params_pdf_paths = compare_params_pdfs
 
         logger.debug("done with compare-parameters ...")
       end
       save # Save the instance of Job
+
+      if @selected_chart_types.include?('test-hypothesis')
+        system("amiga test -i private/uploads/userexpt -s #{finalsubset} -y #{hypothesis} -o 'test-hypothesis'")
+        # Get matching files
+        test_hypothesis_txts = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'test-hypothesis', '*report.txt'))
+        test_hypothesis_pdfs = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'test-hypothesis', '*.pdf'))
+
+        Raise if no output files found
+        if test_hypothesis_txts.empty? && test_hypothesis_pdfs.empty?
+          raise "The test hypothesis analysis failed"
+        end
+
+        # Set instance variables
+        @test_hypothesis_paths = test_hypothesis_txts
+        @test_hypothesis_pdf_paths = test_hypothesis_pdfs
+
+        logger.debug("done with test-hypothesis ...")
+      end
+      save # Save the instance of Job
+
 
       # Prepare the file names to be sent in the email
       file_names = []
       file_names += @raw_data_pdf_paths if @raw_data_pdf_paths.present?
       file_names += @fit_stats_paths if @fit_stats_paths.present?
       file_names += @compare_params_paths if @compare_params_paths.present?
-      file_names += @compare_params_pdf_paths if @compare_params_pdf_paths.present?
-
+      file_names += @test_hypothesis_paths if @test_hypothesis_paths.present?
+      file_names += @test_hypothesis_pdf_paths if @test_hypothesis_pdf_paths.present?
 
       # Send email to the user with the file names and the job object and mark job as completed
       UserMailer.processedjob_email(file_names, self).deliver_now
