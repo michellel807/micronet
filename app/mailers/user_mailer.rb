@@ -1,9 +1,10 @@
 class UserMailer < ApplicationMailer
   default from: "noreply@duke.edu"
 
-  def processedjob_email(file_names, job)
+  def processedjob_email(file_names, job, file_links = [])
     @user = User.find(job.user_id)
     @file_names = file_names
+    @file_links = file_links
 
     file_names.each do |file_name|
       file_path = Rails.root.join('private', 'uploads', 'userexpt', 'figures', file_name)

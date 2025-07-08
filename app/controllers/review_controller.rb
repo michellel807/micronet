@@ -32,6 +32,12 @@ class ReviewController < ApplicationController
       puts "session[:chart_types] is #{session[:chart_types]}"
       session[:email] = params[:email] || ""
       session[:data_files] = params[:data_files] || []
+      session[:generate_heatmap] = params[:generate_heatmap] if params[:generate_heatmap].present?
+      session[:heatmap_x] = params[:heatmap_x] if params[:heatmap_x].present?
+      session[:heatmap_y] = params[:heatmap_y] if params[:heatmap_y].present?
+      session[:heatmap_v] = params[:heatmap_v] if params[:heatmap_v].present?
+      session[:heatmap_format] = params[:heatmap_format] if params[:heatmap_format].present?
+      session[:heatmap_title] = params[:heatmap_title] if params[:heatmap_title].present?
     end
     subsetoptions = CSV.read(@mapping_file_paths[0], col_sep: "\t")[0]
     subsetoptions.keep_if {|option| params[option] != "Select a value for #{option}" && params[option] !=nil }
