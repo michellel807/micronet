@@ -147,14 +147,17 @@ class Job < ApplicationRecord
       file_links = []
       (file_names || []).each do |f|
         if f.start_with?(Rails.root.to_s)
-          rel = f.sub(Rails.root.join('public').to_s + '/', '')
-          file_links << rel
+          rel = File.basename(f)
+          file_links << Rails.application.routes.url_helpers.download_file_url(rel, host: 'localhost:3000')
         end
       end
       # Always add heatmap link if present and not already in file_links
-      if defined?(@heatmap_relative_path) && @heatmap_relative_path.present? && !file_links.include?(@heatmap_relative_path)
-        file_links << @heatmap_relative_path
+      if defined?(@heatmap_relative_path) && @heatmap_relative_path.present?
+        rel = File.basename(@heatmap_relative_path)
+        url = Rails.application.routes.url_helpers.download_file_url(rel, host: 'localhost:3000')
+        file_links << url unless file_links.include?(url)
       end
+      file_links.uniq!
 
       # Send email to the user with the file names and the job object and mark job as completed
       UserMailer.processedjob_email(file_names, self, file_links).deliver_now
