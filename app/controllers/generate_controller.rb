@@ -24,7 +24,15 @@ class GenerateController < ApplicationController
     puts "old files deleted"
     @job.sendconfirm
     @job.sendadmin
-    Delayed::Job.enqueue(JobAnalyzer.new(@job.id, session[:chart_types], session[:pool_replicates], session[:pool_options_string], session[:finalsubset],session[:hypothesis]))
+    heatmap_params = {
+      generate_heatmap: params[:generate_heatmap] || session[:generate_heatmap],
+      heatmap_x: params[:heatmap_x] || session[:heatmap_x],
+      heatmap_y: params[:heatmap_y] || session[:heatmap_y],
+      heatmap_v: params[:heatmap_v] || session[:heatmap_v],
+      heatmap_format: params[:heatmap_format] || session[:heatmap_format],
+      heatmap_title: params[:heatmap_title] || session[:heatmap_title]
+    }
+    Delayed::Job.enqueue(JobAnalyzer.new(@job.id, session[:chart_types], session[:pool_replicates], session[:pool_options_string], session[:finalsubset],session[:hypothesis], heatmap_params))
     puts "beginning analysis"
     @job.update(status: "Job submitted")
     puts "Job status is #{@job.status}"

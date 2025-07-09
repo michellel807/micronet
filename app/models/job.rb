@@ -8,7 +8,7 @@ class Job < ApplicationRecord
   attr_accessor :title
 
 
-  def analyze(chart_types, pool_replicates, pool_options_string, finalsubset, hypothesis)
+  def analyze(chart_types, pool_replicates, pool_options_string, finalsubset, hypothesis, heatmap_params = {})
     self.status = "Analyzing..."
     self.start_time = DateTime.now
     @selected_chart_types = chart_types || []
@@ -21,10 +21,12 @@ class Job < ApplicationRecord
     fit_stats_path = nil
     compare_params_paths = nil
     compare_params_pdf_paths = nil
+    file_names = []
 
     begin
 
       logger.debug("Starting analysis...")
+      logger.debug("Heatmap params: #{heatmap_params.inspect}")
       raw_data_results = RawDataGenerator.generate_raw_data()
       if @selected_chart_types.include?('raw_data')
         raise "The plotting analysis failed" unless raw_data_results[:raw_data_pdf_paths].present?
@@ -44,12 +46,12 @@ class Job < ApplicationRecord
         @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
         logger.debug("done with fit_stats yes ...")
         # Only generate heatmap after fit_summary_modified.txt is confirmed to exist
-        if File.exist?(fit_summary_path) && defined?(session) && session[:generate_heatmap] == 'yes'
-          heatmap_x = session[:heatmap_x]
-          heatmap_y = session[:heatmap_y]
-          heatmap_v = session[:heatmap_v]
-          heatmap_format = session[:heatmap_format] || 'png'
-          heatmap_title = session[:heatmap_title].presence || 'AMiGA Heatmap'
+        if File.exist?(fit_summary_path) && heatmap_params[:generate_heatmap] == 'yes'
+          heatmap_x = heatmap_params[:heatmap_x]
+          heatmap_y = heatmap_params[:heatmap_y]
+          heatmap_v = heatmap_params[:heatmap_v]
+          heatmap_format = heatmap_params[:heatmap_format] || 'png'
+          heatmap_title = heatmap_params[:heatmap_title].presence || 'AMiGA Heatmap'
           safe_title = heatmap_title.gsub(/[^0-9A-Za-z\-]/, '_')
           figures_dir = Rails.root.join('private', 'uploads', 'userexpt', 'figures')
           FileUtils.mkdir_p(figures_dir) unless Dir.exist?(figures_dir)
@@ -82,12 +84,12 @@ class Job < ApplicationRecord
         @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
         logger.debug("done with fit_stats no ...")
         # Only generate heatmap after fit_summary_modified.txt is confirmed to exist
-        if File.exist?(fit_stats_path) && defined?(session) && session[:generate_heatmap] == 'yes'
-          heatmap_x = session[:heatmap_x]
-          heatmap_y = session[:heatmap_y]
-          heatmap_v = session[:heatmap_v]
-          heatmap_format = session[:heatmap_format] || 'png'
-          heatmap_title = session[:heatmap_title].presence || 'AMiGA Heatmap'
+        if File.exist?(fit_stats_path) && heatmap_params[:generate_heatmap] == 'yes'
+          heatmap_x = heatmap_params[:heatmap_x]
+          heatmap_y = heatmap_params[:heatmap_y]
+          heatmap_v = heatmap_params[:heatmap_v]
+          heatmap_format = heatmap_params[:heatmap_format] || 'png'
+          heatmap_title = heatmap_params[:heatmap_title].presence || 'AMiGA Heatmap'
           safe_title = heatmap_title.gsub(/[^0-9A-Za-z\-]/, '_')
           figures_dir = Rails.root.join('private', 'uploads', 'userexpt', 'figures')
           FileUtils.mkdir_p(figures_dir) unless Dir.exist?(figures_dir)
@@ -186,7 +188,22 @@ class Job < ApplicationRecord
 
   def sendconfirm
     logger.info("Sending confirmation for job id: #{id}")
-    UserMailer.with(job: self, user: User.find(self.user_id)).confirm_email.deliver_now
+    file_names = []
+    file_names += @raw_data_pdf_paths if defined?(@raw_data_pdf_paths) && @raw_data_pdf_paths.present?
+    file_names += @fit_stats_paths if defined?(@fit_stats_paths) && @fit_stats_paths.present?
+    file_names += @compare_params_paths if defined?(@compare_params_paths) && @compare_params_paths.present?
+    file_names += @compare_params_pdf_paths if defined?(@compare_params_pdf_paths) && @compare_params_pdf_paths.present?
+    file_names << @heatmap_path if defined?(@heatmap_path) && @heatmap_path.present? && !file_names.include?(@heatmap_path)
+    file_links = []
+    (file_names || []).each do |f|
+      if f.start_with?(Rails.root.to_s)
+        rel = f.sub(Rails.root.join('public').to_s + '/', '')
+        file_links << rel
+      end
+    end
+    file_links << @heatmap_relative_path if defined?(@heatmap_relative_path) && @heatmap_relative_path.present? && !file_links.include?(@heatmap_relative_path)
+    user = User.find(self.user_id)
+    UserMailer.confirm_email(self, user, file_names, file_links).deliver_now
   end
 
   def sendadmin

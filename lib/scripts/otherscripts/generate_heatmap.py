@@ -62,7 +62,8 @@ def main():
     # Plot
     plt.figure(figsize=(10, 8))
     sns.heatmap(heatmap_data, cmap="viridis", annot=True, fmt=".2f")
-    plt.title(args.title)
+    title_with_value = f"{args.title} ({args.value})" if args.value else args.title
+    plt.title(title_with_value)
     plt.tight_layout()
 
     # Save

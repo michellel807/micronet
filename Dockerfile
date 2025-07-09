@@ -36,7 +36,7 @@ ENV PATH="/miniconda3/envs/amigacondaenv/bin:${PATH}"
 
 RUN sed -i 's|<policy domain="coder" rights="none" pattern="PDF" />||' /etc/ImageMagick-6/policy.xml
 
-ENV RAILS_LOG_TO_STDOUT=1
+ENV RAILS__TO_STDOUT=1
 
 # Copy Gemfile and Gemfile.lock into the image and install dependencies
 COPY Gemfile Gemfile.lock ./
