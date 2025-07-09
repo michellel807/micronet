@@ -1,7 +1,7 @@
 class GenerateController < ApplicationController
  def index
-   @job = Job.find(session[:current_user_id])
-   @user = User.find_or_create_by(email: params[:email])
+  @job = Job.find(session[:current_user_id])
+  @user = User.find_or_create_by(email: params[:email])
   @pool_replicates= session[:pool_replicates]
   @pool_options = session[:pool_options] || []
   if !@pool_options.empty?
@@ -14,12 +14,18 @@ class GenerateController < ApplicationController
   puts"session[:chart_types] is #{session[:chart_types]}"
   puts "finalsubset is #{session[:finalsubset]}"
   puts "hypothesis is #{session[:hypothesis]}"
-
+  
   end
 
   def run
-   @job = Job.find(session[:current_user_id])
+    @job = Job.find(session[:current_user_id])
     @user = User.find_or_create_by(email: params[:email])
+
+    if @job.nil?
+      flash[:alert] = "No active job found to submit."
+      redirect_to root_path and return
+    end
+
     @job.deleteoldfiles
     puts "old files deleted"
     @job.sendconfirm

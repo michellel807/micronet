@@ -20,6 +20,23 @@ class ReviewController < ApplicationController
     @usr_meta_file_name = File.basename(@usr_meta_file_path) if @usr_meta_file_path.present?
     @usr_interval_file_name = File.basename(@usr_interval_file_path) if @usr_interval_file_path.present?
 
+    # Validate that each data file has exactly 96 rows (excluding header) if "raw_data" was selected
+    session[:chart_types] = params[:chart_types] || []
+    if session[:chart_types]&.include?("raw_data")
+      invalid_files = []
+
+      @data_file_paths.each do |file_path|
+        data_lines = File.readlines(file_path, encoding: 'utf-8').reject { |line| line.strip.empty? }
+        data_rows = data_lines.drop(1) # Skip header
+        invalid_files << File.basename(file_path) if data_rows.length != 96
+      end
+
+      unless invalid_files.empty?
+        flash[:error] = "Each uploaded file must include 96 wells for Raw Data Plot analysis."
+        redirect_to selectanalyses_path and return
+      end
+    end
+
     if @mapping_file_paths.present?
       first_file_path = @mapping_file_paths.first
       file_data = File.read(first_file_path, encoding: 'iso-8859-1:utf-8')
@@ -28,7 +45,6 @@ class ReviewController < ApplicationController
 
       session[:pool_replicates] = params[:pool_replicates] || []
       session[:pool_options] = params[:pool_options] || []
-      session[:chart_types] = params[:chart_types] || []
       puts "session[:chart_types] is #{session[:chart_types]}"
       session[:email] = params[:email] || ""
       session[:data_files] = params[:data_files] || []

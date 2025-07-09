@@ -1,7 +1,9 @@
 class WelcomeController < ApplicationController
   def index
     @user = User.find_by(email: params[:email])
-    if @user && @user.job && @user.job.status == "In Progress"
+    @job = Job.find_by(id: session[:current_user_id])
+
+    if @user && @job && @job.user_id == @user.id && @job.status == "In Progress"
       flash.now[:alert] = "Looks like you have an unsaved job open. Would you like to resume?"
     end
   end
@@ -40,9 +42,12 @@ class WelcomeController < ApplicationController
   def resume_job
     @user = session[:session_user]
     @job = Job.find(session[:current_user_id])
-    if @job.status == "In Progress"
-      puts "Redirecting to upload page: job id is #{@user.job.id}"  
+    if @job && @job.status == "In Progress"
+      puts "Redirecting to upload page: job id is #{@user.job.id}"
       redirect_to "/upload"
+    else
+      flash[:alert] = "No job to resume."
+      redirect_to root_path
     end
   end
 
