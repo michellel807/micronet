@@ -36,7 +36,7 @@
 
       <% content_for :title, "Parameters page" %>
       <h1> Select Analyses </h1>
-      <p>Please select which results you would like to generate. For more details on each analysis, please see the "Resources" tab.</p>
+      <p>Please select the analyses you would like to generate. For more details on each analysis, please see the "Resources" tab.</p>
       <%= form_with url: '/review', method: :post do |form| %>
         <div class="general-white-block">
           <label>
@@ -53,6 +53,23 @@
               </div>
               <% end %>
         </div>
+
+        <div class="general-white-block">
+          <label>
+            <%= check_box_tag 'chart_types[]', 'gp_plot', @selected_chart_types.include?('gp_plot') %>
+            Gaussian Process Plot
+            <p> This analysis will generate a Gaussian Process plot for a specified experimental property with variable conditions chosen. </p>
+          </label>
+
+          <div id="column-select-wrapper" class="gp-column-container" style="display: none;">
+            <p>Specify the experimental property:</p>
+            <% if @mapping_file_paths.present? %>
+              <%= hidden_field_tag 'file_data', @file_data_json %>
+              <%= select_tag 'column', options_for_select(@columns), prompt: 'Select a column', id: 'column' %>
+            <% end %>
+          </div> 
+        </div>
+        
         <div class="general-white-block">
           <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
             <%= check_box_tag 'chart_types[]', 'fit_stats', @selected_chart_types.include?('fit_stats') %>
@@ -116,7 +133,7 @@
     <%= hidden_field_tag 'chart_types[]', @selected_chart_types %>
   </div>
 
-  <div class="general-white-block">
+  <div style="text-align: center; margin-top: 20px;">
     <%= submit_tag 'Review', class: 'analysis-button', id: 'review-button' %>
     <% end %>
   </div>
@@ -135,6 +152,15 @@
           alert("Please select at least one parameter to pool on for the Fit Statistics analysis, or select 'No'.");
         }
       });
+
+    $("input[name='chart_types[]'][value='gp_plot']").on("change", function() {
+      if ($(this).is(":checked")) {
+        $(".gp-column-container").show();
+      } else {
+        $(".gp-column-container").hide();
+      }
+    });
+
     $("input[name='chart_types[]'][value='compare-parameters']").on("change", function() {
       if ($(this).is(":checked")) {
         $(".compare-parameters-container").show();
