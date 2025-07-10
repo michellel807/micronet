@@ -37,22 +37,17 @@ class Job < ApplicationRecord
       raw_data_results = RawDataGenerator.generate_raw_data()
       if @selected_chart_types.include?('raw_data')
         raise "The plotting analysis failed" unless raw_data_results[:raw_data_pdf_paths].present?
-        @raw_data_pdf_paths = raw_data_results[:raw_data_pdf_paths].select do |path|
-          File.exist?(path)
-        end
+        @raw_data_pdf_paths = raw_data_results[:raw_data_pdf_paths].select { |path| File.exist?(path) }
       end
       logger.debug("done with raw_data ...")
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "no"
         system("amiga fit -i private/uploads/userexpt -o fit")
-
-        # Check if fit_summary_modified.txt exists
         fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
         Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
         raise "The fit statistics analysis failed" unless File.exist?(fit_summary_path)
         @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
         logger.debug("done with fit_stats yes ...")
-        # Only generate heatmap after fit_summary_modified.txt is confirmed to exist
         if File.exist?(fit_summary_path) && heatmap_params[:generate_heatmap] == 'yes'
           heatmap_x = heatmap_params[:heatmap_x]
           heatmap_y = heatmap_params[:heatmap_y]
@@ -90,7 +85,6 @@ class Job < ApplicationRecord
         raise "The fit statistics (pooling requested) analysis failed" if not File.exist?(fit_stats_path)
         @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
         logger.debug("done with fit_stats no ...")
-        # Only generate heatmap after fit_summary_modified.txt is confirmed to exist
         if File.exist?(fit_stats_path) && heatmap_params[:generate_heatmap] == 'yes'
           heatmap_x = heatmap_params[:heatmap_x]
           heatmap_y = heatmap_params[:heatmap_y]
@@ -124,56 +118,40 @@ class Job < ApplicationRecord
       if @selected_chart_types.include?('compare-parameters')
         system("amiga fit -i private/uploads/userexpt --sample-posterior --pool-by #{compare_parameters_pool} -o fit")
         system("amiga compare -i private/uploads/userexpt/summary/fit_summary.txt -o compare-parameters -s #{finalsubset_pooled} --verbose")
-
         old_path = "compare-parameters.txt"
         new_path = "private/uploads/userexpt/models/compare-parameters.txt"
-        File.rename(old_path, new_path)
-
+        File.rename(old_path, new_path) if File.exist?(old_path)
         fit_stats_sample_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary.txt'))
         compare_params_txts = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', '*.txt'))
         logger.debug("compare_params_txts: #{compare_params_txts}")
-        
         if compare_params_txts.empty? && fit_stats_sample_paths.empty?
           raise "The compare parameters analysis failed"
         end
-
-        # Set instance variables
         @compare_params_paths = compare_params_txts
-
         logger.debug("done with compare-parameters ...")
       end
       save # Save the instance of Job
 
       if @selected_chart_types.include?('test-hypothesis')
         system("amiga test -i private/uploads/userexpt -s #{finalsubset} -y #{hypothesis} -o 'test-hypothesis'")
-        # Get matching files
         test_hypothesis_txts = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'test-hypothesis', '*report.txt'))
         test_hypothesis_pdfs = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'test-hypothesis', '*.pdf'))
-
-        Raise if no output files found
         if test_hypothesis_txts.empty? && test_hypothesis_pdfs.empty?
           raise "The test hypothesis analysis failed"
         end
-
-        # Set instance variables
         @test_hypothesis_paths = test_hypothesis_txts
         @test_hypothesis_pdf_paths = test_hypothesis_pdfs
-
         logger.debug("done with test-hypothesis ...")
       end
       save # Save the instance of Job
 
-
-      # Prepare the file names to be sent in the email
       file_names = []
       file_names += @raw_data_pdf_paths if @raw_data_pdf_paths.present?
       file_names += @fit_stats_paths if @fit_stats_paths.present?
       file_names += @compare_params_paths if @compare_params_paths.present?
-<<<<<<< app/models/job.rb
       file_names += @test_hypothesis_paths if @test_hypothesis_paths.present?
       file_names += @test_hypothesis_pdf_paths if @test_hypothesis_pdf_paths.present?
       file_names += @compare_params_pdf_paths if @compare_params_pdf_paths.present?
-      # Add heatmap output file if generated
       if defined?(@heatmap_path) && @heatmap_path.present? && !file_names.include?(@heatmap_path)
         file_names << @heatmap_path
       end
@@ -184,30 +162,23 @@ class Job < ApplicationRecord
           file_links << Rails.application.routes.url_helpers.download_file_url(rel, host: 'localhost:3000')
         end
       end
-      # Always add heatmap link if present and not already in file_links
       if defined?(@heatmap_relative_path) && @heatmap_relative_path.present?
         rel = File.basename(@heatmap_relative_path)
         url = Rails.application.routes.url_helpers.download_file_url(rel, host: 'localhost:3000')
         file_links << url unless file_links.include?(url)
       end
       file_links.uniq!
->>>>>>> app/models/job.rb
 
-      # Send email to the user with the file names and the job object and mark job as completed
       UserMailer.processedjob_email(file_names, self, file_links).deliver_now
     rescue => e
       logger.error("Error processing job: #{e.message}")
-      # If an exception occurs, set the status to "Failed" and save the instance
       self.status = "Failed"
       save
-
-      # Send a failed job notice email to the user
       UserMailer.failedjob_email(self, e.message).deliver_now
     ensure
-      # Update the status to "Completed" only if there was no exception
       if self.status != "Failed"
         self.status = "Completed"
-        save # Save the updated status
+        save
       end
     end
   end
@@ -215,7 +186,6 @@ class Job < ApplicationRecord
   def serve_image
     filename = params[:filename]
     file_path = Rails.root.join('private', 'uploads', 'userexpt', 'figures', filename)
-
     if File.exist?(file_path) && File.file?(file_path)
       send_file file_path, disposition: 'inline'
     else
@@ -234,11 +204,16 @@ class Job < ApplicationRecord
     file_links = []
     (file_names || []).each do |f|
       if f.start_with?(Rails.root.to_s)
-        rel = f.sub(Rails.root.join('public').to_s + '/', '')
-        file_links << rel
+        rel = File.basename(f)
+        file_links << Rails.application.routes.url_helpers.download_file_url(rel, host: 'localhost:3000')
       end
     end
-    file_links << @heatmap_relative_path if defined?(@heatmap_relative_path) && @heatmap_relative_path.present? && !file_links.include?(@heatmap_relative_path)
+    if defined?(@heatmap_relative_path) && @heatmap_relative_path.present?
+      rel = File.basename(@heatmap_relative_path)
+      url = Rails.application.routes.url_helpers.download_file_url(rel, host: 'localhost:3000')
+      file_links << url unless file_links.include?(url)
+    end
+    file_links.uniq!
     user = User.find(self.user_id)
     UserMailer.confirm_email(self, user, file_names, file_links).deliver_now
   end
@@ -261,3 +236,4 @@ class Job < ApplicationRecord
     admin&.is_admin?
   end
 end
+
