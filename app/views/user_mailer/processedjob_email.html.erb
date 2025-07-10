@@ -4,6 +4,16 @@
       <p>Hello,<p>
         <p>Attached is your final analyzed data.</p>
         <p>For more information, check out the papers under the Resources page of MicroNet. Thank you for using MicroNet!</p>
+        <h2>Your Output Files</h2>
+        <ul>
+          <% if @file_links.present? %>
+            <% @file_links.each do |link| %>
+              <li><a href="<%= root_url.chomp('/') %>/<%= link %>" target="_blank"><%= File.basename(link) %></a></li>
+            <% end %>
+          <% else %>
+            <li>No output files generated.</li>
+          <% end %>
+        </ul>
         <br>
     </body>
 </div>

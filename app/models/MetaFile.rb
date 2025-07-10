@@ -35,9 +35,9 @@ class MetaFile
         # Parse CSV file
         CSV.foreach(file.path, encoding: 'UTF-8') do |row|
           out.puts row.join("\t")
-          next if row[0]&.strip == 'Plate_ID' # skip header
-          plate_id = row[0]&.strip
-          @plate_id_values << plate_id if plate_id && !plate_id.empty?
+          first_cell = row[0]&.strip
+          next if first_cell&.casecmp('Plate_ID') == 0  # skip header (case-insensitive)
+          @plate_id_values << first_cell if first_cell && !first_cell.empty?
         end
       else
         # Parse tab-separated file (.txt, .tsv, .asc)
@@ -46,10 +46,9 @@ class MetaFile
             utf8_line = line.encode('UTF-8', 'ISO-8859-1', invalid: :replace, replace: '')
             cleaned = utf8_line.gsub(/\x00/, '')
             out.puts cleaned
-
-            next if index == 0 # skip header
-            plate_id = cleaned.split("\t")[0]&.strip
-            @plate_id_values << plate_id if plate_id && !plate_id.empty?
+            first_cell = cleaned.strip.split("\t")[0]&.strip
+            next if first_cell&.casecmp('Plate_ID') == 0  # skip header (case-insensitive)
+            @plate_id_values << first_cell if first_cell && !first_cell.empty?
           end
         end
       end

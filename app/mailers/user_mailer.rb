@@ -1,9 +1,10 @@
 class UserMailer < ApplicationMailer
   default from: "noreply@duke.edu"
 
-  def processedjob_email(file_names, job)
+  def processedjob_email(file_names, job, file_links = [])
     @user = User.find(job.user_id)
     @file_names = file_names
+    @file_links = file_links
 
     file_names.each do |file_name|
       file_path = Rails.root.join('private', 'uploads', 'userexpt', 'figures', file_name)
@@ -18,11 +19,13 @@ class UserMailer < ApplicationMailer
   #   to create a URL that displays all the Jobs linked to that User's email. More
   #   details on the Job page can be found in app/controllers/jobs_controller.rb.
   # The email can be found under views/user_mailer/confirm_email.html.erb
-  def confirm_email
+  def confirm_email(job, user, file_names = [], file_links = [])
     hashids = Hashids.new(ENV["HASHID_SLUG"].to_s)
-    @user = User.find(params[:job].user_id)
+    @user = user
     @hash = hashids.encode(@user.id)
-    @job = params[:job]
+    @job = job
+    @file_names = file_names
+    @file_links = file_links
     mail(to: @user.email, subject: "Schmid Lab Microbial Growth Model: Job Submitted")
   end
 
@@ -31,6 +34,12 @@ class UserMailer < ApplicationMailer
     @job = job
     @exception_message = ERB::Util.html_escape(exception_message)
     mail(to: @job.user.email, subject: 'Schmid Lab Microbial Growth Model: Job Failed')
+  end
+
+  def failed_heatmap_email(job, exception_message)
+    @job = job
+    @exception_message = ERB::Util.html_escape(exception_message)
+    mail(to: @job.user.email, subject: 'Schmid Lab Microbial Growth Model: Heatmap Generation Failed')
   end
 
 

@@ -1,6 +1,12 @@
 # MicroNet App
 
 ## Development Using docker-compose
+(For Windows, change the bin/rails into LF)
+
+## When switching branches or restarting your IDE
+```shell
+rm -f tmp/pids/server.pid 
+```
 
 To get started with development you will need to build with docker.
 

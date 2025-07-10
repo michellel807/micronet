@@ -62,6 +62,12 @@
         <% end %>
         <%= link_to 'Edit', upload_path, class: 'edit-button' %>
 
+        <h2>Interval File</h2>
+        <% if @usr_interval_file_name.present? %>
+          <p><%= @usr_interval_file_name %></p>
+        <% end %>
+        <%= link_to 'Edit', upload_path, class: 'edit-button' %>
+
         <h2>Analyses To Run</h2>
         <% if session[:chart_types]==[""] %>
         <p>No analyses selected.</p>
@@ -100,6 +106,21 @@
           <p>Growth will be compared by <%= session[:column] %>. </p>
           <% elsif !session[:chart_types].include?('compare-parameters')%>
           <p>N/A (Compare growth not requested)</p>
+        <% end %>
+        <%= link_to 'Edit', selectanalyses_path, class: 'edit-button' %>
+
+        <h2>Heatmap: Selected Options</h2>
+        <% if session[:generate_heatmap] == 'yes' %>
+          <p>Heatmap: Yes</p>
+          <ul>
+            <li>X Axis: <%= session[:heatmap_x] %></li>
+            <li>Y Axis: <%= session[:heatmap_y] %></li>
+            <li>Value (V): <%= session[:heatmap_v] %></li>
+            <li>Format: <%= session[:heatmap_format] %></li>
+            <li>Name: <%= session[:heatmap_title] %></li>
+          </ul>
+        <% else %>
+          <p>Heatmap: No</p>
         <% end %>
         <%= link_to 'Edit', selectanalyses_path, class: 'edit-button' %>
 

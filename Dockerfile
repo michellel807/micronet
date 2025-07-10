@@ -45,7 +45,7 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # fix policy error with imagemagick and ghostscript
 RUN sed -i 's|<policy domain="coder" rights="none" pattern="PDF" />||' /etc/ImageMagick-6/policy.xml
 
-ENV RAILS_LOG_TO_STDOUT=1
+ENV RAILS__TO_STDOUT=1
 
 # Copy Gemfile and Gemfile.lock into the image and install dependencies
 COPY Gemfile Gemfile.lock ./

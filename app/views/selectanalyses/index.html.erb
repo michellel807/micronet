@@ -42,8 +42,16 @@
           <label>
               <%= check_box_tag 'chart_types[]', 'raw_data', @selected_chart_types.include?('raw_data') %>
               Raw Data Plot (Per Well)
-              <p> This analysis will generate a growth curve for each well in the experimental design individually. </p>
+              <p> 
+              This analysis will generate a growth curve for each well in the experimental design individually. <br>
+              Note: This function only works for 96-well plate formats.
+              </p>
           </label>
+              <% if flash[:error] %>
+              <div style="color: red; font-weight: bold; font-size: 20px; margin-bottom: 1em;">
+                <%= flash[:error] %>
+              </div>
+              <% end %>
         </div>
         <div class="general-white-block">
           <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
@@ -78,6 +86,43 @@
                   <%= option %>
               </label>
             <% end %>
+          </div>
+        </div>
+
+        <!-- AMiGA Heatmap Section -->
+        <div id="heatmap-section" style="display:none; margin-top: 30px;">
+          <h2>Generate Heatmap?</h2>
+          <label>
+            <input type="radio" name="generate_heatmap" value="yes"> Yes
+          </label>
+          <label>
+            <input type="radio" name="generate_heatmap" value="no" checked> No
+          </label>
+          <div id="heatmap-options" style="display:none; margin-top: 10px;">
+            <label>X Axis:
+              <select id="heatmap-x" name="heatmap_x"></select>
+            </label>
+            <label>Y Axis:
+              <select id="heatmap-y" name="heatmap_y"></select>
+            </label>
+            <label>Value (V):
+              <select id="heatmap-v" name="heatmap_v">
+                <option value="AUC in units of OD">AUC in units of OD</option>
+                <option value="Linear Carrying Capacity in units of OD">Linear Carrying Capacity in units of OD</option>
+                <option value="Growth Rate">Growth Rate</option>
+                <option value="Doubling Time">Doubling Time</option>
+                <option value="Lag Time">Lag Time</option>
+              </select>
+            </label>
+            <label>Format:
+              <select id="heatmap-format" name="heatmap_format">
+                <option value="png">PNG</option>
+                <option value="jpg">JPG</option>
+              </select>
+            </label>
+            <label>Heatmap Name:
+              <input type="text" id="heatmap-title" name="heatmap_title" value="AMiGA Heatmap" />
+            </label>
           </div>
         </div>
 
@@ -179,8 +224,11 @@
       if ($(this).is(":checked")) {
         $(".radio-container").show();
         $("input[name='pool_replicates'][value='no']").prop("checked", true);
+        $('#heatmap-section').show();
       } else {
         $(".radio-container").hide();
+        $('#heatmap-section').hide();
+        $('#heatmap-options').hide();
       }
     });
 
@@ -350,6 +398,47 @@
     function clearCheckedOptions() {
       $("input[name='pool_options[]']").prop("checked", false);
     }
+
+    // AMiGA Heatmap UI logic (mapping columns)
+    function populateHeatmapAxisDropdowns() {
+      var columns = <%= raw @columns.to_json %>;
+      let xSelect = $('#heatmap-x');
+      let ySelect = $('#heatmap-y');
+      xSelect.empty();
+      ySelect.empty();
+      columns.forEach(function(opt) {
+        if (!/well/i.test(opt)) { // Exclude columns containing 'well' (case-insensitive)
+          xSelect.append(`<option value="${opt}">${opt}</option>`);
+          ySelect.append(`<option value="${opt}">${opt}</option>`);
+        }
+      });
+      xSelect.on('change', function() {
+        let selected = $(this).val();
+        ySelect.find('option').show();
+        ySelect.find(`option[value="${selected}"]`).hide();
+        // Special case: if Plate_ID is selected in X, hide it in Y
+        if (selected === 'Plate_ID') {
+          ySelect.find(`option[value="Plate_ID"]`).hide();
+        }
+      });
+      ySelect.on('change', function() {
+        let selected = $(this).val();
+        xSelect.find('option').show();
+        xSelect.find(`option[value="${selected}"]`).hide();
+        // Special case: if Plate_ID is selected in Y, hide it in X
+        if (selected === 'Plate_ID') {
+          xSelect.find(`option[value="Plate_ID"]`).hide();
+        }
+      });
+    }
+    $('input[name="generate_heatmap"]').on('change', function() {
+      if ($(this).val() === 'yes') {
+        $('#heatmap-options').show();
+        populateHeatmapAxisDropdowns();
+      } else {
+        $('#heatmap-options').hide();
+      }
+    });
   });
 </script>
 
