@@ -4,6 +4,7 @@ class GenerateController < ApplicationController
   @user = User.find_or_create_by(email: params[:email])
   @pool_replicates= session[:pool_replicates]
   @pool_options = session[:pool_options] || []
+  @compare_parameters_pool = session[:compare_parameters_pool]
   if !@pool_options.empty?
     @pool_options_string = "'#{ @pool_options.join(",") }'"
   end
@@ -14,7 +15,12 @@ class GenerateController < ApplicationController
   puts"session[:chart_types] is #{session[:chart_types]}"
   puts "finalsubset is #{session[:finalsubset]}"
   puts "hypothesis is #{session[:hypothesis]}"
+<<<<<<< app/controllers/generate_controller.rb
+  puts "compare_parameters_pool is #{session[:compare_parameters_pool]}"
+  puts "finalsubset_pooled is #{session[:finalsubset_pooled]}"
+=======
   
+>>>>>>> app/controllers/generate_controller.rb
   end
 
   def run
@@ -38,7 +44,7 @@ class GenerateController < ApplicationController
       heatmap_format: params[:heatmap_format] || session[:heatmap_format],
       heatmap_title: params[:heatmap_title] || session[:heatmap_title]
     }
-    Delayed::Job.enqueue(JobAnalyzer.new(@job.id, session[:chart_types], session[:pool_replicates], session[:pool_options_string], session[:finalsubset],session[:hypothesis], heatmap_params))
+    Delayed::Job.enqueue(JobAnalyzer.new(@job.id, session[:chart_types], session[:pool_replicates], session[:pool_options_string], session[:finalsubset],session[:hypothesis], session[:finalsubset],session[:hypothesis], session[:compare_parameters_pool], session[:finalsubset_pooled], heatmap_params))
     puts "beginning analysis"
     @job.update(status: "Job submitted")
     puts "Job status is #{@job.status}"

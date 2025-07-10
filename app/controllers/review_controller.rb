@@ -45,6 +45,13 @@ class ReviewController < ApplicationController
 
       session[:pool_replicates] = params[:pool_replicates] || []
       session[:pool_options] = params[:pool_options] || []
+      session[:chart_types] = params[:chart_types] || []
+      # Save pooled variable for compare-parameters as column_pooled if selected
+      if session[:chart_types].include?("compare-parameters")
+        session[:compare_parameters_pool] = params[:column_pooled]
+      else
+        session[:compare_parameters_pool] = nil
+      end
       puts "session[:chart_types] is #{session[:chart_types]}"
       session[:email] = params[:email] || ""
       session[:data_files] = params[:data_files] || []
@@ -60,17 +67,33 @@ class ReviewController < ApplicationController
     final = {}
     subsetoptions.map{|option| final[option]=params[option]}
     final = final.map { |key, value| "#{key}:#{value}" }.join(",")
+    
+    # Test Hypothesis parameters
     @column = params[:column] || 'None'
     @condition1 = params[:condition1]
     @condition2 = params[:condition2]
     session[:subsetoptions] = subsetoptions
     finalsubset = "'#{@column}:#{@condition1},#{@condition2};#{final}'"
     session[:finalsubset] = finalsubset
+    
+    # Compare Parameters (pooled) parameters
+    @column_pooled = params[:column_pooled] || 'None'
+    @condition1_pooled = params[:condition1_pooled]
+    @condition2_pooled = params[:condition2_pooled]
+    session[:column_pooled] = @column_pooled
+    session[:condition1_pooled] = @condition1_pooled
+    session[:condition2_pooled] = @condition2_pooled
+    
+    # Create separate finalsubset for compare-parameters
+    finalsubset_pooled = "'#{@column_pooled}:#{@condition1_pooled},#{@condition2_pooled};#{final}'"
+    session[:finalsubset_pooled] = finalsubset_pooled
+    
     @hypothesis = "H0:Time;H1:Time+" + @column || 'None'
     @hypothesis = "'#{@hypothesis}'"
     session[:hypothesis] = @hypothesis
     session[:column] = @column
     puts "finalsubset is #{session[:finalsubset]}"
+    puts "finalsubset_pooled is #{session[:finalsubset_pooled]}"
     puts "hypothesis is #{session[:hypothesis]}"
   end
 end
