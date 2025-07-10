@@ -8,9 +8,9 @@ class Job < ApplicationRecord
   attr_accessor :title
 
 
-<<<<<<< app/models/job.rb
+
   def analyze(chart_types, pool_replicates, pool_options_string, finalsubset, hypothesis, compare_parameters_pool, finalsubset_pooled, heatmap_params = {})
->>>>>>> app/models/job.rb
+
     self.status = "Analyzing..."
     self.start_time = DateTime.now
     @selected_chart_types = chart_types || []
@@ -24,12 +24,11 @@ class Job < ApplicationRecord
     fit_summary_path = nil
     fit_stats_path = nil
     compare_params_paths = nil
-<<<<<<< app/models/job.rb
     test_hypothesis_paths = nil
     test_hypothesis_pdf_paths = nil
     compare_params_pdf_paths = nil
     file_names = []
->>>>>>> app/models/job.rb
+
 
     begin
 
