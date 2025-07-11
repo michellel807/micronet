@@ -8,7 +8,7 @@ class Job < ApplicationRecord
   attr_accessor :title
 
 
-  def analyze(chart_types, pool_replicates, pool_options_string, finalsubset, hypothesis)
+  def analyze(chart_types, pool_replicates, pool_options_string, finalsubset, hypothesis, gp_pool_by_column, gp_subset_choice, gp_finalsubset)
     self.status = "Analyzing..."
     self.start_time = DateTime.now
     @selected_chart_types = chart_types || []
@@ -16,11 +16,15 @@ class Job < ApplicationRecord
     @pool_options_string = pool_options_string || []
     @finalsubset = finalsubset
     @hypothesis = hypothesis
+    @gp_pool_by_column = gp_pool_by_column
+    @gp_subset_choice = gp_subset_choice
+    @gp_finalsubset = gp_finalsubset
     raw_data_results = nil
     fit_summary_path = nil
     fit_stats_path = nil
     compare_params_paths = nil
     compare_params_pdf_paths = nil
+    gp_plot_path = nil
 
     begin
 
@@ -33,6 +37,21 @@ class Job < ApplicationRecord
         end
       end
       logger.debug("done with raw_data ...")
+
+      if @selected_chart_types.include?('gp_plot')
+        if @gp_subset_choice == "no"
+          system("amiga fit -i D:/Projects/Data+/micronet-app/private/uploads/userexpt --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
+        elsif @gp_subset_choice == "yes"
+          system("amiga fit -i D:/Projects/Data+/micronet-app/private/uploads/userexpt -s #{gp_finalsubset} --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
+        else
+          raise "Invalid GP subset choice"
+        end
+        Python.exec("lib/scripts/otherscripts/gpplot.py private/uploads/userexpt/derived")
+        gp_plot_path = Rails.root.join('private', 'uploads', 'userexpt', 'derived', 'gp_plot.pdf')
+        raise "The GP plot analysis failed" unless File.exist?(gp_plot_path)
+        @gp_plot_path = gp_plot_path
+        logger.debug("done with gp_plot ...")
+      end
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "no"
         system("amiga fit -i private/uploads/userexpt -o fit")

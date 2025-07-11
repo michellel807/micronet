@@ -14,6 +14,9 @@ class GenerateController < ApplicationController
   puts"session[:chart_types] is #{session[:chart_types]}"
   puts "finalsubset is #{session[:finalsubset]}"
   puts "hypothesis is #{session[:hypothesis]}"
+  puts "gp_pool_by_column is #{session[:gp_pool_by_column]}"
+  puts "gp_subset_choice is #{session[:gp_subset_choice]}" 
+  puts "gp_finalsubset is #{session[:gp_finalsubset]}"
   
   end
 
@@ -37,7 +40,10 @@ class GenerateController < ApplicationController
       session[:pool_replicates],
       session[:pool_options_string],
       session[:finalsubset],
-      session[:hypothesis]
+      session[:hypothesis],
+      session[:gp_pool_by_column],
+      session[:gp_subset_choice],
+      session[:gp_finalsubset]
     ))
     puts "beginning analysis"
     @job.update(status: "Job submitted")
