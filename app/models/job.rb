@@ -40,16 +40,16 @@ class Job < ApplicationRecord
 
       if @selected_chart_types.include?('gp_plot')
         if @gp_subset_choice == "no"
-          system("amiga fit -i D:/Projects/Data+/micronet-app/private/uploads/userexpt --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
+          system("amiga fit -i private/uploads/userexpt --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
         elsif @gp_subset_choice == "yes"
-          system("amiga fit -i D:/Projects/Data+/micronet-app/private/uploads/userexpt -s #{gp_finalsubset} --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
+          system("amiga fit -i private/uploads/userexpt -s #{gp_finalsubset} --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
         else
           raise "Invalid GP subset choice"
         end
         Python.exec("lib/scripts/otherscripts/gpplot.py private/uploads/userexpt/derived")
         gp_plot_path = Rails.root.join('private', 'uploads', 'userexpt', 'derived', 'gp_plot.pdf')
         raise "The GP plot analysis failed" unless File.exist?(gp_plot_path)
-        @gp_plot_path = gp_plot_path
+        @gp_plot_path = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'derived', 'gp_plot.pdf'))
         logger.debug("done with gp_plot ...")
       end
 
@@ -99,6 +99,7 @@ class Job < ApplicationRecord
       file_names += @fit_stats_paths if @fit_stats_paths.present?
       file_names += @compare_params_paths if @compare_params_paths.present?
       file_names += @compare_params_pdf_paths if @compare_params_pdf_paths.present?
+      file_names += @gp_plot_path if @gp_plot_path.present?
 
 
       # Send email to the user with the file names and the job object and mark job as completed

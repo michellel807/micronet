@@ -1,13 +1,15 @@
 class UserMailer < ApplicationMailer
   default from: "noreply@duke.edu"
-
-  def processedjob_email(file_names, job)
+  def processedjob_email(file_paths, job)
     @user = User.find(job.user_id)
-    @file_names = file_names
+    @file_names = file_paths.map { |fp| File.basename(fp) }
 
-    file_names.each do |file_name|
-      file_path = Rails.root.join('private', 'uploads', 'userexpt', 'figures', file_name)
-      attachments[File.basename(file_name)] = File.read(file_path) if File.exist?(file_path)
+    file_paths.each do |file_path|
+      if File.exist?(file_path)
+        attachments[File.basename(file_path)] = File.read(file_path)
+      else
+        logger.warn("Attachment missing: #{file_path}")
+      end
     end
 
     mail(to: @user.email, subject: "Schmid Lab Microbial Growth Model: Processed Data")
