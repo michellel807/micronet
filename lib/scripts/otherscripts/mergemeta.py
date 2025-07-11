@@ -40,7 +40,7 @@ if __name__ == "__main__":
     data_path = sys.argv[1]
     mapping_path = sys.argv[2]
 
-    # Call the comparison function and get the result
+    # Call the function and get the result
     result = merge_meta_files(data_path, mapping_path)
 
     # Print the result

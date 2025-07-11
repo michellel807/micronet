@@ -8,9 +8,7 @@ class Job < ApplicationRecord
   attr_accessor :title
 
 
-
   def analyze(chart_types, pool_replicates, pool_options_string, finalsubset, hypothesis, compare_parameters_pool, finalsubset_pooled, heatmap_params = {})
-
     self.status = "Analyzing..."
     self.start_time = DateTime.now
     @selected_chart_types = chart_types || []
@@ -20,6 +18,9 @@ class Job < ApplicationRecord
     @hypothesis = hypothesis
     @compare_parameters_pool = compare_parameters_pool
     @finalsubset_pooled = finalsubset_pooled
+    @gp_pool_by_column = gp_pool_by_column
+    @gp_subset_choice = gp_subset_choice
+    @gp_finalsubset = gp_finalsubset
     raw_data_results = nil
     fit_summary_path = nil
     fit_stats_path = nil
@@ -29,6 +30,7 @@ class Job < ApplicationRecord
     compare_params_pdf_paths = nil
     file_names = []
 
+    gp_plot_path = nil
 
     begin
 
@@ -40,6 +42,21 @@ class Job < ApplicationRecord
         @raw_data_pdf_paths = raw_data_results[:raw_data_pdf_paths].select { |path| File.exist?(path) }
       end
       logger.debug("done with raw_data ...")
+
+      if @selected_chart_types.include?('gp_plot')
+        if @gp_subset_choice == "no"
+          system("amiga fit -i private/uploads/userexpt --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
+        elsif @gp_subset_choice == "yes"
+          system("amiga fit -i private/uploads/userexpt -s #{gp_finalsubset} --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
+        else
+          raise "Invalid GP subset choice"
+        end
+        Python.exec("lib/scripts/otherscripts/gpplot.py private/uploads/userexpt/derived")
+        gp_plot_path = Rails.root.join('private', 'uploads', 'userexpt', 'derived', 'gp_plot.pdf')
+        raise "The GP plot analysis failed" unless File.exist?(gp_plot_path)
+        @gp_plot_path = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'derived', 'gp_plot.pdf'))
+        logger.debug("done with gp_plot ...")
+      end
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "no"
         system("amiga fit -i private/uploads/userexpt -o fit")
@@ -152,6 +169,7 @@ class Job < ApplicationRecord
       file_names += @test_hypothesis_paths if @test_hypothesis_paths.present?
       file_names += @test_hypothesis_pdf_paths if @test_hypothesis_pdf_paths.present?
       file_names += @compare_params_pdf_paths if @compare_params_pdf_paths.present?
+      file_names += @gp_plot_path if @gp_plot_path.present?
       if defined?(@heatmap_path) && @heatmap_path.present? && !file_names.include?(@heatmap_path)
         file_names << @heatmap_path
       end

@@ -37,7 +37,6 @@ class ReviewController < ApplicationController
       end
     end
 
-    if @mapping_file_paths.present?
       first_file_path = @mapping_file_paths.first
       file_data = File.read(first_file_path, encoding: 'iso-8859-1:utf-8')
       @columns = file_data.lines.first.chomp.split("\t")
@@ -45,14 +44,14 @@ class ReviewController < ApplicationController
 
       session[:pool_replicates] = params[:pool_replicates] || []
       session[:pool_options] = params[:pool_options] || []
-      session[:chart_types] = params[:chart_types] || []
+      puts "Pool_replicates is #{session[:pool_replicates]}"
+      puts "Pool_options is #{session[:pool_options]}"
       # Save pooled variable for compare-parameters as column_pooled if selected
       if session[:chart_types].include?("compare-parameters")
         session[:compare_parameters_pool] = params[:column_pooled]
       else
         session[:compare_parameters_pool] = nil
       end
-      puts "session[:chart_types] is #{session[:chart_types]}"
       session[:email] = params[:email] || ""
       session[:data_files] = params[:data_files] || []
       session[:generate_heatmap] = params[:generate_heatmap] if params[:generate_heatmap].present?
@@ -61,7 +60,16 @@ class ReviewController < ApplicationController
       session[:heatmap_v] = params[:heatmap_v] if params[:heatmap_v].present?
       session[:heatmap_format] = params[:heatmap_format] if params[:heatmap_format].present?
       session[:heatmap_title] = params[:heatmap_title] if params[:heatmap_title].present?
-    end
+
+      session[:gp_pool_by_column] = params[:gp_pool_by_column] || "None"
+      session[:gp_subset_choice] = params[:gp_subset_choice] || []
+      session[:gp_subset_column] = params[:gp_subset_column] || "None"
+      session[:gp_conditions] = params[:gp_conditions] || []
+      puts "GP pool by column: #{session[:gp_pool_by_column]}"
+      puts "GP subset choice: #{session[:gp_subset_choice]}"
+      puts "GP subset column: #{session[:gp_subset_column]}"
+      puts "GP subset values: #{session[:gp_conditions].inspect}"
+
     subsetoptions = CSV.read(@mapping_file_paths[0], col_sep: "\t")[0]
     subsetoptions.keep_if {|option| params[option] != "Select a value for #{option}" && params[option] !=nil }
     final = {}
@@ -95,5 +103,14 @@ class ReviewController < ApplicationController
     puts "finalsubset is #{session[:finalsubset]}"
     puts "finalsubset_pooled is #{session[:finalsubset_pooled]}"
     puts "hypothesis is #{session[:hypothesis]}"
+
+    @gp_pool_by_column = session[:gp_pool_by_column]
+    @gp_pool_by_column = "'#{@gp_pool_by_column}'"
+    @gp_subset_column = session[:gp_subset_column]
+    @gp_conditions = session[:gp_conditions]
+    @gp_subset_choice = session[:gp_subset_choice]
+    gp_finalsubset = "'#{@gp_subset_column}:#{@gp_conditions.join(",")}'"
+    session[:gp_finalsubset] = gp_finalsubset
+    puts "GP final subset is #{session[:gp_finalsubset]}"
   end
 end

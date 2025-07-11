@@ -17,9 +17,10 @@ class GenerateController < ApplicationController
   puts "hypothesis is #{session[:hypothesis]}"
   puts "compare_parameters_pool is #{session[:compare_parameters_pool]}"
   puts "finalsubset_pooled is #{session[:finalsubset_pooled]}"
-
+  puts "gp_pool_by_column is #{session[:gp_pool_by_column]}"
+  puts "gp_subset_choice is #{session[:gp_subset_choice]}" 
+  puts "gp_finalsubset is #{session[:gp_finalsubset]}"
   
-
   end
 
   def run
@@ -35,7 +36,7 @@ class GenerateController < ApplicationController
     puts "old files deleted"
     @job.sendconfirm
     @job.sendadmin
-    heatmap_params = {
+        heatmap_params = {
       generate_heatmap: params[:generate_heatmap] || session[:generate_heatmap],
       heatmap_x: params[:heatmap_x] || session[:heatmap_x],
       heatmap_y: params[:heatmap_y] || session[:heatmap_y],
@@ -50,6 +51,9 @@ class GenerateController < ApplicationController
       session[:pool_options_string],
       session[:finalsubset],
       session[:hypothesis],
+      session[:gp_pool_by_column],
+      session[:gp_subset_choice],
+      session[:gp_finalsubset],
       session[:compare_parameters_pool],
       session[:finalsubset_pooled],
       heatmap_params
