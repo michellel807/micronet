@@ -20,13 +20,11 @@ class UserMailer < ApplicationMailer
   #   to create a URL that displays all the Jobs linked to that User's email. More
   #   details on the Job page can be found in app/controllers/jobs_controller.rb.
   # The email can be found under views/user_mailer/confirm_email.html.erb
-  def confirm_email(job, user, file_names = [], file_links = [])
+  def confirm_email
     hashids = Hashids.new(ENV["HASHID_SLUG"].to_s)
-    @user = user
+    @user = User.find(params[:job].user_id)
     @hash = hashids.encode(@user.id)
-    @job = job
-    @file_names = file_names
-    @file_links = file_links
+    @job = params[:job]
     mail(to: @user.email, subject: "Schmid Lab Microbial Growth Model: Job Submitted")
   end
 

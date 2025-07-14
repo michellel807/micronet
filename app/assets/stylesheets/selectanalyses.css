@@ -71,3 +71,11 @@
   flex-direction: column;
   justify-content: center;
 }
+
+.analysis-dropdown {
+  font-size: 20px;
+  padding: 6px;
+  width: 100%;
+  max-width: 300px;
+  border-radius: 4px;
+}

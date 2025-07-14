@@ -13,10 +13,10 @@ class GenerateController < ApplicationController
   puts "@pool_options_string is #{@pool_options_string}"
   puts "session[:pool_options_string] is #{session[:pool_options_string]}"
   puts"session[:chart_types] is #{session[:chart_types]}"
-  puts "finalsubset is #{session[:finalsubset]}"
+  puts "test_finalsubset is #{session[:test_finalsubset]}"
   puts "hypothesis is #{session[:hypothesis]}"
   puts "compare_parameters_pool is #{session[:compare_parameters_pool]}"
-  puts "finalsubset_pooled is #{session[:finalsubset_pooled]}"
+  puts "compare_finalsubset is #{session[:compare_finalsubset]}"
   puts "gp_pool_by_column is #{session[:gp_pool_by_column]}"
   puts "gp_subset_choice is #{session[:gp_subset_choice]}" 
   puts "gp_finalsubset is #{session[:gp_finalsubset]}"
@@ -36,27 +36,19 @@ class GenerateController < ApplicationController
     puts "old files deleted"
     @job.sendconfirm
     @job.sendadmin
-        heatmap_params = {
-      generate_heatmap: params[:generate_heatmap] || session[:generate_heatmap],
-      heatmap_x: params[:heatmap_x] || session[:heatmap_x],
-      heatmap_y: params[:heatmap_y] || session[:heatmap_y],
-      heatmap_v: params[:heatmap_v] || session[:heatmap_v],
-      heatmap_format: params[:heatmap_format] || session[:heatmap_format],
-      heatmap_title: params[:heatmap_title] || session[:heatmap_title]
-    }
+
     Delayed::Job.enqueue(JobAnalyzer.new(
       @job.id,
       session[:chart_types],
       session[:pool_replicates],
       session[:pool_options_string],
-      session[:finalsubset],
+      session[:test_finalsubset],
       session[:hypothesis],
       session[:gp_pool_by_column],
       session[:gp_subset_choice],
       session[:gp_finalsubset],
       session[:compare_parameters_pool],
-      session[:finalsubset_pooled],
-      heatmap_params
+      session[:compare_finalsubset],
     ))
     puts "beginning analysis"
     @job.update(status: "Job submitted")

@@ -3,7 +3,7 @@ class HelpController < ApplicationController
   def index
   end
 
-  def download_file
+  def download_data_file
     send_example_file(params[:file_name], "data")
   end
 

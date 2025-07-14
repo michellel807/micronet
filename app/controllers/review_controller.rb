@@ -44,64 +44,53 @@ class ReviewController < ApplicationController
 
       session[:pool_replicates] = params[:pool_replicates] || []
       session[:pool_options] = params[:pool_options] || []
-      puts "Pool_replicates is #{session[:pool_replicates]}"
-      puts "Pool_options is #{session[:pool_options]}"
-      # Save pooled variable for compare-parameters as column_pooled if selected
-      if session[:chart_types].include?("compare-parameters")
-        session[:compare_parameters_pool] = params[:column_pooled]
-      else
-        session[:compare_parameters_pool] = nil
-      end
+      session[:compare_parameters_pool] = params[:column_pooled] || 'None'
       session[:email] = params[:email] || ""
       session[:data_files] = params[:data_files] || []
-      session[:generate_heatmap] = params[:generate_heatmap] if params[:generate_heatmap].present?
-      session[:heatmap_x] = params[:heatmap_x] if params[:heatmap_x].present?
-      session[:heatmap_y] = params[:heatmap_y] if params[:heatmap_y].present?
-      session[:heatmap_v] = params[:heatmap_v] if params[:heatmap_v].present?
-      session[:heatmap_format] = params[:heatmap_format] if params[:heatmap_format].present?
-      session[:heatmap_title] = params[:heatmap_title] if params[:heatmap_title].present?
-
       session[:gp_pool_by_column] = params[:gp_pool_by_column] || "None"
       session[:gp_subset_choice] = params[:gp_subset_choice] || []
       session[:gp_subset_column] = params[:gp_subset_column] || "None"
       session[:gp_conditions] = params[:gp_conditions] || []
+      puts "Pool_replicates is #{session[:pool_replicates]}"
+      puts "Pool_options is #{session[:pool_options]}"
+      puts "Compare parameters subset is #{session[:compare_parameters_pool]}"
       puts "GP pool by column: #{session[:gp_pool_by_column]}"
       puts "GP subset choice: #{session[:gp_subset_choice]}"
       puts "GP subset column: #{session[:gp_subset_column]}"
       puts "GP subset values: #{session[:gp_conditions].inspect}"
 
-    subsetoptions = CSV.read(@mapping_file_paths[0], col_sep: "\t")[0]
-    subsetoptions.keep_if {|option| params[option] != "Select a value for #{option}" && params[option] !=nil }
-    final = {}
-    subsetoptions.map{|option| final[option]=params[option]}
-    final = final.map { |key, value| "#{key}:#{value}" }.join(",")
+    permitted = params.permit!
+
+    test_subset_params = permitted.to_h.select { |k, v| k.start_with?("test_subset_") && v.present? && !v.start_with?("Select a value") }
+    compare_subset_params = permitted.to_h.select { |k, v| k.start_with?("pooled_subset_") && v.present? && !v.start_with?("Select a value") }
+
+    test_final = test_subset_params.map { |k, v| "#{k.sub("test_subset_", "")}:#{v}" }.join(";")
+    compare_final = compare_subset_params.map { |k, v| "#{k.sub("pooled_subset_", "")}:#{v}" }.join(";")
+    session[:test_final] = test_final
+    session[:compare_final] = compare_final
     
     # Test Hypothesis parameters
-    @column = params[:column] || 'None'
-    @condition1 = params[:condition1]
-    @condition2 = params[:condition2]
-    session[:subsetoptions] = subsetoptions
-    finalsubset = "'#{@column}:#{@condition1},#{@condition2};#{final}'"
-    session[:finalsubset] = finalsubset
+    @column_test = params[:column_test] || 'None'
+    session[:column_test] = @column_test
+    @condition1_test = params[:condition1_test] || 'None'
+    @condition2_test = params[:condition2_test] || 'None'
+    test_finalsubset = "'#{@column_test}:#{@condition1_test},#{@condition2_test};#{test_final}'"
+    session[:test_finalsubset] = test_finalsubset
     
-    # Compare Parameters (pooled) parameters
+    # Compare Parameters parameters
     @column_pooled = params[:column_pooled] || 'None'
-    @condition1_pooled = params[:condition1_pooled]
-    @condition2_pooled = params[:condition2_pooled]
     session[:column_pooled] = @column_pooled
-    session[:condition1_pooled] = @condition1_pooled
-    session[:condition2_pooled] = @condition2_pooled
+    @condition1_pooled = params[:condition1_pooled] || 'None'
+    @condition2_pooled = params[:condition2_pooled] || 'None'
+    compare_finalsubset = "'#{@column_pooled}:#{@condition1_pooled},#{@condition2_pooled};#{compare_final}'"
+    session[:compare_finalsubset] = compare_finalsubset
     
-    # Create separate finalsubset for compare-parameters
-    finalsubset_pooled = "'#{@column_pooled}:#{@condition1_pooled},#{@condition2_pooled};#{final}'"
-    session[:finalsubset_pooled] = finalsubset_pooled
-    
-    @hypothesis = "H0:Time;H1:Time+" + @column || 'None'
+    @hypothesis = "H0:Time;H1:Time+" + @column_test || 'None'
     @hypothesis = "'#{@hypothesis}'"
     session[:hypothesis] = @hypothesis
-    session[:column] = @column
-    puts "finalsubset is #{session[:finalsubset]}"
-    puts "finalsubset_pooled is #{session[:finalsubset_pooled]}"
+    session[:column_test] = @column_test
+    puts "test_finalsubset is #{session[:test_finalsubset]}"
+    puts "compare_finalsubset is #{session[:compare_finalsubset]}"
     puts "hypothesis is #{session[:hypothesis]}"
 
     @gp_pool_by_column = session[:gp_pool_by_column]

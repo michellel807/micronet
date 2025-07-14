@@ -103,37 +103,31 @@
             <p>N/A (Fit statistics not requested)</p>
           <% end %>
 
-          <% if session[:chart_types].include?('compare-parameters') %>
-            <% if session[:subsetoptions].present? %>
-              <p>Compare Growth (Compare by <%= session[:column] %> and Subset on <%= session[:subsetoptions].join(", ") %>)</p>
+          <% if session[:chart_types].include?('test-hypothesis') %>
+            <% if session[:test_final].present? %>
+              <p>Test Hypothesis (Test on <%= session[:column_test] %> and Subset on <%= session[:test_final] %>)</p>
             <% else %>
-              <p>Compare Growth (Compare by <%= session[:column] %>)</p>
+              <p>Test Hypothesis (Test on <%= session[:column_test] %>)</p>
+            <% end %>
+          <% else %>
+            <p>N/A (Test hypothesis not requested)</p>
+          <% end %>
+
+          <% if session[:chart_types].include?('compare-parameters') %>
+            <% if session[:compare_final].present? %>
+              <p>Compare Growth (Compare by <%= session[:column_pooled] %> and Subset on <%= session[:compare_final] %>)</p>
+            <% else %>
+              <p>Compare Growth (Compare by <%= session[:column_pooled] %>)</p>
             <% end %>
           <% else %>
             <p>N/A (Compare growth not requested)</p>
           <% end %>
-
-          <%= link_to 'Edit', selectanalyses_path, class: 'edit-button' %>
-        <% end %>
-
-        <h2>Heatmap: Selected Options</h2>
-        <% if session[:generate_heatmap] == 'yes' %>
-          <p>Heatmap: Yes</p>
-          <ul>
-            <li>X Axis: <%= session[:heatmap_x] %></li>
-            <li>Y Axis: <%= session[:heatmap_y] %></li>
-            <li>Value (V): <%= session[:heatmap_v] %></li>
-            <li>Format: <%= session[:heatmap_format] %></li>
-            <li>Name: <%= session[:heatmap_title] %></li>
-          </ul>
-        <% else %>
-          <p>Heatmap: No</p>
-        <% end %>
         <%= link_to 'Edit', selectanalyses_path, class: 'edit-button' %>
 
         <%= submit_tag 'Start My Job', class: 'analysis-button' %>
         <p style="margin-top: 10px;"> Note: Submitting may take a few seconds. Please be patient. </p>
         <% end %>
+      <% end %>
       </div>
     </div>
     <%= render "layouts/footer" %>

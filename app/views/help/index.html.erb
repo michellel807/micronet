@@ -27,7 +27,7 @@
       <h2>Data Files</h2>
       <ul>
         <% files_by_type[:data_files].each do |file| %>
-          <li><%= link_to file, download_file_path(file), target: "_blank" %></li>
+          <li><%= link_to file, download_data_file_path(file), target: "_blank" %></li>
         <% end %>
       </ul>
 
