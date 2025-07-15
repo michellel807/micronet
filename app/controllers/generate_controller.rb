@@ -20,6 +20,9 @@ class GenerateController < ApplicationController
   puts "gp_pool_by_column is #{session[:gp_pool_by_column]}"
   puts "gp_subset_choice is #{session[:gp_subset_choice]}" 
   puts "gp_finalsubset is #{session[:gp_finalsubset]}"
+  puts "heatmap_value is #{session[:heatmap_value]}"
+  puts "heatmap_x is #{session[:heatmap_x]}"
+  puts "heatmap_y is #{session[:heatmap_y]}"
   
   end
 
@@ -49,6 +52,9 @@ class GenerateController < ApplicationController
       session[:gp_finalsubset],
       session[:compare_parameters_pool],
       session[:compare_finalsubset],
+      session[:heatmap_value],
+      session[:heatmap_x],
+      session[:heatmap_y]
     ))
     puts "beginning analysis"
     @job.update(status: "Job submitted")

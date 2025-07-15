@@ -88,7 +88,7 @@
               <p>Gaussian Process Plot (No pooling specified)</p>
             <% end %>
           <% else %>
-            <p>N/A (Growth curve plot not requested)</p>
+            <p>N/A (Gaussian Process Plot not requested)</p>
           <% end %>
 
           <% if session[:chart_types].include?('fit_stats') %>
@@ -101,6 +101,16 @@
             <% end %>
           <% else %>
             <p>N/A (Fit statistics not requested)</p>
+          <% end %>
+
+          <% if session[:chart_types].include?('heatmap_plot') %>
+            <% if session[:heatmap_value] != 'None' && session[:heatmap_x] != 'None' && session[:heatmap_y] != 'None' %>
+              <p>Heatmap Plot (Value: <%= session[:heatmap_value] %>, X: <%= session[:heatmap_x] %>, Y: <%= session[:heatmap_y] %>)</p>
+            <% else %>
+              <p>Heatmap Plot (Incomplete parameters)</p>
+            <% end %>
+          <% else %>
+            <p>N/A (Heatmap plot not requested)</p>
           <% end %>
 
           <% if session[:chart_types].include?('test-hypothesis') %>

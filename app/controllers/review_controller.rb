@@ -51,6 +51,9 @@ class ReviewController < ApplicationController
       session[:gp_subset_choice] = params[:gp_subset_choice] || []
       session[:gp_subset_column] = params[:gp_subset_column] || "None"
       session[:gp_conditions] = params[:gp_conditions] || []
+      session[:heatmap_value] = params[:heatmap_value] || 'None'
+      session[:heatmap_x] = params[:heatmap_x] || 'None'
+      session[:heatmap_y] = params[:heatmap_y] || 'None'
       puts "Pool_replicates is #{session[:pool_replicates]}"
       puts "Pool_options is #{session[:pool_options]}"
       puts "Compare parameters subset is #{session[:compare_parameters_pool]}"
@@ -58,6 +61,9 @@ class ReviewController < ApplicationController
       puts "GP subset choice: #{session[:gp_subset_choice]}"
       puts "GP subset column: #{session[:gp_subset_column]}"
       puts "GP subset values: #{session[:gp_conditions].inspect}"
+      puts "Heatmap value: #{session[:heatmap_value]}"
+      puts "Heatmap x-axis: #{session[:heatmap_x]}"
+      puts "Heatmap y-axis: #{session[:heatmap_y]}"
 
     permitted = params.permit!
 
@@ -101,5 +107,9 @@ class ReviewController < ApplicationController
     gp_finalsubset = "'#{@gp_subset_column}:#{@gp_conditions.join(",")}'"
     session[:gp_finalsubset] = gp_finalsubset
     puts "GP final subset is #{session[:gp_finalsubset]}"
+
+    @heatmap_value = session[:heatmap_value]
+    @heatmap_x = session[:heatmap_x]
+    @heatmap_y = session[:heatmap_y]
   end
 end

@@ -8,7 +8,7 @@ class Job < ApplicationRecord
   attr_accessor :title
 
 
-  def analyze(chart_types, pool_replicates, pool_options_string, test_finalsubset, hypothesis, gp_pool_by_column, gp_subset_choice, gp_finalsubset, compare_parameters_pool, compare_finalsubset)
+  def analyze(chart_types, pool_replicates, pool_options_string, test_finalsubset, hypothesis, gp_pool_by_column, gp_subset_choice, gp_finalsubset, compare_parameters_pool, compare_finalsubset, heatmap_value, heatmap_x, heatmap_y)
     self.status = "Analyzing..."
     self.start_time = DateTime.now
     @selected_chart_types = chart_types || []
@@ -21,6 +21,9 @@ class Job < ApplicationRecord
     @gp_pool_by_column = gp_pool_by_column
     @gp_subset_choice = gp_subset_choice
     @gp_finalsubset = gp_finalsubset
+    @heatmap_value = heatmap_value
+    @heatmap_x = heatmap_x
+    @heatmap_y = heatmap_y
     raw_data_results = nil
     fit_summary_path = nil
     fit_stats_path = nil
@@ -29,6 +32,8 @@ class Job < ApplicationRecord
     test_hypothesis_pdf_paths = nil
     compare_params_pdf_paths = nil
     gp_plot_path = nil
+    gp_plot_data = nil
+    heatmap_plot_paths = nil
 
     begin
 
@@ -61,8 +66,6 @@ class Job < ApplicationRecord
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "no"
         system("amiga fit -i private/uploads/userexpt -o fit")
-
-        # Check if fit_summary_modified.txt exists
         fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
         Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
         raise "The fit statistics analysis failed" unless File.exist?(fit_summary_path)
@@ -79,6 +82,25 @@ class Job < ApplicationRecord
         logger.debug("done with fit_stats no ...")
       end
 
+      if @selected_chart_types.include?('heatmap_plot')
+        if @heatmap_value.present? && @heatmap_x.present? && @heatmap_y.present?
+          if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes" && fit_stats_path.present?
+            system("amiga heatmap -i private/uploads/userexpt/summary/fit_summary_modified.txt -o heatmap_plot -x #{heatmap_x} -y #{heatmap_y} -v '#{heatmap_value}' --title 'Heatmap: #{heatmap_value}' ")
+          else
+            system("amiga fit -i private/uploads/userexpt -o fit")
+            Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
+            heatmap_fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
+            raise "The heatmap plot failed" unless File.exist?(heatmap_fit_summary_path)
+            system("amiga heatmap -i private/uploads/userexpt/summary/fit_summary_modified.txt -o heatmap_plot -x #{heatmap_x} -y #{heatmap_y} -v '#{heatmap_value}' --title 'Heatmap: #{heatmap_value}' ")
+          end
+        else
+          raise "Heatmap value, x-axis, or y-axis not selected"
+        end
+        heatmap_plot_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'heatmap_plot.pdf')
+        raise "The heatmap plot analysis failed" unless File.exist?(heatmap_plot_path)
+        @heatmap_plot_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'heatmap_plot.pdf'))
+        logger.debug("done with heatmap_plot ...")
+      end
 
       if @selected_chart_types.include?('compare-parameters')
         system("amiga fit -i private/uploads/userexpt --sample-posterior --pool-by #{compare_parameters_pool} -o compare")
@@ -119,6 +141,7 @@ class Job < ApplicationRecord
       file_names += @compare_params_pdf_paths if @compare_params_pdf_paths.present?
       file_names += @gp_plot_path if @gp_plot_path.present?
       file_names += @gp_plot_data if @gp_plot_data.present?
+      file_names += @heatmap_plot_paths if @heatmap_plot_paths.present?
 
       UserMailer.processedjob_email(file_names, self).deliver_now
     rescue => e

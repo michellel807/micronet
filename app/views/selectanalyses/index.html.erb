@@ -135,6 +135,40 @@
     </div>
 
     <div class="general-white-block">
+        <label>
+          <%= check_box_tag 'chart_types[]', 'heatmap_plot', @selected_chart_types.include?('heatmap_plot') %>
+          Heatmap Plot
+          <p> This analysis will generate a heatmap for the conditions chosen. </p>
+        </label>
+
+        <div class="heatmap-container" style="display: none; gap: 10px; margin-bottom: 2px;">
+            <% if @mapping_file_paths.present? %>
+              <%= hidden_field_tag 'file_data', @file_data_json %>
+              <label style="margin: 0; padding: 0;">
+                <p style="margin: 0;">Choose the heatmap value:</p>
+              </label>
+              <%= select_tag 'heatmap_value', options_for_select([
+                'AUC in units of OD',
+                'Growth Rate',
+                'Linear Carrying Capacity in units of OD',
+                'Lag Time',
+                'Doubling Time'
+              ]), prompt: 'Select a value', id: 'heatmap_value', class: 'analysis-dropdown' %>
+
+              <p style="margin-top: 10px;">Choose the heatmap axes:</p>
+              <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px;">
+                <p style="margin: 0;">x-axis:</p>
+                <%= select_tag 'heatmap_x', options_for_select(@columns), prompt: 'Select x-axis', id: 'heatmap_x', class: 'analysis-dropdown' %>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px;">
+                <p style="margin: 0;">y-axis:</p>
+                <%= select_tag 'heatmap_y', options_for_select(@columns), prompt: 'Select y-axis', id: 'heatmap_y', class: 'analysis-dropdown' %>
+              </div>
+            <% end %>
+        </div>
+    </div>
+
+    <div class="general-white-block">
       <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
         <%= check_box_tag 'chart_types[]', 'test-hypothesis', @selected_chart_types.include?('test-hypothesis') %>
         Test Hypothesis
@@ -281,6 +315,14 @@
         $(".radio-container").hide();
         $('#heatmap-section').hide();
         $('#heatmap-options').hide();
+      }
+    });
+
+    $("input[name='chart_types[]'][value='heatmap_plot']").on("change", function () {
+      if ($(this).is(":checked")) {
+        $(".heatmap-container").show();
+      } else {
+        $(".heatmap-container").hide();
       }
     });
 
