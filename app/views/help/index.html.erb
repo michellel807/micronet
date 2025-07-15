@@ -17,33 +17,42 @@
       <a href="https://firasmidani.github.io/amiga/" target="_blank">Click here</a> to learn more.
     </p>
 
-    <% files_by_type = {
-      data_files: ["exampledata1.txt", "exampledata2.txt"],
-      mapping_files: ["examplemapping1.txt", "examplemapping2.txt"],
-      meta_file: "examplemeta.txt",
-      interval_file: "exampleinterval.txt"} %>
+    <div class="general-white-block">
+      <h2>MicroNet Guide and Data Cleaning Pipeline</h2>
+      <p>For detailed information for the different features of MicroNet and how to clean your data in the desired format, please refer to our comprehensive  documentation:</p>
+      <div class="documentation-link">
+        <%= link_to "MicroNet_Guide.pdf", "/docs/MicroNet_Guide.pdf", target: "_blank", class: "doc-link" %>
+      </div>
+    </div>
 
     <div class="general-white-block">
-      <h2>Data Files</h2>
+      <h2>Example Files</h2>
+      <% files_by_type = {
+        data_files: ["exampledata1.txt", "exampledata2.txt"],
+        mapping_files: ["examplemapping1.txt", "examplemapping2.txt"],
+        meta_file: "examplemeta.txt",
+        interval_file: "exampleinterval.txt"} %>
+
+      <h3>Data Files</h3>
       <ul>
         <% files_by_type[:data_files].each do |file| %>
           <li><%= link_to file, download_data_file_path(file), target: "_blank" %></li>
         <% end %>
       </ul>
 
-      <h2>Mapping Files</h2>
+      <h3>Mapping Files</h3>
       <ul>
         <% files_by_type[:mapping_files].each do |file| %>
           <li><%= link_to file, download_mapping_file_path(file), target: "_blank" %></li>
         <% end %>
       </ul>
 
-      <h2>Meta File</h2>
+      <h3>Meta File</h3>
       <ul>
         <li><%= link_to files_by_type[:meta_file], download_meta_file_path("examplemeta"), target: "_blank" %></li>
       </ul>
 
-      <h2>Interval File</h2>
+      <h3>Interval File</h3>
       <ul>
         <li><%= link_to files_by_type[:interval_file], download_interval_file_path("exampleinterval"), target: "_blank" %></li>
       </ul>
@@ -52,3 +61,4 @@
 </div>
   <%= render "layouts/footer" %>
 </body>
+</html>
