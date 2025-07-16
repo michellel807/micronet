@@ -4,7 +4,14 @@ import pandas as pd
 import os
 import sys
 
-def plot_gp_data(derived_path):
+# Set global font sizes for all plots
+plt.rcParams.update({
+    'axes.titlesize': 16,
+    'axes.labelsize': 14,
+    'legend.fontsize': 12
+})
+
+def plot_gp_data(derived_path, subset_name=None):
     data = pd.read_csv(os.path.join(derived_path, "plot_gp_data.txt"), sep='\t', encoding='utf-8')
     col = data.columns[1]
     data = data[[col, 'Time', 'mu', 'Sigma']]
@@ -37,7 +44,11 @@ def plot_gp_data(derived_path):
     # Final touches
     plt.xlabel('Time')
     plt.ylabel('Predicted OD')
-    plt.title('Predicted OD with 95% CI')
+    if subset_name != ':':
+        title = f'Gaussian Process Plot with Subset {subset_name}'
+    else:
+        title = 'Gaussian Process Plot'
+    plt.title(title)
     plt.legend()
     plt.grid(True)
 
@@ -47,12 +58,13 @@ def plot_gp_data(derived_path):
 
 if __name__ == "__main__":
     # Check if two filenames are provided as command-line arguments
-    if len(sys.argv) != 2:
-        print("Usage: python gpplot.py derived_path")
+    if len(sys.argv) < 2:
+        print("Usage: python gpplot.py derived_path subset_name")
         sys.exit(1)
 
     # Get the filenames from command-line arguments
     derived_path = sys.argv[1]
+    subset_name = sys.argv[2] if len(sys.argv) > 2 else None
 
     # Call the function and get the result
-    plot_gp_data(derived_path)
+    plot_gp_data(derived_path, subset_name)

@@ -210,7 +210,6 @@
         <p>Choose two to compare:</p>
         <%= select_tag 'condition1_pooled', '', prompt: 'Select a condition', id: 'condition1-pooled', class: 'analysis-dropdown' %>
         <%= select_tag 'condition2_pooled', '', prompt: 'Select another condition', id: 'condition2-pooled', class: 'analysis-dropdown' %>
-      <div id="subset-dropdowns-pooled"></div>
   </div>
   </div>
 
@@ -425,6 +424,49 @@
         $("#subset-dropdowns-pooled").empty();
       }
     });
+
+    // Helper function to exclude selected value from another select's options
+    function setupExclusionFilter(triggerSelector, targetSelector) {
+      $(triggerSelector).on('change', function () {
+        const selectedVal = $(this).val();
+        const $target = $(targetSelector);
+
+        // Save original options once
+        if (!$target.data('original-options')) {
+          const originalOptions = [];
+          $target.find('option').each(function () {
+            originalOptions.push({
+              value: this.value,
+              text: this.text,
+              disabled: this.disabled,
+              selected: this.selected
+            });
+          });
+          $target.data('original-options', originalOptions);
+        }
+
+        // Rebuild target select excluding selected value
+        const originalOptions = $target.data('original-options');
+        $target.empty();
+
+        originalOptions.forEach(option => {
+          if (option.value !== selectedVal) {
+            const opt = $('<option>', {
+              value: option.value,
+              text: option.text
+            });
+            if (option.disabled) opt.prop('disabled', true);
+            if (option.selected) opt.prop('selected', true);
+            $target.append(opt);
+          }
+        });
+      });
+    }
+
+    // Setup exclusion filters for all three pairs
+    setupExclusionFilter('#heatmap_x', '#heatmap_y');
+    setupExclusionFilter('#condition1-test', '#condition2-test');
+    setupExclusionFilter('#condition1-pooled', '#condition2-pooled');
 
     // Validation for both analyses
     $('#review-button').on('click', function(e) {

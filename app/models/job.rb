@@ -55,7 +55,7 @@ class Job < ApplicationRecord
         else
           raise "Invalid GP subset choice"
         end
-        Python.exec("lib/scripts/otherscripts/gpplot.py private/uploads/userexpt/derived")
+        Python.exec("lib/scripts/otherscripts/gpplot.py private/uploads/userexpt/derived #{gp_finalsubset}")
         gp_plot_path = Rails.root.join('private', 'uploads', 'userexpt', 'derived', 'gp_plot.pdf')
         gp_plot_data = Rails.root.join('private', 'uploads', 'userexpt', 'derived', 'plot_gp_data.txt')
         raise "The GP plot analysis failed" unless File.exist?(gp_plot_path) && File.exist?(gp_plot_data)
@@ -85,13 +85,13 @@ class Job < ApplicationRecord
       if @selected_chart_types.include?('heatmap_plot')
         if @heatmap_value.present? && @heatmap_x.present? && @heatmap_y.present?
           if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes" && fit_stats_path.present?
-            system("amiga heatmap -i private/uploads/userexpt/summary/fit_summary_modified.txt -o heatmap_plot -x #{heatmap_x} -y #{heatmap_y} -v '#{heatmap_value}' --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data")
+            system("amiga heatmap -i private/uploads/userexpt/summary/fit_summary_modified.txt -o heatmap_plot -x #{heatmap_x} -y #{heatmap_y} -v '#{heatmap_value}' --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' ")
           else
             system("amiga fit -i private/uploads/userexpt -o fit")
             Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
             heatmap_fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
             raise "The heatmap plot failed" unless File.exist?(heatmap_fit_summary_path)
-            system("amiga heatmap -i private/uploads/userexpt/summary/fit_summary_modified.txt -o heatmap_plot -x #{heatmap_x} -y #{heatmap_y} -v '#{heatmap_value}' --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data")
+            system("amiga heatmap -i private/uploads/userexpt/summary/fit_summary_modified.txt -o heatmap_plot -x #{heatmap_x} -y #{heatmap_y} -v '#{heatmap_value}' --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' ")
           end
         else
           raise "Heatmap value, x-axis, or y-axis not selected"
