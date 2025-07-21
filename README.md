@@ -10,6 +10,9 @@ The platform is a user-friendly implementation of the AMiGA Python package devel
 
 ## 🛠️ Quick Start
 
+#### `For Windows, change the bin/rails setting from CRLF into LF`
+#### `For macOS, some modifications to the Dockerfile may be needed`
+
 ### 1. Build the web with docker.
 
 ```bash
@@ -44,8 +47,6 @@ docker-compose run --rm web bash -c "bin/rails db:migrate RAILS_ENV=development"
 ## 🔧 Development
 
 ### Starting Development Server
-
-#### `For Windows, change the bin/rails setting from CRLF into LF`
 
 ```bash
 # Remove stale server PID if switching branches
@@ -91,7 +92,13 @@ This analysis compares parameters between two conditions of a variable.
 
 ## ⚙️ System Overview
 
-![Diagram](/schmid-lab/micronet-app/-/raw/final_cleanup/images/micronet%20flowchart.png)
+<p align="center">
+  <img src="https://gitlab.oit.duke.edu/schmid-lab/micronet-app/-/raw/final_cleanup/images/workflow.png" alt="Workflow Diagram" width="600"/>
+</p>
+
+- All the AMiGA commands are executed in app\models\job.rb
+- All the HTML files are in app\views
+- All the controllers are in app\controllers
 
 ---
 
