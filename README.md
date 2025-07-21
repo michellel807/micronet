@@ -93,7 +93,7 @@ This analysis compares parameters between two conditions of a variable.
 ## ⚙️ System Overview
 
 <p align="center">
-  <img src="https://gitlab.oit.duke.edu/schmid-lab/micronet-app/-/raw/final_cleanup/images/workflow.png" alt="Workflow Diagram" width="600"/>
+  <img src="https://gitlab.oit.duke.edu/schmid-lab/micronet-app/-/raw/final_cleanup/manuscript/workflow.png" alt="Workflow Diagram" width="600"/>
 </p>
 
 - All the AMiGA commands are executed in app\models\job.rb
