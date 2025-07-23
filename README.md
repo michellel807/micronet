@@ -110,3 +110,18 @@ All Micronet analyses are currently run on the local version. Additional system 
 
 ### 2. Device Memory Requirement.
 Certain analyses (such as **Fit Statistics** and **Test Hypothesis**) are memory-intensive. Inadequate system memory may result in computation failures.
+
+---
+
+
+## 🤝 Acknowledgment
+
+### 🌟This is the final product of Data+ 2025🌟
+
+Team members: Fan Xu, Ziqi Li, James Peng, Uzoma Uwazurike Jr., Abdulrahman Alalyani.
+
+Special thanks to:
+- The Schmid Lab for project guidance and resources.
+- The Duke OIT Research Computing team for infrastructure and support.
+- All contributors and testers who helped improve the tool.
+
