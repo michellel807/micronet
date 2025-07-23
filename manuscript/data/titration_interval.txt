@@ -1,0 +1,2 @@
+Plate_ID:Interval(seconds)
+titration:1800					
