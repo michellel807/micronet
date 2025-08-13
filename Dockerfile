@@ -4,7 +4,7 @@ FROM image-mirror-prod-registry.cloud.duke.edu/library/ruby:3.2.2 as deps
 # Set the working directory
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies (added python3-dev for Python.h)
 RUN apt-get update && apt-get -y upgrade && \
     apt-get install -y nodejs && \
     apt-get install -y --no-install-recommends \
@@ -14,7 +14,7 @@ RUN apt-get update && apt-get -y upgrade && \
     gcc \
     ca-certificates \
     ghostscript \
-    python3 python3-venv \
+    python3 python3-venv python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a Python virtual environment and install uv inside it
@@ -28,9 +28,15 @@ ENV PATH="/opt/python-base/bin:${PATH}"
 # Create virtual environment with uv and install amiga
 RUN uv venv /opt/uvenv && \
     cp /opt/python-base/bin/uv /opt/uvenv/bin/ && \
-    /opt/uvenv/bin/uv pip install amiga==3.0.4
+    /opt/uvenv/bin/uv pip list
 
+# uvenv to the path
 ENV PATH="/opt/uvenv/bin:${PATH}"
+
+COPY requirements.txt ./
+RUN uv pip install -r requirements.txt
+
+# RUN uv pip list
 
 RUN sed -i 's|<policy domain="coder" rights="none" pattern="PDF" />||' /etc/ImageMagick-6/policy.xml
 
