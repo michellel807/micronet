@@ -1,5 +1,4 @@
 # Use the official Ruby image as base
-# FROM ruby:3.2.2 as deps
 FROM image-mirror-prod-registry.cloud.duke.edu/library/ruby:3.2.2 as deps
 
 # Set the working directory
@@ -15,27 +14,23 @@ RUN apt-get update && apt-get -y upgrade && \
     gcc \
     ca-certificates \
     ghostscript \
+    python3 python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-ENV PATH="/miniconda3/bin:${PATH}"
-ARG PATH="/miniconda3/bin:${PATH}"
-RUN arch=$(uname -m) && \
-    if [ "$arch" = "x86_64" ]; then \
-      wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; \
-    else \
-      wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh -O miniconda.sh; \
-    fi && \
-    mkdir /root/.conda && \
-    bash miniconda.sh -b -u -p /miniconda3 && \
-    rm miniconda.sh && \
-    conda tos accept --override-channels --channel  https://repo.anaconda.com/pkgs/main && \
-    conda tos accept --override-channels --channel  https://repo.anaconda.com/pkgs/r && \
-    echo "Running $(/miniconda3/bin/conda --version)"
+# Create a Python virtual environment and install uv inside it
+RUN python3 -m venv /opt/python-base && \
+    /opt/python-base/bin/pip install --upgrade pip && \
+    /opt/python-base/bin/pip install uv
 
-COPY amigacondaenv.yml ./
-RUN conda env create -f ./amigacondaenv.yml
-ENV CONDA_DEFAULT_ENV=amiga
-ENV PATH="/miniconda3/envs/amigacondaenv/bin:${PATH}"
+# Ensure uv is on PATH for all following commands
+ENV PATH="/opt/python-base/bin:${PATH}"
+
+# Create virtual environment with uv and install amiga
+RUN uv venv /opt/uvenv && \
+    cp /opt/python-base/bin/uv /opt/uvenv/bin/ && \
+    /opt/uvenv/bin/uv pip install amiga==3.0.4
+
+ENV PATH="/opt/uvenv/bin:${PATH}"
 
 RUN sed -i 's|<policy domain="coder" rights="none" pattern="PDF" />||' /etc/ImageMagick-6/policy.xml
 
