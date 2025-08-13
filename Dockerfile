@@ -1,5 +1,6 @@
 # Use the official Ruby image as base
-FROM ruby:3.2.2 as deps
+# FROM ruby:3.2.2 as deps
+FROM image-mirror-prod-registry.cloud.duke.edu/library/ruby:3.2.2 as deps
 
 # Set the working directory
 WORKDIR /app
@@ -27,6 +28,8 @@ RUN arch=$(uname -m) && \
     mkdir /root/.conda && \
     bash miniconda.sh -b -u -p /miniconda3 && \
     rm miniconda.sh && \
+    conda tos accept --override-channels --channel  https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --override-channels --channel  https://repo.anaconda.com/pkgs/r && \
     echo "Running $(/miniconda3/bin/conda --version)"
 
 COPY amigacondaenv.yml ./
