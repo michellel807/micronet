@@ -3,23 +3,21 @@ import pandas as pd
 
 def compare_files(data_file, mapping_file):
     try:
-        mapping_file = pd.read_csv(mapping_file,sep=",",header=None)
+        mapping_file = pd.read_csv(mapping_file,sep="\t",header=None)
         
-        data_file = pd.read_csv(data_file,sep=",",header=None)
+        data_file = pd.read_csv(data_file,sep="\t",header=None)
         
-        mapping_file = mapping_file.iloc[1:]
         mapping_file.reset_index(drop=True, inplace=True)
         data_file.reset_index(drop=True, inplace=True)
-
         
         if len(mapping_file) != len(data_file):
-            return "Error: Number of rows in the two files is different."
+            return False
 
         if len(mapping_file) == len(data_file):
-            return "Files match"
+            return True
 
     except Exception as e:
-        return "Error: " + str(e)
+        return False
         
         
 if __name__ == "__main__":
@@ -33,9 +31,10 @@ if __name__ == "__main__":
     mapping_file = sys.argv[2]
 
     # Call the comparison function and get the result
-    result = compare_files(data_file, mapping_file)
-
-    # Print the result
-    print(result)
+    success = compare_files(data_file, mapping_file)
+    if success:
+        sys.exit(0)  # success
+    else:
+        sys.exit(1)  # failure
     
         

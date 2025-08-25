@@ -42,64 +42,102 @@
 
         <h2>Email</h2>
         <p><%= @user.email %></p>
+        <%= link_to 'Edit', root_path, class: 'edit-button' %>
 
-        <h2>Data Files</h2>
-        <% @data_file_names.each do |data_file| %>
-          <p><%= data_file %></p>
+        <h2>Uploaded Files</h2>
+
+        <% if @usr_data_file_names.present? %>
+          <p><strong>Data Files:</strong> <%= @usr_data_file_names.join(", ") %></p>
         <% end %>
-        <%= link_to 'Edit', upload_path, class: 'edit-button' %>
 
+        <% if @usr_mapping_file_names.present? %>
+          <p><strong>Mapping Files:</strong> <%= @usr_mapping_file_names.join(", ") %></p>
+        <% end %>
 
-        <h2>Mapping Files</h2>
-        <% @mapping_file_names.each do |mapping_file_path| %>
-          <p><%= mapping_file_path %></p>
+        <% if @usr_meta_file_name.present? %>
+          <p><strong>Meta File:</strong> <%= @usr_meta_file_name %></p>
+        <% end %>
+
+        <% if @usr_interval_file_name.present? %>
+          <p><strong>Interval File:</strong> <%= @usr_interval_file_name %></p>
         <% end %>
         <%= link_to 'Edit', upload_path, class: 'edit-button' %>
 
         <h2>Analyses To Run</h2>
-        <% if session[:chart_types]==[""] %>
-        <p>No analyses selected.</p>
-      <% else %>
-        <% if session[:chart_types].include?('fit_stats') %>
-          <p>Fit Statistics</p>
-        <% end %>
-        <% if session[:chart_types].include?('raw_data') %>
-          <p>Raw Data Plots (Per Well)</p>
-        <% end %>
-        <% if session[:chart_types].include?('compare-parameters') %>
-          <% if session[:subsetoptions].present? %>
-            <p>Growth will be compared by <%= session[:column] %> and subset on <%= session[:subsetoptions] %></p>
+
+        <% if session[:chart_types].blank? || session[:chart_types] == [""] %>
+          <p>No analyses selected.</p>
+        <% else %>
+
+          <% if session[:chart_types].include?('raw_data') %>
+            <p>Raw Data Plots (Per Well)</p>
           <% else %>
-            <p>Growth will be compared by <%= session[:column] %>. </p>
+            <p>N/A (Raw data plots not requested)</p>
           <% end %>
-        <% end %>
-      <% end %>
-      
-        <%= link_to 'Edit', selectanalyses_path, class: 'edit-button' %>
 
-        <h2>Pool Replicates: Selected Options</h2>
-        <% if session[:chart_types].include?('fit_stats') && session[:pool_replicates] == "yes" && !session[:pool_options].empty? %>
-          <p>For fit statistics, replicates will be pooled by <%= session[:pool_options] %></p>
-        <% elsif session[:chart_types].include?('fit_stats') && session[:pool_replicates] == "no" %>
-          <p>For fit statistics, no pooling will be used.</p>
-        <% elsif !session[:chart_types].include?('fit_stats') %>
-        <p>N/A (Fit statistics not requested)</p>
-        <% end %>
-        <%= link_to 'Edit', selectanalyses_path, class: 'edit-button' %>
+          <% if session[:chart_types].include?('gp_plot') %>
+            <% if session[:gp_pool_by_column].present? %>
+              <% if session[:gp_subset_choice] == "yes" && session[:gp_subset_column].present? %>
+                <p>Gaussian Pocess Plot (Pooled by <%= session[:gp_pool_by_column] %> and Subset on <%= session[:gp_subset_column] %>)</p>
+              <% elsif session[:gp_subset_choice] == "no" %>
+                <p>Gaussian Pocess Plot (Pooled by <%= session[:gp_pool_by_column] %>)</p>
+              <% else %>
+                <p>Gaussian Process Plot (Pooled by <%= session[:gp_pool_by_column] %> but no subset specified)</p>
+              <% end %>
+            <% else %>
+              <p>Gaussian Process Plot (No pooling specified)</p>
+            <% end %>
+          <% else %>
+            <p>N/A (Gaussian Process Plot not requested)</p>
+          <% end %>
 
-        <h2>Compare Growth: Selected Options</h2>
-        <% if session[:chart_types].include?('compare-parameters') && session[:subsetoptions].present?%>
-          <p>Growth will be compared by <%= session[:column] %> and subset on <%= session[:subsetoptions] %></p>
-          <% elsif session[:chart_types].include?('compare-parameters') && !session[:subsetoptions].present?%>
-          <p>Growth will be compared by <%= session[:column] %>. </p>
-          <% elsif !session[:chart_types].include?('compare-parameters')%>
-          <p>N/A (Compare growth not requested)</p>
-        <% end %>
+          <% if session[:chart_types].include?('fit_stats') %>
+            <% if session[:pool_replicates] == "yes" && session[:pool_options].present? %>
+              <p>Fit Statistics (Pool by <%= session[:pool_options].join(", ") %>)</p>
+            <% elsif session[:pool_replicates] == "no" %>
+              <p>Fit Statistics (No pooling)</p>
+            <% else %>
+              <p>Pooling information not provided.</p>
+            <% end %>
+          <% else %>
+            <p>N/A (Fit statistics not requested)</p>
+          <% end %>
+
+          <% if session[:chart_types].include?('heatmap_plot') %>
+            <% if session[:heatmap_value] != 'None' && session[:heatmap_x] != 'None' && session[:heatmap_y] != 'None' %>
+              <p>Heatmap Plot (Value: <%= session[:heatmap_value] %>, X: <%= session[:heatmap_x] %>, Y: <%= session[:heatmap_y] %>)</p>
+            <% else %>
+              <p>Heatmap Plot (Incomplete parameters)</p>
+            <% end %>
+          <% else %>
+            <p>N/A (Heatmap plot not requested)</p>
+          <% end %>
+
+          <% if session[:chart_types].include?('test-hypothesis') %>
+            <% if session[:test_final].present? %>
+              <p>Test Hypothesis (Test on <%= session[:column_test] %> and Subset on <%= session[:test_final] %>)</p>
+            <% else %>
+              <p>Test Hypothesis (Test on <%= session[:column_test] %>)</p>
+            <% end %>
+          <% else %>
+            <p>N/A (Test hypothesis not requested)</p>
+          <% end %>
+
+          <% if session[:chart_types].include?('compare-parameters') %>
+            <% if session[:compare_final].present? %>
+              <p>Compare Growth (Compare by <%= session[:column_pooled] %> and Subset on <%= session[:compare_final] %>)</p>
+            <% else %>
+              <p>Compare Growth (Compare by <%= session[:column_pooled] %>)</p>
+            <% end %>
+          <% else %>
+            <p>N/A (Compare growth not requested)</p>
+          <% end %>
         <%= link_to 'Edit', selectanalyses_path, class: 'edit-button' %>
 
         <%= submit_tag 'Start My Job', class: 'analysis-button' %>
         <p style="margin-top: 10px;"> Note: Submitting may take a few seconds. Please be patient. </p>
         <% end %>
+      <% end %>
       </div>
     </div>
     <%= render "layouts/footer" %>

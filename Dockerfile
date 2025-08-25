@@ -1,10 +1,10 @@
 # Use the official Ruby image as base
-FROM ruby:3.2.2 as deps
+FROM image-mirror-prod-registry.cloud.duke.edu/library/ruby:3.2.2 as deps
 
 # Set the working directory
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies (added python3-dev for Python.h)
 RUN apt-get update && apt-get -y upgrade && \
     apt-get install -y nodejs && \
     apt-get install -y --no-install-recommends \
@@ -14,25 +14,33 @@ RUN apt-get update && apt-get -y upgrade && \
     gcc \
     ca-certificates \
     ghostscript \
+    python3 python3-venv python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-ENV PATH="/miniconda3/bin:${PATH}"
-ARG PATH="/miniconda3/bin:${PATH}"
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-    && mkdir /root/.conda \
-    && bash Miniconda3-latest-Linux-x86_64.sh -b -u -p /miniconda3 \
-    && rm -f Miniconda3-latest-Linux-x86_64.sh \
-    && echo "Running $(conda --version)"
+# Create a Python virtual environment and install uv inside it
+RUN python3 -m venv /opt/python-base && \
+    /opt/python-base/bin/pip install --upgrade pip && \
+    /opt/python-base/bin/pip install uv
 
+# Ensure uv is on PATH for all following commands
+ENV PATH="/opt/python-base/bin:${PATH}"
 
-COPY amigacondaenv.yml ./
-RUN conda env create -f ./amigacondaenv.yml
+# Create virtual environment with uv and install amiga
+RUN uv venv /opt/uvenv && \
+    cp /opt/python-base/bin/uv /opt/uvenv/bin/ && \
+    /opt/uvenv/bin/uv pip list
 
-# fix policy error with imagemagick and ghostscript
+# uvenv to the path
+ENV PATH="/opt/uvenv/bin:${PATH}"
+
+COPY requirements.txt ./
+RUN uv pip install -r requirements.txt
+
+# RUN uv pip list
+
 RUN sed -i 's|<policy domain="coder" rights="none" pattern="PDF" />||' /etc/ImageMagick-6/policy.xml
 
 ENV RAILS_LOG_TO_STDOUT=1
-
 
 # Copy Gemfile and Gemfile.lock into the image and install dependencies
 COPY Gemfile Gemfile.lock ./

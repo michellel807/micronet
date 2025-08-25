@@ -7,30 +7,58 @@
   </head>
   
 <body>
-  <div class="help">
-    <%= render "layouts/header" %>
-    <div class="column skinny">
-      <% content_for :title, "Resources page" %>
-      <h1>Need Help?</h1>
-      <p>If you require assistance understanding how MicroNet works, or would like to see examples of how input data must be formatted, we recommend stepping through the workflow using our toy dataset below.
-        Simply download both the "Data" and "Mapping" files, then return to the <a href="/">home page</a> and upload them when prompted.
-      </p>
-      <div class="general-white-block">
-      <% data_files = [
-        { dataset_name: "Example Dataset 1", data: "exampledata1.asc", mapping: "examplemapping1.txt" },
-        { dataset_name: "Example Dataset 2", data: "exampledata2.asc", mapping: "examplemapping2.txt" }] %>
-    
-      <% data_files.each do |data_file| %>
-        <h1><%= data_file[:dataset_name] %></h1>
-        <div id="downloadlinks">
-          <!-- Download link for Data File -->
-          <%= link_to "Download Data File", download_file_path(data_file[:data]), target: '_blank' %>
-          <br>
-          <!-- Download link for Mapping File -->
-          <%= link_to "Download Mapping File", download_mapping_file_path(data_file[:mapping]), target: '_blank' %>
-        </div>
-      <% end %>
+<div class="help">
+  <%= render "layouts/header" %>
+  <div class="column skinny">
+    <% content_for :title, "Resources page" %>
+    <h1>Need Help?</h1>
+    <p>If you require assistance understanding how MicroNet works, or would like to see examples of how input data must be formatted, we recommend stepping through the workflow using our toy dataset below.
+      Simply download both the "Data" and "Mapping" files, then return to the <a href="/">home page</a> and upload them when prompted. 
+      <a href="https://firasmidani.github.io/amiga/" target="_blank">Click here</a> to learn more.
+    </p>
+
+    <div class="general-white-block">
+      <h2>MicroNet Guide and Data Cleaning Pipeline</h2>
+      <p>For detailed information for the different features of MicroNet and how to clean your data in the desired format, please refer to our comprehensive  documentation:</p>
+      <div class="documentation-link">
+        <%= link_to "MicroNet_Guide.pdf", "/docs/MicroNet_Guide.pdf", target: "_blank", class: "doc-link" %>
+      </div>
+    </div>
+
+    <div class="general-white-block">
+      <h2>Example Files</h2>
+      <% files_by_type = {
+        data_files: ["exampledata1.txt", "exampledata2.txt"],
+        mapping_files: ["examplemapping1.txt", "examplemapping2.txt"],
+        meta_file: "examplemeta.txt",
+        interval_file: "exampleinterval.txt"} %>
+
+      <h3>Data Files</h3>
+      <ul>
+        <% files_by_type[:data_files].each do |file| %>
+          <li><%= link_to file, download_data_file_path(file), target: "_blank" %></li>
+        <% end %>
+      </ul>
+
+      <h3>Mapping Files</h3>
+      <ul>
+        <% files_by_type[:mapping_files].each do |file| %>
+          <li><%= link_to file, download_mapping_file_path(file), target: "_blank" %></li>
+        <% end %>
+      </ul>
+
+      <h3>Meta File</h3>
+      <ul>
+        <li><%= link_to files_by_type[:meta_file], download_meta_file_path("examplemeta"), target: "_blank" %></li>
+      </ul>
+
+      <h3>Interval File</h3>
+      <ul>
+        <li><%= link_to files_by_type[:interval_file], download_interval_file_path("exampleinterval"), target: "_blank" %></li>
+      </ul>
     </div>
   </div>
+</div>
   <%= render "layouts/footer" %>
 </body>
+</html>

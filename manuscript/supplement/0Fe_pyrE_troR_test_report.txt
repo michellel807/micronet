@@ -1,0 +1,12 @@
+The following criteria were used to subset data:
+name...........['pyrE', 'troR']
+condition......['(-Fe)']
+
+
+Model Tested: {'H0': ['Time'], 'H1': ['Time', 'name']}
+
+log Bayes Factor: 5039.675
+
+Functional Difference [95% CI]: 3.343 [3.264,3.422]
+
+Data Manipulation: Input was reduced to 145 equidistant time points. Samples were modeled without controlling for batch effects (i.e. subtracting the growth of group/batch-specific control samples).

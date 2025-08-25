@@ -5,3 +5,6 @@
 #
 #   movies = Movie.create([{ name: "Star Wars" }, { name: "Lord of the Rings" }])
 #   Character.create(name: "Luke", movie: movies.first)
+
+# Create default admin user if it doesn't exist
+Admin.create(username: 'admin', password: 'admin123') unless Admin.exists?(username: 'admin')

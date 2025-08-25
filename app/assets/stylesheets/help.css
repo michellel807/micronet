@@ -62,14 +62,81 @@
   box-shadow: 0 0 15px 0 rgba(0,0,0,.8) inset;
 }
 .general-white-block {
-  padding: 20px;
-  border: 1px solid #ddd;
-  width: 80%; /* Adjust the width as per your requirement */
-  height: 10%; /* Adjust the maximum height as per your requirement */
-  overflow: auto; /* Add scrollbars if the content exceeds the maximum height */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  background: #fff;
+  border-radius: 8px;
+  padding: 25px;
+  margin: 20px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.general-white-block h2 {
+  color: #000750;
+  margin-bottom: 20px;
+  font-size: 24px;
+}
+
+.general-white-block h3 {
+  color: #2c3e50;
+  margin: 20px 0 10px;
+  font-size: 20px;
+}
+
+.general-white-block ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 10px 0;
+}
+
+.general-white-block li {
+  margin: 10px 0;
+}
+
+.general-white-block a {
+  color: #2980b9;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.general-white-block a:hover {
+  color: #3498db;
+  text-decoration: underline;
+}
+
+.documentation-link {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.doc-link {
+  display: inline-block;
+  background: #000750;
+  color: white !important;
+  padding: 12px 24px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.doc-link:hover {
+  background: #001070;
+  text-decoration: none !important;
+}
+
+h1 {
+  color: #000750;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+p {
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.help ul li a {
+  font-size: 1.25em;
+  font-weight: bold;
 }
 
 #downloadlinks {

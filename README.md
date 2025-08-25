@@ -1,34 +1,127 @@
-# MicroNet App
+# MicroNet
 
-## Development Using docker-compose
+**A web application for modeling and analyzing microbial population growth data.**
 
-To get started with development you will need to build with docker.
+MicroNet is a web-based tool that models microbial population dynamics using Gaussian Processes regression. It helps researchers analyze how microbes adapt to various environmental stressors, providing insights into microbial resilience. 
+The platform is a user-friendly implementation of the AMiGA Python package developed by Firas: https://firasmidani.github.io/amiga/.
 
-```shell
+---
+
+
+## 🛠️ Quick Start
+
+#### `For Windows, change the bin/rails setting from CRLF into LF`
+#### `For macOS, some modifications to the Dockerfile may be needed`
+
+### 1. Build the web with docker.
+
+```bash
 docker-compose build web
 ```
 
-Copy the .env.example into place.
+### 2. Copy the .env.example into place.
 
-```shell
+```bash
 cp .env.example .env
 ```
 
-Create the database.
+### 3. Create the database.
 
-```shell
+```bash
 docker-compose run --rm web bash -c "bin/rails db:create"
 ```
 
-Migrate the database.
+### 4. Migrate the database.
 
-```shell
+```bash
 docker-compose run --rm web bash -c "bin/rails db:migrate RAILS_ENV=development"
 ```
 
-### Checking email in Development
+### 5. Access the Application
 
-When running locally using the `docker-compose.yml` file included in the project,
-a instance of [InBucket](https://inbucket.org/) will be started in a container.
-In `config/development.rb`, the smtp server is set to use InBucket so to see if
-the email is working, visit [http://localhost:9000](http://localhost:9000).
+- **Web App**: http://localhost:3000  
+- **Email Interface**: http://localhost:9000  
+
+---
+
+## 🔧 Development
+
+### Starting Development Server
+
+```bash
+# Remove stale server PID if switching branches
+rm -f tmp/pids/server.pid
+
+# Start development server
+docker-compose up
+
+# End all services
+docker-compose down
+```
+
+### Running Tests
+
+```bash
+docker-compose run --rm test
+```
+
+---
+
+## 🚀 Features
+
+### 1. Raw Data Plot (Per Well)
+This analysis generates a growth curve for each well in the experimental design individually
+(only works for 96-well plates).
+
+### 2. Gaussian Process Plot
+This analysis will generate a Gaussian Process plot for a specified experimental property (the pool by option) with one chosen condition (the subset option).
+
+### 3.Fit Statistics
+This analysis summarizes and models growth curves, generating 5 commonly-used metrics as output: AUC (Area Under Curve), Growth Rate, Carrying Capacity, Lag Time, and Doubling Time.
+
+### 4. Heatmap Plot
+This analysis will generate a heatmap with values from **Fit Statistics** for the conditions (x and y axis) chosen.
+
+### 5. Test Hypothesis
+This analysis tests differential growth between distinct experimental conditions by computing the log Bayes Factor scores and the functional difference in the OD.
+
+### 6. Compare Parameters
+This analysis compares parameters between two conditions of a variable.
+
+---
+
+## ⚙️ System Overview
+
+<p align="center">
+  <img src="https://gitlab.oit.duke.edu/schmid-lab/micronet-app/-/raw/final_cleanup/manuscript/workflow.png" alt="Workflow Diagram" width="600"/>
+</p>
+
+- All the AMiGA commands are executed in app\models\job.rb
+- All the HTML files are in app\views
+- All the controllers are in app\controllers
+
+---
+
+
+## ⚠️ Notes
+
+### 1. Server Testing.
+All Micronet analyses are currently run on the local version. Additional system testing is required before deploying to the server.
+
+### 2. Device Memory Requirement.
+Certain analyses (such as **Fit Statistics** and **Test Hypothesis**) are memory-intensive. Inadequate system memory may result in computation failures.
+
+---
+
+
+## 🤝 Acknowledgment
+
+### 🌟This is the final product of Data+ 2025🌟
+
+Team members: Fan Xu, Ziqi Li, James Peng, Uzoma Uwazurike Jr., Abdulrahman Alalyani.
+
+Special thanks to:
+- The Schmid Lab for project guidance and resources.
+- The Duke OIT Research Computing team for infrastructure and support.
+- All contributors and testers who helped improve the tool.
+
