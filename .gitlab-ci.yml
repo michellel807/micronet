@@ -13,7 +13,7 @@ include:
 ##### TEST ENV #####
 .test_env:
   only:
-    - main
+    - acceptance
   environment:
     url: https://micronet-test.oit.duke.edu
     name: test
@@ -41,3 +41,32 @@ deploy_shib_apache_image_test:
     - .test_env
     - .deploy_shib_apache
 
+##### PROD ENV #####
+.prod_env:
+  only:
+    - production
+  environment:
+    url: https://micronet.biology.duke.edu
+    name: test
+  variables:
+    K8S_ENV: "okd4-prod"
+    K8S_NAMESPACE: "essweb-micronet-app-prod"
+    VAULT_OKD_ROLE: "ess-web-micronet_app_prod_okd4"
+    VAULT_SHIB_SECRET_PATH: "ess-web/kv/data/apps/micronet_app/shib/production"
+  extends:
+    - .common_env
+
+build_application_image_prod:
+  extends:
+    - .prod_env
+    - .build_image_using_library_template
+
+deploy_application_image_prod:
+  extends:
+    - .prod_env
+    - .deploy_image_using_library_template
+
+deploy_shib_apache_image_prod:
+  extends:
+    - .prod_env
+    - .deploy_shib_apache
