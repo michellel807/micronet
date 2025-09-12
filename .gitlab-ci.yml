@@ -47,7 +47,7 @@ deploy_shib_apache_image_test:
     - production
   environment:
     url: https://micronet.biology.duke.edu
-    name: test
+    name: prod
   variables:
     K8S_ENV: "okd4-prod"
     K8S_NAMESPACE: "essweb-micronet-app-prod"
