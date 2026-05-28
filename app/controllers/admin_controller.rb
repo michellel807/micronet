@@ -28,25 +28,40 @@ class AdminController < ApplicationController
     redirect_to login_path
   end
 
-  def update_credentials
+  def update_username
     admin = Admin.find(session[:admin_id])
 
-    # Check if the submitted parameters are valid
-    if admin&.authenticate(params[:current_password])
-      if params[:new_username].present?
-        admin.update(username: params[:new_username])
+    if admin.authenticate(params[:current_password])
+      if params[:new_username].blank?
+        flash[:error] = 'New username cannot be empty.'
+      elsif admin.update(username: params[:new_username])
+        flash[:success] = 'Username updated successfully.'
+      else
+        flash[:error] = admin.errors.full_messages.join(', ')
       end
-
-      if params[:new_password].present?
-        admin.update(password: params[:new_password])
-      end
-
-      flash[:success] = 'Username and/or password updated successfully.'
-      redirect_to admin_jobs_path
     else
       flash[:error] = 'Invalid current password. Please try again.'
-      redirect_to admin_jobs_path
     end
+    redirect_to admin_jobs_path
+  end
+
+  def update_password
+    admin = Admin.find(session[:admin_id])
+
+    if admin.authenticate(params[:current_password])
+      if params[:new_password].blank?
+        flash[:error] = 'New password cannot be empty.'
+      elsif params[:new_password] != params[:password_confirmation]
+        flash[:error] = 'Password confirmation does not match.'
+      elsif admin.update(password: params[:new_password])
+        flash[:success] = 'Password updated successfully.'
+      else
+        flash[:error] = admin.errors.full_messages.join(', ')
+      end
+    else
+      flash[:error] = 'Invalid current password. Please try again.'
+    end
+    redirect_to admin_jobs_path
   end
 
 end
