@@ -155,4 +155,100 @@ color: #fff;
 
   #password-section {
   margin-left: 30px;  }
+
+  /* Credentials Form Styling */
+  .credentials-container {
+    display: flex;
+    gap: 40px;
+    margin: 30px;
+    flex-wrap: wrap;
+  }
+
+  .credentials-form-wrapper {
+    flex: 1;
+    min-width: 300px;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #405fad;
+  }
+
+  .credentials-form-wrapper h2 {
+    font-size: 20px;
+    color: white;
+    margin-top: 0;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .credentials-form {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-group label {
+    color: white;
+    font-size: 14px;
+    margin-bottom: 5px;
+    font-weight: 500;
+  }
+
+  .form-control {
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: white;
+    color: #333;
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: #405fad;
+    box-shadow: 0 0 4px rgba(64, 95, 173, 0.3);
+  }
+
+  .form-submit {
+    padding: 10px 20px;
+    background-color: #405fad;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    align-self: flex-start;
+  }
+
+  .form-submit:hover {
+    background-color: #34467d;
+  }
+
+  .form-error {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: rgba(255, 107, 107, 0.2);
+    border-left: 3px solid #ff6b6b;
+    color: #ffb3b3;
+    font-size: 13px;
+    border-radius: 3px;
+  }
+
+  .form-success {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: rgba(107, 255, 107, 0.2);
+    border-left: 3px solid #6bff6b;
+    color: #b3ffb3;
+    font-size: 13px;
+    border-radius: 3px;
+  }
   

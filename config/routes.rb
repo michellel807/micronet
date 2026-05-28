@@ -34,7 +34,8 @@ Rails.application.routes.draw do
 
   get '/healthcheck' => 'healthcheck#index'
 
-  patch '/admin/update_credentials', to: 'admin#update_credentials', as: :update_admin_credentials
+  patch '/admin/update_username', to: 'admin#update_username', as: :update_admin_username
+  patch '/admin/update_password', to: 'admin#update_password', as: :update_admin_password
 
   scope '/admin' do
     get 'login', to: 'admin#login'
