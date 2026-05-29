@@ -11,6 +11,7 @@ class AdminController < ApplicationController
 
   def authenticate_admin
     if request.post?
+      # Handle login form submission
       admin = Admin.find_by(username: params[:username])
       if admin && admin.authenticate(params[:password])
         session[:admin_id] = admin.id
@@ -20,6 +21,9 @@ class AdminController < ApplicationController
         puts "Incorrect login"
         render :login
       end
+    else
+      # Check if user is already logged in for non-POST requests
+      redirect_to login_path unless session[:admin_id]
     end
   end
 
@@ -51,17 +55,23 @@ class AdminController < ApplicationController
     if admin.authenticate(params[:current_password])
       if params[:new_password].blank?
         flash[:error] = 'New password cannot be empty.'
+        redirect_to admin_jobs_path
       elsif params[:new_password] != params[:password_confirmation]
         flash[:error] = 'Password confirmation does not match.'
+        redirect_to admin_jobs_path
       elsif admin.update(password: params[:new_password])
-        flash[:success] = 'Password updated successfully.'
+        # Force logout after password change for security
+        session[:admin_id] = nil
+        flash[:success] = 'Password updated successfully. Please log in with your new password.'
+        redirect_to login_path
       else
         flash[:error] = admin.errors.full_messages.join(', ')
+        redirect_to admin_jobs_path
       end
     else
       flash[:error] = 'Invalid current password. Please try again.'
+      redirect_to admin_jobs_path
     end
-    redirect_to admin_jobs_path
   end
 
 end
