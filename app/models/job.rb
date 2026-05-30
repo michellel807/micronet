@@ -7,6 +7,9 @@ class Job < ApplicationRecord
   belongs_to :user
   attr_accessor :title
 
+  # Configuration constants
+  MAX_ACTIVE_JOBS_PER_USER = 3
+
 
   def analyze(chart_types, pool_replicates, pool_options_string, test_finalsubset, hypothesis, gp_pool_by_column, gp_subset_choice, gp_finalsubset, compare_parameters_pool, compare_finalsubset, heatmap_value, heatmap_x, heatmap_y)
     self.status = "Analyzing..."
@@ -146,12 +149,21 @@ class Job < ApplicationRecord
       UserMailer.processedjob_email(file_names, self).deliver_now
     rescue => e
       logger.error("Error processing job: #{e.message}")
-      self.status = "Failed"
-      save
-      UserMailer.failedjob_email(self, e.message).deliver_now
+      # Reload from DB to check if job was cancelled while this was running
+      self.reload
+      # Don't mark as failed if job was cancelled by admin
+      if self.status != "Cancelled"
+        self.status = "Failed"
+        self.end_time = DateTime.now
+        save
+        UserMailer.failedjob_email(self, e.message).deliver_now
+      else
+        logger.info("Job #{id} was cancelled by admin, skipping error email")
+      end
     ensure
       if self.status != "Failed"
         self.status = "Completed"
+        self.end_time = DateTime.now
         save
       end
     end
@@ -188,6 +200,30 @@ class Job < ApplicationRecord
 
   def admin_can_manage_jobs?(admin)
     admin&.is_admin?
+  end
+
+  # Count active submitted jobs (queued or running only)
+  def self.count_active_for_user(user_id)
+    where(user_id: user_id, status: ["Job submitted", "Analyzing..."]).count
+  end
+
+  # Check if user can submit another job
+  def self.can_user_submit?(user_id)
+    count_active_for_user(user_id) < MAX_ACTIVE_JOBS_PER_USER
+  end
+
+  # Mark job as cancelled without destroying it
+  def mark_cancelled(admin_name = nil)
+    self.status = "Cancelled"
+    self.end_time = DateTime.now
+    save
+    UserMailer.job_cancelled_email(self, admin_name).deliver_now
+  end
+
+  # Set end_time when job finishes
+  def set_end_time
+    self.end_time = DateTime.now
+    save
   end
 end
 
