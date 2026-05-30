@@ -1,140 +1,616 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admin page</title>
+  <title>Admin - Jobs Management</title>
   <%= stylesheet_link_tag 'admin' %>
   <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
   <%= javascript_include_tag 'application', 'data-turbolinks-track': 'reload' %>
   <%= csrf_meta_tags %>
+  <style>
+    .jobs-container {
+      padding: 20px;
+    }
 
+    .jobs-container h1 {
+      margin-bottom: 20px;
+      color: white;
+    }
+
+    .filter-tabs {
+      margin: 20px 0 30px 0;
+      border-bottom: 2px solid #ddd;
+      display: flex;
+      gap: 0;
+    }
+
+    .filter-tab {
+      padding: 12px 20px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .filter-tab:hover {
+      color: #64B5F6;
+    }
+
+    .filter-tab.active {
+      color: #64B5F6;
+      border-bottom-color: #64B5F6;
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    .job-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+      background: white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .job-table th {
+      background-color: #2c3e50;
+      color: white;
+      padding: 14px;
+      text-align: left;
+      font-weight: 600;
+      border: none;
+    }
+
+    .job-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #eee;
+      color: #333;
+    }
+
+    .job-table tr:hover {
+      background-color: #f8f9fa;
+    }
+
+    .job-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      min-width: 80px;
+      color: white;
+    }
+
+    .status-draft {
+      background-color: #9E9E9E;
+    }
+
+    .status-queued {
+      background-color: #9E9E9E;
+    }
+
+    .status-running {
+      background-color: #2196F3;
+    }
+
+    .status-completed {
+      background-color: #4CAF50;
+    }
+
+    .status-failed {
+      background-color: #f44336;
+    }
+
+    .status-cancelled {
+      background-color: #FF9800;
+    }
+
+    .no-jobs-message {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+      font-size: 16px;
+    }
+
+    .cancel-btn {
+      background-color: #f44336;
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: background-color 0.2s;
+    }
+
+    .cancel-btn:hover {
+      background-color: #da190b;
+    }
+
+    .time-pending {
+      color: #999;
+      font-style: italic;
+    }
+
+    .queue-position {
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      color: #333;
+    }
+  </style>
 </head>
 <body>
   <div class="adminscreen">
     <%= render "layouts/header" %>
-    <% @jobs = @jobs.to_a.reject { |job| job.status == 'Completed' } %>
+    
+    <div class="jobs-container">
+      <h1>Jobs Management</h1>
+      
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all">All Jobs</button>
+        <button class="filter-tab" data-filter="active">Active Jobs</button>
+        <button class="filter-tab" data-filter="completed">Completed (7 days)</button>
+        <button class="filter-tab" data-filter="failed">Failed (7 days)</button>
+        <button class="filter-tab" data-filter="cancelled">Cancelled (7 days)</button>
+      </div>
 
-    <h1>Currently Running Jobs</h1>
-    <ul>
-      <% @jobs.each do |job| %>
-        <%= "User: #{job.user_id} | "  %>
-        <%= "Job: #{job.id} | " %>
-        <%= "Status: #{job.status} | " %>
-        <%= "Start Time: #{job.start_time} | " %>
-        <% if job.admin_can_manage_jobs?(current_admin) %>
-        <%= button_to 'Cancel', cancel_admin_job_path(job), method: :patch, class: 'cancel-button', 'data-confirm-message': 'Are you sure you want to cancel this job?' %>
-        <% end %>
-    <% end %>
-  </ul>
-
-  <p id="updateinfo-button">Update username/password </p>
-
-  <div id="credentials-section" style="display: none;">
-    <div class="credentials-container">
-      <!-- Change Username Form -->
-      <div class="credentials-form-wrapper">
-        <h2>Change Username</h2>
-        <%= form_tag(update_admin_username_path, method: :patch, class: 'credentials-form') do %>
-          <div class="form-group">
-            <label for="current_password_username">Current Password:</label>
-            <%= password_field_tag :current_password, '', class: 'form-control' %>
-          </div>
-
-          <div class="form-group">
-            <label for="new_username">New Username:</label>
-            <%= text_field_tag :new_username, '', class: 'form-control' %>
-          </div>
-
-          <%= submit_tag 'Update Username', class: 'form-submit' %>
-        <% end %>
-
-        <% if flash.now[:error] && flash.now[:error].include?('username') %>
-          <div class="form-error">
-            <%= flash.now[:error] %>
-          </div>
-        <% end %>
-        <% if flash.now[:success] && flash.now[:success].include?('Username') %>
-          <div class="form-success">
-            <%= flash.now[:success] %>
-          </div>
+      <!-- All Jobs Section -->
+      <div id="all" class="section active">
+        <% if @jobs.any? %>
+          <table class="job-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Job ID</th>
+                <th>Type</th>
+                <th>Submitted</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @jobs.sort_by { |j| j.created_at }.reverse.each do |job| %>
+                <tr>
+                  <td><%= job.user.email %></td>
+                  <td><strong><%= job.id %></strong></td>
+                  <td>
+                    <% type_label = case job.status
+                      when 'In Progress' then 'Draft'
+                      when 'Job submitted' then 'Queued'
+                      when 'Analyzing...' then 'Running'
+                      else job.status
+                      end %>
+                    <% status_class = case job.status
+                      when 'In Progress'
+                        'status-draft'
+                      when 'Job submitted'
+                        'status-queued'
+                      when 'Analyzing...'
+                        'status-running'
+                      when 'Completed'
+                        'status-completed'
+                      when 'Failed'
+                        'status-failed'
+                      when 'Cancelled'
+                        'status-cancelled'
+                      else
+                        'status-queued'
+                      end %>
+                    <span class="status-badge <%= status_class %>"><%= type_label %></span>
+                  </td>
+                  <td><%= job.created_at.strftime('%Y-%m-%d %H:%M:%S') %></td>
+                  <td>
+                    <% if job.start_time.present? %>
+                      <%= job.start_time.strftime('%Y-%m-%d %H:%M:%S') %>
+                    <% else %>
+                      <span class="time-pending">Pending</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if job.end_time.present? %>
+                      <%= job.end_time.strftime('%Y-%m-%d %H:%M:%S') %>
+                    <% else %>
+                      <span class="time-pending">Pending</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if ["Job submitted", "Analyzing..."].include?(job.status) && job.admin_can_manage_jobs?(current_admin) %>
+                      <button class="cancel-btn" onclick="showCancelModal(<%= job.id %>, '<%= job.user.email %>')">Cancel</button>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <div class="no-jobs-message">No jobs</div>
         <% end %>
       </div>
 
-      <!-- Change Password Form -->
-      <div class="credentials-form-wrapper">
-        <h2>Change Password</h2>
-        <%= form_tag(update_admin_password_path, method: :patch, class: 'credentials-form') do %>
-          <div class="form-group">
-            <label for="current_password">Current Password:</label>
-            <%= password_field_tag :current_password, '', class: 'form-control' %>
-          </div>
-
-          <div class="form-group">
-            <label for="new_password">New Password:</label>
-            <%= password_field_tag :new_password, '', class: 'form-control' %>
-          </div>
-
-          <div class="form-group">
-            <label for="password_confirmation">Confirm New Password:</label>
-            <%= password_field_tag :password_confirmation, '', class: 'form-control' %>
-          </div>
-
-          <%= submit_tag 'Update Password', class: 'form-submit' %>
+      <!-- Active Jobs Section -->
+      <div id="active" class="section">
+        <% active_jobs = @jobs.select { |j| ["Job submitted", "Analyzing..."].include?(j.status) }.sort_by { |j| j.created_at }.reverse %>
+        <% if active_jobs.any? %>
+          <table class="job-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Job ID</th>
+                <th>Type</th>
+                <th>Submitted</th>
+                <th>Start Time</th>
+                <th>Queue Position</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% active_jobs.each_with_index do |job, index| %>
+                <tr>
+                  <td><%= job.user.email %></td>
+                  <td><strong><%= job.id %></strong></td>
+                  <td>
+                    <span class="status-badge <%= job.status == 'Job submitted' ? 'status-queued' : 'status-running' %>">
+                      <%= job.status == 'Job submitted' ? 'Queued' : 'Running' %>
+                    </span>
+                  </td>
+                  <td><%= job.created_at.strftime('%Y-%m-%d %H:%M:%S') %></td>
+                  <td>
+                    <% if job.start_time.present? %>
+                      <%= job.start_time.strftime('%Y-%m-%d %H:%M:%S') %>
+                    <% else %>
+                      <span class="time-pending">Pending</span>
+                    <% end %>
+                  </td>
+                  <td class="queue-position">
+                    <% if job.status == 'Job submitted' %>
+                      <%= index + 1 %>
+                    <% else %>
+                      
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if job.admin_can_manage_jobs?(current_admin) %>
+                      <button class="cancel-btn" onclick="showCancelModal(<%= job.id %>, '<%= job.user.email %>')">Cancel</button>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <div class="no-jobs-message">No active jobs</div>
         <% end %>
+      </div>
 
-        <% if flash.now[:error] && flash.now[:error].include?('password') %>
-          <div class="form-error">
-            <%= flash.now[:error] %>
-          </div>
+      <!-- Completed Jobs Section -->
+      <div id="completed" class="section">
+        <% seven_days_ago = 7.days.ago %>
+        <% completed_jobs = @jobs.select { |j| j.status == 'Completed' && j.updated_at >= seven_days_ago }.sort_by { |j| j.updated_at }.reverse %>
+        <% if completed_jobs.any? %>
+          <table class="job-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Job ID</th>
+                <th>Submitted</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% completed_jobs.each do |job| %>
+                <tr>
+                  <td><%= job.user.email %></td>
+                  <td><strong><%= job.id %></strong></td>
+                  <td><%= job.created_at.strftime('%Y-%m-%d %H:%M:%S') %></td>
+                  <td>
+                    <% if job.start_time.present? %>
+                      <%= job.start_time.strftime('%Y-%m-%d %H:%M:%S') %>
+                    <% else %>
+                      <span class="time-pending">N/A</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if job.end_time.present? %>
+                      <%= job.end_time.strftime('%Y-%m-%d %H:%M:%S') %>
+                    <% else %>
+                      <span class="time-pending">N/A</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if job.start_time.present? && job.end_time.present? %>
+                      <%= ((job.end_time - job.start_time) / 60).round(1) %> min
+                    <% else %>
+                      
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <div class="no-jobs-message">No completed jobs in the last 7 days</div>
         <% end %>
-        <% if flash.now[:success] && flash.now[:success].include?('Password') %>
-          <div class="form-success">
-            <%= flash.now[:success] %>
-          </div>
+      </div>
+
+      <!-- Failed Jobs Section -->
+      <div id="failed" class="section">
+        <% seven_days_ago = 7.days.ago %>
+        <% failed_jobs = @jobs.select { |j| j.status == 'Failed' && j.updated_at >= seven_days_ago }.sort_by { |j| j.updated_at }.reverse %>
+        <% if failed_jobs.any? %>
+          <table class="job-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Job ID</th>
+                <th>Submitted</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% failed_jobs.each do |job| %>
+                <tr>
+                  <td><%= job.user.email %></td>
+                  <td><strong><%= job.id %></strong></td>
+                  <td><%= job.created_at.strftime('%Y-%m-%d %H:%M:%S') %></td>
+                  <td>
+                    <% if job.start_time.present? %>
+                      <%= job.start_time.strftime('%Y-%m-%d %H:%M:%S') %>
+                    <% else %>
+                      <span class="time-pending">N/A</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if job.end_time.present? %>
+                      <%= job.end_time.strftime('%Y-%m-%d %H:%M:%S') %>
+                    <% else %>
+                      <span class="time-pending">N/A</span>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <div class="no-jobs-message">No failed jobs in the last 7 days</div>
         <% end %>
+      </div>
+
+      <!-- Cancelled Jobs Section -->
+      <div id="cancelled" class="section">
+        <% seven_days_ago = 7.days.ago %>
+        <% cancelled_jobs = @jobs.select { |j| j.status == 'Cancelled' && j.updated_at >= seven_days_ago }.sort_by { |j| j.updated_at }.reverse %>
+        <% if cancelled_jobs.any? %>
+          <table class="job-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Job ID</th>
+                <th>Submitted</th>
+                <th>Cancelled</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% cancelled_jobs.each do |job| %>
+                <tr>
+                  <td><%= job.user.email %></td>
+                  <td><strong><%= job.id %></strong></td>
+                  <td><%= job.created_at.strftime('%Y-%m-%d %H:%M:%S') %></td>
+                  <td>
+                    <% if job.end_time.present? %>
+                      <%= job.end_time.strftime('%Y-%m-%d %H:%M:%S') %>
+                    <% else %>
+                      <span class="time-pending">N/A</span>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <div class="no-jobs-message">No cancelled jobs in the last 7 days</div>
+        <% end %>
+      </div>
+
+      <p id="updateinfo-button">Update username/password </p>
+
+      <div id="credentials-section" style="display: none;">
+        <div class="credentials-container">
+          <!-- Change Username Form -->
+          <div class="credentials-form-wrapper">
+            <h2>Change Username</h2>
+            <%= form_tag(update_admin_username_path, method: :patch, class: 'credentials-form') do %>
+              <div class="form-group">
+                <label for="current_password_username">Current Password:</label>
+                <%= password_field_tag :current_password, '', class: 'form-control' %>
+              </div>
+
+              <div class="form-group">
+                <label for="new_username">New Username:</label>
+                <%= text_field_tag :new_username, '', class: 'form-control' %>
+              </div>
+
+              <%= submit_tag 'Update Username', class: 'form-submit' %>
+            <% end %>
+
+            <% if flash.now[:error] && flash.now[:error].include?('username') %>
+              <div class="form-error">
+                <%= flash.now[:error] %>
+              </div>
+            <% end %>
+            <% if flash.now[:success] && flash.now[:success].include?('Username') %>
+              <div class="form-success">
+                <%= flash.now[:success] %>
+              </div>
+            <% end %>
+          </div>
+
+          <!-- Change Password Form -->
+          <div class="credentials-form-wrapper">
+            <h2>Change Password</h2>
+            <%= form_tag(update_admin_password_path, method: :patch, class: 'credentials-form') do %>
+              <div class="form-group">
+                <label for="current_password">Current Password:</label>
+                <%= password_field_tag :current_password, '', class: 'form-control' %>
+              </div>
+
+              <div class="form-group">
+                <label for="new_password">New Password:</label>
+                <%= password_field_tag :new_password, '', class: 'form-control' %>
+              </div>
+
+              <div class="form-group">
+                <label for="password_confirmation">Confirm New Password:</label>
+                <%= password_field_tag :password_confirmation, '', class: 'form-control' %>
+              </div>
+
+              <%= submit_tag 'Update Password', class: 'form-submit' %>
+            <% end %>
+
+            <% if flash.now[:error] && flash.now[:error].include?('password') %>
+              <div class="form-error">
+                <%= flash.now[:error] %>
+              </div>
+            <% end %>
+            <% if flash.now[:success] && flash.now[:success].include?('Password') %>
+              <div class="form-success">
+                <%= flash.now[:success] %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <%= button_to "Logout", admin_logout_path, method: :delete, data: { confirm: "Are you sure you want to logout?" }, id: "logout-button", class: "logout-button"%>
+    </div>
+  </div>
+  <%= render "layouts/footer" %>
+
+  <script>
+    function showCancelModal(jobId, userEmail) {
+      document.getElementById('cancelModal').style.display = 'block';
+      document.getElementById('jobIdConfirm').innerText = jobId;
+      document.getElementById('userEmailConfirm').innerText = userEmail;
+      document.getElementById('confirmCancelBtn').onclick = function() {
+        confirmCancel(jobId);
+      };
+    }
+
+    function closeModal() {
+      document.getElementById('cancelModal').style.display = 'none';
+    }
+
+    function confirmCancel(jobId) {
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = `/admin/jobs/${jobId}/cancel`;
+
+      const methodInput = document.createElement('input');
+      methodInput.type = 'hidden';
+      methodInput.name = '_method';
+      methodInput.value = 'PATCH';
+      form.appendChild(methodInput);
+
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = 'authenticity_token';
+      csrfInput.value = csrfToken;
+      form.appendChild(csrfInput);
+
+      document.body.appendChild(form);
+      form.submit();
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      // Filter tab functionality
+      const filterTabs = document.querySelectorAll('.filter-tab');
+      const sections = document.querySelectorAll('.section');
+
+      filterTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          filterTabs.forEach(t => t.classList.remove('active'));
+          sections.forEach(s => s.classList.remove('active'));
+
+          this.classList.add('active');
+          const filterId = this.dataset.filter;
+          document.getElementById(filterId).classList.add('active');
+        });
+      });
+
+      // Credentials toggle
+      const updateButton = document.getElementById('updateinfo-button');
+      const credentialsSection = document.getElementById('credentials-section');
+
+      if (updateButton) {
+        updateButton.addEventListener('click', function() {
+          credentialsSection.style.display = (credentialsSection.style.display === 'none') ? 'block' : 'none';
+        });
+      }
+
+      // Nav links
+      const navLinks = document.querySelectorAll('nav a, .home_link');
+      navLinks.forEach(function(link) {
+        link.addEventListener('click', function(event) {
+          event.preventDefault();
+          var confirmation = confirm('Please log out before navigating away from the admin page');
+          if (confirmation) {
+            if (this.href === 'https://genome.duke.edu/') {
+              window.open(this.href, '_blank');
+            }
+          }
+        });
+      });
+
+      // Close modal when clicking outside of it
+      window.onclick = function(event) {
+        const modal = document.getElementById('cancelModal');
+        if (event.target == modal) {
+          modal.style.display = 'none';
+        }
+      };
+    });
+  </script>
+
+  <!-- Cancel Confirmation Modal -->
+  <div id="cancelModal" class="modal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5);">
+    <div class="modal-content" style="background-color:#fefefe; margin:15% auto; padding:20px; border:1px solid #888; width:400px; border-radius:5px;">
+      <span class="close" onclick="closeModal()" style="color:#aaa; float:right; font-size:28px; font-weight:bold; cursor:pointer;">&times;</span>
+      <h2>Cancel Job Confirmation</h2>
+      <p>Are you sure you want to cancel this job?</p>
+      <p><strong>Job ID:</strong> <span id="jobIdConfirm"></span></p>
+      <p><strong>User Email:</strong> <span id="userEmailConfirm"></span></p>
+      <p style="color:#f44336; font-weight:600;">⚠️ The user will receive a cancellation notification email.</p>
+      <div style="margin-top:20px; text-align:right;">
+        <button onclick="closeModal()" style="padding:8px 16px; margin-right:10px; background:#ccc; border:none; border-radius:4px; cursor:pointer;">Keep Job</button>
+        <button id="confirmCancelBtn" style="padding:8px 16px; background:#f44336; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600;">Yes, Cancel Job</button>
       </div>
     </div>
   </div>
-
-  <%= button_to "Logout", admin_logout_path, method: :delete, data: { confirm: "Are you sure you want to logout?" }, id: "logout-button", class: "logout-button"%>
-  </div>
-  <%= render "layouts/footer" %>
 </body>
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-  var cancelButton = document.querySelector('.cancel-button');
-  cancelButton.addEventListener('click', function(event) {
-    event.preventDefault();
-    var confirmation = confirm(this.dataset.confirmMessage);
-    if (confirmation) {
-      var form = this.closest('form');
-      form.submit(); // Submit the form
-    }
-  });
-
-  var navLinks = document.querySelectorAll('nav a, .home_link');
-  navLinks.forEach(function(link) {
-    link.addEventListener('click', function(event) {
-      event.preventDefault();
-      var confirmation = confirm('Please log out before navigating away from the admin page');
-      if (confirmation) {
-        if (this.href === 'https://genome.duke.edu/') {
-          window.open(this.href, '_blank'); // Open the external link in a new tab
-        }
-      }
-    });
-  });
-
-
-});
-window.addEventListener('load', function () {
-  const updateButton = document.getElementById('updateinfo-button');
-  const credentialsSection = document.getElementById('credentials-section');
-
-  updateButton.addEventListener('click', function() {
-    credentialsSection.style.display = (credentialsSection.style.display === 'none') ? 'block' : 'none';
-  });
-});
-</script>
-
 </html>
-
