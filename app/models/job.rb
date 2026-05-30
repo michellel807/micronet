@@ -161,7 +161,8 @@ class Job < ApplicationRecord
         logger.info("Job #{id} was cancelled by admin, skipping error email")
       end
     ensure
-      if self.status != "Failed"
+      self.reload
+      if self.status == "Analyzing..."
         self.status = "Completed"
         self.end_time = DateTime.now
         save
