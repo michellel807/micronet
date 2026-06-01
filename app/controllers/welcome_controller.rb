@@ -12,6 +12,7 @@ class WelcomeController < ApplicationController
   def create
     @user = User.find_or_create_by(email: job_params[:email])
     session[:email] = job_params[:email]
+    session[:user_id] = @user.id
 
     if !@user.valid?
       @user.destroy
@@ -31,7 +32,8 @@ class WelcomeController < ApplicationController
     draft_job = Job.find_by(user_id: @user.id, status: "In Progress")
     if draft_job.present?
       flash.now.alert = "Looks like you have an unsaved job open. Would you like to resume?"
-      session[:session_user] = @user
+      session[:user_id] = @user.id
+      session[:current_user_id] = draft_job.id
       render "index"
       return
     end
@@ -47,10 +49,9 @@ class WelcomeController < ApplicationController
   end
 
   def resume_job
-    @user = session[:session_user]
-    @job = Job.find(session[:current_user_id])
-    if @job && @job.status == "In Progress"
-      puts "Redirecting to upload page: job id is #{@user.job.id}"
+    @user = User.find_by(id: session[:user_id])
+    @job = Job.find_by(id: session[:current_user_id])
+    if @user && @job && @job.user_id == @user.id && @job.status == "In Progress"
       redirect_to "/upload"
     else
       flash[:alert] = "No job to resume."
@@ -59,13 +60,17 @@ class WelcomeController < ApplicationController
   end
 
   def create_job
-    @user = session[:session_user]
+    @user = User.find_by(id: session[:user_id])
+    
+    unless @user
+      flash[:alert] = "Please enter your email first."
+      redirect_to root_path
+      return
+    end
+
     @job = Job.create(user_id: @user.id, status: "In Progress")
-    @job.save
     session[:current_user_id] = @job.id
-    puts "Job ID is #{@job.id}"
-    puts "User is #{@user.id}"
-    puts "Job status is #{@user.job_in_progress?}"
+
     redirect_to "/upload/delete_files"
   end
 
