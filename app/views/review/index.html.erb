@@ -63,7 +63,7 @@
         <% end %>
         <%= link_to 'Edit', upload_path, class: 'edit-button' %>
 
-        <h2>Analyses To Run</h2>
+         <h2>Analyses To Run</h2>
 
         <% if session[:chart_types].blank? || session[:chart_types] == [""] %>
           <p>No analyses selected.</p>
@@ -132,7 +132,7 @@
           <% else %>
             <p>N/A (Compare growth not requested)</p>
           <% end %>
-        <%= link_to 'Edit', selectanalyses_path, class: 'edit-button' %>
+        <%= link_to 'Edit Analyses', selectanalyses_path(returning_from_review: 'true'), class: 'edit-button' %>
 
         <%= submit_tag 'Start My Job', class: 'analysis-button' %>
         <p style="margin-top: 10px;"> Note: Submitting may take a few seconds. Please be patient. </p>

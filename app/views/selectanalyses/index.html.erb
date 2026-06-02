@@ -38,7 +38,7 @@
       <h1> Select Analyses </h1>
       <p>Please select the analyses you would like to generate. For more details on each analysis, please see the "Resources" tab.</p>
 
-      <%= form_with url: '/review', method: :post do |form| %>
+      <%= form_with url: (session[:returning_from_review] ? '/review' : '/review'), method: :post do |form| %>
 
         <div class="general-white-block">
           <label>
@@ -63,33 +63,33 @@
             <p> This analysis will generate a Gaussian Process plot for a specified experimental property with one chosen condition. </p>
           </label>
 
-          <div class="gp-pool-by-container" style="display: none; gap: 10px; margin-bottom: 2px;">
+          <div class="gp-pool-by-container" style="<%= @selected_chart_types.include?('gp_plot') ? '' : 'display: none;' %> gap: 10px; margin-bottom: 2px;">
             <% if @mapping_file_paths.present? %>
               <%= hidden_field_tag 'file_data', @file_data_json %>
               <label style="margin: 0; padding: 0;">
                 <p style="margin: 0;">Choose the column to pool by:</p>
               </label>
-              <%= select_tag 'gp_pool_by_column', options_for_select(@columns), prompt: 'Select a column', id: 'gp-pool-by-select', class: 'analysis-dropdown' %>
+              <%= select_tag 'gp_pool_by_column', options_for_select(@columns, @gp_pool_by_column), prompt: 'Select a column', id: 'gp-pool-by-select', class: 'analysis-dropdown' %>
             <% end %>
           </div>
 
-          <div class="gp-subset-toggle" style="display: none; align-items: center; gap: 10px; margin-bottom: 4px;">
+          <div class="gp-subset-toggle" style="<%= @selected_chart_types.include?('gp_plot') ? '' : 'display: none;' %> align-items: center; gap: 10px; margin-bottom: 4px;">
           <label><p>Subset the data?</p></label>
           <label>
-            <%= radio_button_tag 'gp_subset_choice', 'yes', false, id: 'gp_subset_yes' %>
+            <%= radio_button_tag 'gp_subset_choice', 'yes', @gp_subset_choice == 'yes', id: 'gp_subset_yes' %>
             Yes
           </label>
           <label>
-            <%= radio_button_tag 'gp_subset_choice', 'no', true, id: 'gp_subset_no' %>
+            <%= radio_button_tag 'gp_subset_choice', 'no', @gp_subset_choice == 'no' || @gp_subset_choice.blank?, id: 'gp_subset_no' %>
             No
           </label>
 
-          <div class="gp-subset-container" style="display: none; gap: 10px; margin-top: 0;">
+          <div class="gp-subset-container" style="<%= @gp_subset_choice == 'yes' ? 'display: flex;' : 'display: none;' %> gap: 10px; margin-top: 0;">
             <% if @mapping_file_paths.present? %>
               <label style="margin: 0; padding: 0;">
                 <p style="margin: 0;">Choose the column to subset:</p>
               </label>
-              <%= select_tag 'gp_subset_column', options_for_select(@columns), prompt: 'Select a column', id: 'gp-subset-select', class: 'analysis-dropdown' %>
+              <%= select_tag 'gp_subset_column', options_for_select(@columns, @gp_subset_column), prompt: 'Select a column', id: 'gp-subset-select', class: 'analysis-dropdown' %>
             <% end %>
           </div>
 
@@ -105,14 +105,14 @@
             <p> This analysis summarizes and models growth curves for your data, generating 5 commonly-used metrics as output: AUC (Area Under Curve), Growth Rate, Carrying Capacity, Lag Time, and Doubling Time. </p>
           </label>
 
-          <div class="radio-container" style="display: none;">
+          <div class="radio-container" style="<%= @selected_chart_types.include?('fit_stats') ? 'display: block;' : 'display: none;' %>">
             <h2> Pool Replicates? </h2>
              <label class="option-label">
-              <input type="radio" name="pool_replicates" value="yes">
+              <input type="radio" name="pool_replicates" value="yes" <%= @pool_replicates == 'yes' ? 'checked' : '' %>>
               Yes
             </label>
             <label class="option-label">
-              <input type="radio" name="pool_replicates" value="no" checked>
+              <input type="radio" name="pool_replicates" value="no" <%= @pool_replicates == 'no' || @pool_replicates.blank? ? 'checked' : '' %>>
               No
             </label>
           </div>
@@ -126,7 +126,7 @@
             <% @pool_options.each do |option| %>
               <% next if option.downcase.include?('well') %>
               <label>
-                <input type="checkbox" name="pool_options[]" value="<%= option %>">
+                <input type="checkbox" name="pool_options[]" value="<%= option %>" <%= @pool_options_selected.include?(option) ? 'checked' : '' %>>
                   <%= option %>
               </label>
             <% end %>
@@ -141,7 +141,7 @@
           <p> This analysis will generate a heatmap for the conditions chosen. </p>
         </label>
 
-        <div class="heatmap-container" style="display: none; gap: 10px; margin-bottom: 2px;">
+        <div class="heatmap-container" style="<%= @selected_chart_types.include?('heatmap_plot') ? 'display: flex;' : 'display: none;' %> gap: 10px; margin-bottom: 2px;">
             <% if @mapping_file_paths.present? %>
               <%= hidden_field_tag 'file_data', @file_data_json %>
               <label style="margin: 0; padding: 0;">
@@ -153,16 +153,16 @@
                 'Linear Carrying Capacity in units of OD',
                 'Lag Time',
                 'Doubling Time'
-              ]), prompt: 'Select a value', id: 'heatmap_value', class: 'analysis-dropdown' %>
+              ], @heatmap_value), prompt: 'Select a value', id: 'heatmap_value', class: 'analysis-dropdown' %>
 
               <p style="margin-top: 10px;">Choose the heatmap axes:</p>
               <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px;">
                 <p style="margin: 0;">x-axis:</p>
-                <%= select_tag 'heatmap_x', options_for_select(@columns), prompt: 'Select x-axis', id: 'heatmap_x', class: 'analysis-dropdown' %>
+                <%= select_tag 'heatmap_x', options_for_select(@columns, @heatmap_x), prompt: 'Select x-axis', id: 'heatmap_x', class: 'analysis-dropdown' %>
               </div>
               <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px;">
                 <p style="margin: 0;">y-axis:</p>
-                <%= select_tag 'heatmap_y', options_for_select(@columns), prompt: 'Select y-axis', id: 'heatmap_y', class: 'analysis-dropdown' %>
+                <%= select_tag 'heatmap_y', options_for_select(@columns, @heatmap_y), prompt: 'Select y-axis', id: 'heatmap_y', class: 'analysis-dropdown' %>
               </div>
             <% end %>
         </div>
@@ -175,11 +175,11 @@
         <p> This analysis tests differential growth between distinct experimental conditions by computing the log Bayes Factor scores and the functional difference in the OD. </p>
       </label>
 
-      <div class="test-hypothesis-container" style="display: none;">
+      <div class="test-hypothesis-container" style="<%= @selected_chart_types.include?('test-hypothesis') ? 'display: block;' : 'display: none;' %>">
         <p>Choose variable to test:</p>
         <% if @mapping_file_paths.present? %>
           <%= hidden_field_tag 'file_data', @file_data_json %>
-          <%= select_tag 'column_test', options_for_select(@columns), prompt: 'Select a column', id: 'column-test', class: 'analysis-dropdown' %>
+          <%= select_tag 'column_test', options_for_select(@columns, @column_test), prompt: 'Select a column', id: 'column-test', class: 'analysis-dropdown' %>
         <% end %>
       </div>     
 
@@ -198,11 +198,11 @@
         <p> This analysis compares parameters between two conditions of a variable.
       </label>
 
-      <div class="compare-parameters-container" style="display: none;">
+      <div class="compare-parameters-container" style="<%= @selected_chart_types.include?('compare-parameters') ? 'display: block;' : 'display: none;' %>">
         <p>Choose variable to compare on:</p>
         <% if @mapping_file_paths.present? %>
           <%= hidden_field_tag 'file_data', @file_data_json %>
-          <%= select_tag 'column_pooled', options_for_select(@columns), prompt: 'Select a column', id: 'column-pooled', class: 'analysis-dropdown' %>
+          <%= select_tag 'column_pooled', options_for_select(@columns, @column_pooled), prompt: 'Select a column', id: 'column-pooled', class: 'analysis-dropdown' %>
         <% end %>
       </div>
 
@@ -214,7 +214,12 @@
   </div>
 
   <div style="text-align: center; margin-top: 20px;">
-    <%= submit_tag 'Review', class: 'analysis-button', id: 'review-button' %>
+    <% if session[:returning_from_review] %>
+      <%= submit_tag 'Back to Review', class: 'analysis-button', id: 'review-button' %>
+      <%= link_to 'Start Over', upload_path, class: 'edit-button', style: 'margin-left: 10px;' %>
+    <% else %>
+      <%= submit_tag 'Review', class: 'analysis-button', id: 'review-button' %>
+    <% end %>
     <% end %>
   </div>
 
@@ -507,6 +512,47 @@
         alert("Please select at least one parameter to pool on for the Fit Statistics analysis, or select 'No'.");
       }
     });
+
+    // Initialize form visibility based on session data
+    // If GP plot is selected, show its containers
+    if ($("input[name='chart_types[]'][value='gp_plot']").is(":checked")) {
+      $(".gp-pool-by-container").show();
+      $(".gp-subset-toggle").show();
+      if ($("#gp_subset_yes").is(":checked")) {
+        $(".gp-subset-container").show();
+      }
+    }
+
+    // If Fit Stats is selected, show its containers
+    if ($("input[name='chart_types[]'][value='fit_stats']").is(":checked")) {
+      $(".radio-container").show();
+      if ($("input[name='pool_replicates']:checked").val() === 'yes') {
+        $(".checkbox-container").show();
+      }
+    }
+
+    // If Heatmap is selected, show its containers
+    if ($("input[name='chart_types[]'][value='heatmap_plot']").is(":checked")) {
+      $(".heatmap-container").show();
+    }
+
+    // If Test Hypothesis is selected, show its containers and populate condition dropdowns
+    if ($("input[name='chart_types[]'][value='test-hypothesis']").is(":checked")) {
+      $(".test-hypothesis-container").show();
+      const columnTest = $("#column-test").val();
+      if (columnTest) {
+        generateSubsetDropdowns(columnTest, "test", "test");
+      }
+    }
+
+    // If Compare Parameters is selected, show its containers and populate condition dropdowns
+    if ($("input[name='chart_types[]'][value='compare-parameters']").is(":checked")) {
+      $(".compare-parameters-container").show();
+      const columnPooled = $("#column-pooled").val();
+      if (columnPooled) {
+        generateSubsetDropdowns(columnPooled, "pooled", "pooled");
+      }
+    }
 
     // Hide Fit Stats options initially
     $(".checkbox-container").hide();
