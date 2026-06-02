@@ -49,6 +49,8 @@
     text-decoration: none; /* Remove underline */
     color: white; /* Change the color of the text inside the circle to white */
     /* End of new styles */
+    cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
 .stepper-item .step-counter:hover {
@@ -61,17 +63,24 @@
     color:#000750;
 }
 
-.stepper-item a .active:hover {
-    background: #405fad; /* Replace with your desired color */
-    color: white; /* Replace with your desired color */
-  }
-
 .stepper-item.active .step-counter {
     background-color: #000750; 
-  }
+    cursor: pointer;
+}
+
+.stepper-item.active .step-counter:hover {
+    background-color: #405fad;
+    color: white;
+}
 
 .stepper-item.completed .step-counter {
     background-color: #000750;
+    cursor: pointer;
+}
+
+.stepper-item.completed .step-counter:hover {
+    background-color: #405fad;
+    color: white;
 }
 
 .stepper-item.completed::after {
@@ -84,12 +93,6 @@
     z-index: 3; 
 } /* for the line connecting the dots */
 
-.stepper-item a .completed:hover {
-    background: #405fad; /* Replace with your desired color */
-    color: white; /* Replace with your desired color */
-  }
-
-
 .stepper-item:first-child::before {
     content: none;
 }
@@ -100,9 +103,7 @@
 
 .stepper-item a {
     text-decoration: none;
-}
-
-.stepper-item a:hover {
-    background: #405fad;
-    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }

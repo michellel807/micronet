@@ -154,6 +154,8 @@ GEM
     nio4r (2.5.9)
     nokogiri (1.15.2-aarch64-linux)
       racc (~> 1.4)
+    nokogiri (1.15.2-arm64-darwin)
+      racc (~> 1.4)
     nokogiri (1.15.2-x86_64-darwin)
       racc (~> 1.4)
     nokogiri (1.15.2-x86_64-linux)
@@ -212,6 +214,7 @@ GEM
       activesupport (>= 5.2)
       sprockets (>= 3.0.0)
     sqlite3 (1.6.3-aarch64-linux)
+    sqlite3 (1.6.3-arm64-darwin)
     sqlite3 (1.6.3-x86_64-darwin)
     sqlite3 (1.6.3-x86_64-linux)
     ssrf_filter (1.1.1)
@@ -244,6 +247,7 @@ GEM
 
 PLATFORMS
   aarch64-linux
+  arm64-darwin-23
   x86_64-darwin-22
   x86_64-linux
 

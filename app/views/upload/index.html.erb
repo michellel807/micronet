@@ -13,6 +13,10 @@
       var header = document.getElementById("data-files-header");
       var button = document.getElementById("view-files-button");
       var tableContainer = document.getElementById("data-files-table-container");
+
+      if (!container || !header || !button || !tableContainer) {
+        return;
+      }
   
       button.style.display = "none"; // Hide the button initially
   
@@ -128,7 +132,7 @@
     <input type="file" id="interval-file-input" name="interval_files" accept=".txt,.tsv,.csv,.asc">
   </div>
 
-  <input type="submit" value="Upload" class="upload-button" style="margin-top: 40px;">
+  <input type="submit" value="Upload and Continue" class="upload-button">
 </form>
 
 <% if flash.now[:alert] %>
@@ -142,25 +146,10 @@
 
   <% if (@data_file_paths.present? &&
       (@mapping_file_paths.present? || @meta_file_path.present?)) %>
-  <div class="notice">
-    <p>
-      <span class="success" style="color: green; font-weight: 500;">Files uploaded successfully! </span>
-    </p>
-    <div class="upload-notice" style="color: white; font-weight: light; text-align: left;">
-      <p>
-        <span class="current", style="font-size: 20px;">Currently uploaded data file(s): <%= @usr_data_file_names %></span>
-      </p>
-      <p>
-        <span class="current", style="font-size: 20px;">Currently uploaded mapping file(s): <%= @usr_mapping_file_names %></span>
-      </p>
-      <p>
-        <span class="current", style="font-size: 20px;">Currently uploaded meta file: <%= @usr_meta_file_name %></span>
-      </p>
-      <p>
-        <span class="current", style="font-size: 20px;">Currently uploaded interval file: <%= @usr_interval_file_name %></span>
-      </p>
-    </div>
-  </div>
+  <script>
+    // Redirect immediately to analysis selection
+    window.location.href = '<%= selectanalyses_path %>';
+  </script>
 <% end %>
 
 <script>
@@ -208,21 +197,62 @@ document.getElementById('meta-file-input').addEventListener('change', function(e
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    new Sortable(document.getElementById('data-files-list'), { animation: 150 });
-    new Sortable(document.getElementById('mapping-files-list'), { animation: 150 });
+    if (window.Sortable) {
+      new Sortable(document.getElementById('data-files-list'), { animation: 150 });
+      new Sortable(document.getElementById('mapping-files-list'), { animation: 150 });
+    }
 
     function handleFileInput(inputId, listId) {
       const input = document.getElementById(inputId);
       const list = document.getElementById(listId);
+      let selectedFiles = [];
 
-      input.addEventListener('change', () => {
+      function syncInputFiles() {
+        const dataTransfer = new DataTransfer();
+        selectedFiles.forEach(file => dataTransfer.items.add(file));
+        input.files = dataTransfer.files;
+      }
+
+      function renderFileList() {
         list.innerHTML = '';
-        Array.from(input.files).forEach(file => {
+        selectedFiles.forEach(file => {
           const li = document.createElement('li');
           li.className = 'sortable-item';
-          li.innerText = file.name;
+
+          const nameSpan = document.createElement('span');
+          nameSpan.innerText = file.name;
+
+          const removeButton = document.createElement('button');
+          removeButton.type = 'button';
+          removeButton.innerText = 'x';
+          removeButton.setAttribute('aria-label', `Remove ${file.name}`);
+          removeButton.style.background = 'none';
+          removeButton.style.border = 'none';
+          removeButton.style.color = '#ff6b6b';
+          removeButton.style.cursor = 'pointer';
+          removeButton.style.fontSize = '18px';
+          removeButton.style.marginLeft = '10px';
+
+          removeButton.addEventListener('click', () => {
+            selectedFiles = selectedFiles.filter(selectedFile => selectedFile.name !== file.name);
+            syncInputFiles();
+            renderFileList();
+          });
+
+          li.appendChild(nameSpan);
+          li.appendChild(removeButton);
           list.appendChild(li);
         });
+      }
+
+      input.addEventListener('change', () => {
+        Array.from(input.files).forEach(file => {
+          if (!selectedFiles.some(selectedFile => selectedFile.name === file.name)) {
+            selectedFiles.push(file);
+          }
+        });
+        syncInputFiles();
+        renderFileList();
       });
     }
 
@@ -232,8 +262,8 @@ document.getElementById('meta-file-input').addEventListener('change', function(e
     // On form submission, capture file order
     const form = document.getElementById('upload-form');
     form.addEventListener('submit', (e) => {
-      const dataList = Array.from(document.querySelectorAll('#data-files-list .sortable-item')).map(el => el.innerText);
-      const mappingList = Array.from(document.querySelectorAll('#mapping-files-list .sortable-item')).map(el => el.innerText);
+      const dataList = Array.from(document.querySelectorAll('#data-files-list .sortable-item')).map(el => el.querySelector('span').innerText);
+      const mappingList = Array.from(document.querySelectorAll('#mapping-files-list .sortable-item')).map(el => el.querySelector('span').innerText);
 
       document.getElementById('ordered_data_files').value = JSON.stringify(dataList);
       document.getElementById('ordered_mapping_files').value = JSON.stringify(mappingList);
@@ -241,14 +271,6 @@ document.getElementById('meta-file-input').addEventListener('change', function(e
   });
 </script>
 
-  <% if (
-      @data_file_paths.present? &&
-      (
-        (@mapping_file_paths.present?) || (@meta_file_path.present?)
-      )
-    ) %>
-  <%= link_to "Next", 'selectanalyses', class: "next-button" %>
-  <% end %>
 <div class="background-space"></div>
 
 </div>

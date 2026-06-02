@@ -37,50 +37,63 @@
   margin-top: 20px;
 }
 
+#upload-form {
+  max-width: 100%;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
 .upload-button {
   background-color: #000750;
-  padding: 5px 15px;
+  padding: 14px 40px;
   border-radius: 6px;
-  width: 200px;
+  width: auto;
+  min-width: 280px;
   color: white;
-  font-size: 50px;
+  font-size: 18px;
   text-decoration: none;
   cursor: pointer;
   border: none;
-  display: inline-block;
+  display: block;
+  margin: 40px auto 0;
   text-align: center;
   align-self: center;
   filter: drop-shadow(3px 3px 4px #b4b4b4);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .upload-button:hover {
   background-color: #405fad;
   color: white;
   text-decoration: none;
+  transform: translateY(-2px);
+  filter: drop-shadow(5px 5px 6px #808080);
 }
 
 .next-button {
   background-color: #000750;
-  padding: 60px;
   margin-top: 30px;
   border-radius: 6px;
-  width: 100px;
   color: white;
-  font-size: 50px;
+  font-size: 40px;
   text-decoration: none;
   cursor: pointer;
   border: none;
   display: inline-block;
   text-align: center;
   filter: drop-shadow(3px 3px 4px #b4b4b4);
-  width: 200px;
-  border: none;
   padding: 12px 48px 12px 24px;
-  border-radius: 4px;
-  color: #fff;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='30' viewBox='0 0 7.41 12'%3E%3Cpath d='M10,6,8.59,7.41,13.17,12,8.59,16.59,10,18l6-6Z' transform='translate(-8.59 -6)' fill='%23fff'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 24px center;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
 }
 
 .next-button:hover {
@@ -90,17 +103,27 @@
 }
 
 .notice{
-  font-size: 20px;
+  font-size: 14px;
   font-weight: 500;
-  color: #405fad;
-  margin-top: 20px;
+  color: #4CAF50;
+  margin-top: 30px;
+  margin-bottom: 30px;
+  padding: 20px;
+  background-color: rgba(76, 175, 80, 0.08);
+  border-left: 5px solid #4CAF50;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .error{
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 500;
-  color: orange;
+  color: #f44336;
   margin-top: 20px;
+  padding: 15px;
+  background-color: rgba(244, 67, 54, 0.1);
+  border-left: 4px solid #f44336;
+  border-radius: 4px;
 }
 
 
@@ -116,10 +139,11 @@
 
 #view-files-button {
   background-color: #000750;
-  padding: 5px 15px;
+  padding: 12px 24px;
   border-radius: 6px;
   color: white;
-  font-size: 50px;
+  font-size: 16px;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
   border: none;
@@ -127,6 +151,7 @@
   text-align: center;
   align-self: center;
   filter: drop-shadow(3px 3px 4px #b4b4b4);
+  transition: all 0.3s ease;
 }
 
 #view-files-button:hover {
