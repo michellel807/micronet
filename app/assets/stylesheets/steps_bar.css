@@ -1,10 +1,9 @@
 .stepper-wrapper {
-    margin-top: 20px;
+    margin: 20px auto;
     display: flex;
     justify-content: space-between;
-    margin-bottom: 20px;
-    /* Adjust width of each step */
-    width: 55%; /* You can adjust this value to spread out the steps */
+    width: min(760px, 100%);
+    margin-bottom: 32px;
 }
 
 .stepper-item {
@@ -13,6 +12,7 @@
     flex-direction: column;
     align-items: center;
     flex: 1;
+    font-size: 14px;
 }
 
 .stepper-item::before,
@@ -20,21 +20,25 @@
     position: absolute;
     content: "";
     border-bottom: 2px solid #ccc;
-    width: calc(50% + (100% / 2)); /* Adjust the width to make the horizontal line longer */
+    width: 100%;
     top: 20px;
-    z-index: 2;
-}
-
-.stepper-item::before {
     left: -50%;
+    z-index: 2;
 }
 
 .stepper-item::after {
     left: 50%;
 }
 
+.stepper-item:first-child::before {
+    content: none;
+}
+
+.stepper-item:last-child::after {
+    content: none;
+}
+
 .stepper-item .step-counter {
-    /* Existing styles for the circle */
     position: relative;
     z-index: 5;
     display: flex;
@@ -45,26 +49,24 @@
     border-radius: 50%;
     background: #ccc;
     margin-bottom: 6px;
-    /* Add the following to remove underline and blue color */
-    text-decoration: none; /* Remove underline */
-    color: white; /* Change the color of the text inside the circle to white */
-    /* End of new styles */
+    text-decoration: none;
+    color: white;
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
 
 .stepper-item .step-counter:hover {
-    background-color: #007bff; /* Replace with your desired color */
-    color: #fff; /* Set the text color to white on hover */
+    background-color: #007bff;
+    color: #fff;
 }
 
 .stepper-item.active {
     font-weight: bold;
-    color:#000750;
+    color: #000750;
 }
 
 .stepper-item.active .step-counter {
-    background-color: #000750; 
+    background-color: #000750;
     cursor: pointer;
 }
 
@@ -84,21 +86,8 @@
 }
 
 .stepper-item.completed::after {
-    position: absolute;
-    content: "";
     border-bottom: 2px solid #000750;
-    width: 100%;
-    top: 20px;
-    left: 50%;
-    z-index: 3; 
-} /* for the line connecting the dots */
-
-.stepper-item:first-child::before {
-    content: none;
-}
-
-.stepper-item:last-child::after {
-    content: none;
+    z-index: 3;
 }
 
 .stepper-item a {
@@ -106,4 +95,25 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    color: inherit;
+}
+
+.step-name {
+    text-align: center;
+}
+
+@media (max-width: 840px) {
+  .stepper-item {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 560px) {
+  .stepper-wrapper {
+    width: 100%;
+  }
+  .step-counter {
+    width: 32px;
+    height: 32px;
+  }
 }

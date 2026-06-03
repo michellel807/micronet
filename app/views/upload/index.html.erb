@@ -45,27 +45,7 @@
   <%= render "layouts/header" %>
 
   <div class="column skinny">
-  <div class="stepper-wrapper">
-  <div class="stepper-item active">
-    <a href="<%= upload_path %>" style="text-decoration: none; color: #000750"> 
-      <div class="step-counter">1</div>
-      <div class="step-name">Upload Files</div>
-    </a>
-  </div>
-  <div class="stepper-item">
-      <div class="step-counter">2</div>
-    </a>
-    <div class="step-name">Select Analyses</div>
-  </div>
-  <div class="stepper-item">
-    <div class="step-counter">3</div>
-    <div class="step-name">Review</div>
-  </div>
-  <div class="stepper-item">
-    <div class="step-counter">4</div>
-    <div class="step-name">Submit</div>
-  </div>
-</div>
+  <%= render "layouts/stepper", current_step: 1 %>
 
 <h1>MicroNet: Upload Files</h1>
 <p>

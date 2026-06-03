@@ -1,0 +1,43 @@
+.jobs-container {
+  color: black;
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50px;
+  padding: 30px; 
+  padding-right: 50px;
+  padding-left: 50px;
+  filter: drop-shadow(9px 5px 10px black);
+  margin: 50px auto;
+  min-width: 80%;
+  min-height: 500px;
+}
+
+.jobs-container h2 {
+  font-size: 32px;
+  color: #000750;
+  margin-bottom: 20px;
+}
+
+.jobs-container .scroll-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.jobs-container table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.jobs-container th, .jobs-container td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.jobs-container th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}

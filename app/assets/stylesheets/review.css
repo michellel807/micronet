@@ -97,3 +97,38 @@
   text-decoration: none;
 }
 
+.review-container {
+  color: black;
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50px;
+  padding: 30px; 
+  padding-right: 50px;
+  padding-left: 50px;
+  filter: drop-shadow(9px 5px 10px black);
+  margin: auto;
+  padding-bottom: 50px;
+  margin-bottom: 50px;
+  min-width: 80%;
+  min-height: 500px;
+}
+
+.review-container h2 {
+  font-size: 40px;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.review-container p {
+  font-size: 18px;
+  padding: 10px;
+  text-align: center;
+}
+
+.review-container label {
+  font-weight: 500;
+}
+
