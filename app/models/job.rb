@@ -75,6 +75,9 @@ class Job < ApplicationRecord
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes"
         system("amiga fit -i private/uploads/userexpt --pool-by '#{pool_options_string}' -o fit")
+        puts "AMIGA EXIT STATUS = #{$?.exitstatus}"
+        puts "fit_summary exists? #{File.exist?('private/uploads/userexpt/summary/fit_summary.txt')}"
+        puts Dir.glob("private/uploads/userexpt/summary/*")
         Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
         fit_stats_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
         raise "The fit statistics (pooling requested) analysis failed" if not File.exist?(fit_stats_path)
@@ -85,13 +88,23 @@ class Job < ApplicationRecord
       if @selected_chart_types.include?('heatmap_plot')
         if @heatmap_value.present? && @heatmap_x.present? && @heatmap_y.present?
           if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes" && fit_stats_path.present?
-            system("amiga heatmap -i private/uploads/userexpt/summary/fit_summary_modified.txt -o heatmap_plot -x #{heatmap_x} -y #{heatmap_y} -v '#{heatmap_value}' --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
+            heatmap_x = @heatmap_x == "Well positions" ? "Well" : @heatmap_x
+            heatmap_y = @heatmap_y == "Well positions" ? "Well" : @heatmap_y
+            puts "HEATMAP VALUE = #{@heatmap_value}"
+            puts "HEATMAP X = #{@heatmap_x}"
+            puts "HEATMAP Y = #{@heatmap_y}"
+            system("amiga heatmap -i private/uploads/userexpt/summary/fit_summary_modified.txt -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
           else
+            heatmap_x = @heatmap_x == "Well positions" ? "Well" : @heatmap_x
+            heatmap_y = @heatmap_y == "Well positions" ? "Well" : @heatmap_y
+            puts "HEATMAP VALUE = #{@heatmap_value.inspect}"
+            puts "HEATMAP X = #{@heatmap_x.inspect}"
+            puts "HEATMAP Y = #{@heatmap_y.inspect}"
             system("amiga fit -i private/uploads/userexpt -o fit")
             Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
             heatmap_fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
             raise "The heatmap plot failed" unless File.exist?(heatmap_fit_summary_path)
-            system("amiga heatmap -i private/uploads/userexpt/summary/fit_summary_modified.txt -o heatmap_plot -x #{heatmap_x} -y #{heatmap_y} -v '#{heatmap_value}' --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
+            system("amiga heatmap -i private/uploads/userexpt/summary/fit_summary_modified.txt -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
           end
         else
           raise "Heatmap value, x-axis, or y-axis not selected"
