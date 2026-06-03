@@ -61,7 +61,7 @@
   background-color: #000750;
   box-shadow: 0 0 15px 0 rgba(0,0,0,.8) inset;
 }
-.general-white-block {
+.help-container {
   background: #fff;
   border-radius: 8px;
   padding: 25px;
@@ -69,35 +69,35 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.general-white-block h2 {
+.help-container h2 {
   color: #000750;
   margin-bottom: 20px;
   font-size: 24px;
 }
 
-.general-white-block h3 {
+.help-container h3 {
   color: #2c3e50;
   margin: 20px 0 10px;
   font-size: 20px;
 }
 
-.general-white-block ul {
+.help-container ul {
   list-style-type: none;
   padding: 0;
   margin: 10px 0;
 }
 
-.general-white-block li {
+.help-container li {
   margin: 10px 0;
 }
 
-.general-white-block a {
+.help-container a {
   color: #2980b9;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
-.general-white-block a:hover {
+.help-container a:hover {
   color: #3498db;
   text-decoration: underline;
 }
