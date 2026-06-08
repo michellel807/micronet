@@ -2,19 +2,23 @@
 <html>
 <head>
   <title>Admin - Jobs Management</title>
-  <%= stylesheet_link_tag 'admin' %>
   <%= stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track': 'reload' %>
   <%= javascript_include_tag 'application', 'data-turbolinks-track': 'reload' %>
+  <%= stylesheet_link_tag 'admin' %>
   <%= csrf_meta_tags %>
   <style>
     .jobs-container {
-      padding: 20px;
-    }
-
-    .jobs-container h1 {
-      margin-bottom: 20px;
       color: white;
-    }
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border-radius: 0;
+      filter: none;
+      min-width: 80%;
+      min-height: 500px;
+} 
 
     .filter-tabs {
       margin: 20px 0 30px 0;
@@ -506,7 +510,7 @@
         </div>
       </div>
 
-      <%= button_to "Logout", admin_logout_path, method: :delete, data: { confirm: "Are you sure you want to logout?" }, id: "logout-button", class: "logout-button"%>
+      <%= button_to "Logout", admin_logout_path, method: :delete, data: { confirm: "Are you sure you want to logout?" }, id: "logout-button", class: "upload-button"%>
     </div>
   </div>
   <%= render "layouts/footer" %>

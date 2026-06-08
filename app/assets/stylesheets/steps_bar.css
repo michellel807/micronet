@@ -13,6 +13,7 @@
     align-items: center;
     flex: 1;
     font-size: 14px;
+    color: #000750;   /* add this */
 }
 
 .stepper-item::before,
@@ -62,7 +63,7 @@
 
 .stepper-item.active {
     font-weight: bold;
-    color: #000750;
+    color: white;
 }
 
 .stepper-item.active .step-counter {
