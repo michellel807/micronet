@@ -10,232 +10,218 @@
   <div class="selectanalyses">
     <%= render "layouts/header" %>
 
-    <main class="selectanalyses-shell">
-      <%= render "layouts/stepper", current_step: 2 %>
-
-      <% content_for :title, "Parameters page" %>
-      <div class="selectanalyses-heading">
-        <h1>Select Analyses</h1>
-        <p>Choose one or more analyses to run on your data.</p>
+    <div class="column skinny">
+      <div class="stepper-wrapper">
+        <div class="stepper-item completed">
+          <a href="<%= upload_path %>" style="text-decoration: none; color: white"> 
+            <div class="step-counter">1</div>
+            <div class="step-name">Upload Files</div>
+          </a>
+        </div>
+        <div class="stepper-item active">
+          <a href="<%= selectanalyses_path %>">
+            <div class="step-counter">2</div>
+          </a>
+          <div class="step-name">Select Analyses</div>
+        </div>
+        <div class="stepper-item">
+          <div class="step-counter">3</div>
+          <div class="step-name">Review</div>
+        </div>
+        <div class="stepper-item">
+          <div class="step-counter">4</div>
+          <div class="step-name">Submit</div>
+        </div>
       </div>
 
+      <% content_for :title, "Parameters page" %>
+      <h1> Select Analyses </h1>
+      <p>Please select the analyses you would like to generate. For more details on each analysis, please see the "Resources" tab.</p>
+
       <%= form_with url: (session[:returning_from_review] ? '/review' : '/review'), method: :post do |form| %>
+
+        <div class="general-white-block">
+          <label>
+              <%= check_box_tag 'chart_types[]', 'raw_data', @selected_chart_types.include?('raw_data') %>
+              Raw Data Plot (Per Well)
+              <p> 
+              This analysis will generate a growth curve for each well in the experimental design individually. <br>
+              Note: This function only works for 96-well plate formats.
+              </p>
+          </label>
+              <% if flash[:error] %>
+              <div style="color: red; font-weight: bold; font-size: 20px; margin-bottom: 1em;">
+                <%= flash[:error] %>
+              </div>
+              <% end %>
+        </div>
+
+        <div class="general-white-block">
+          <label>
+            <%= check_box_tag 'chart_types[]', 'gp_plot', @selected_chart_types.include?('gp_plot') %>
+            Gaussian Process Plot
+            <p> This analysis will generate a Gaussian Process plot for a specified experimental property with one chosen condition. </p>
+          </label>
+
+          <div class="gp-pool-by-container" style="<%= @selected_chart_types.include?('gp_plot') ? '' : 'display: none;' %> gap: 10px; margin-bottom: 2px;">
+            <% if @mapping_file_paths.present? %>
+              <%= hidden_field_tag 'file_data', @file_data_json %>
+              <label style="margin: 0; padding: 0;">
+                <p style="margin: 0;">Choose the column to pool by:</p>
+              </label>
+              <%= select_tag 'gp_pool_by_column', options_for_select(@columns, @gp_pool_by_column), prompt: 'Select a column', id: 'gp-pool-by-select', class: 'analysis-dropdown' %>
+            <% end %>
+          </div>
+
+          <div class="gp-subset-toggle" style="<%= @selected_chart_types.include?('gp_plot') ? '' : 'display: none;' %> align-items: center; gap: 10px; margin-bottom: 4px;">
+          <label><p>Subset the data?</p></label>
+          <label>
+            <%= radio_button_tag 'gp_subset_choice', 'yes', @gp_subset_choice == 'yes', id: 'gp_subset_yes' %>
+            Yes
+          </label>
+          <label>
+            <%= radio_button_tag 'gp_subset_choice', 'no', @gp_subset_choice == 'no' || @gp_subset_choice.blank?, id: 'gp_subset_no' %>
+            No
+          </label>
+
+          <div class="gp-subset-container" style="<%= @gp_subset_choice == 'yes' ? 'display: flex;' : 'display: none;' %> gap: 10px; margin-top: 0;">
+            <% if @mapping_file_paths.present? %>
+              <label style="margin: 0; padding: 0;">
+                <p style="margin: 0;">Choose the column to subset:</p>
+              </label>
+              <%= select_tag 'gp_subset_column', options_for_select(@columns, @gp_subset_column), prompt: 'Select a column', id: 'gp-subset-select', class: 'analysis-dropdown' %>
+            <% end %>
+          </div>
+
+          <div id="gp-condition-checkboxes" class="checkbox-container" style="display: none; margin-top: 5px;"></div>
+
+        </div>
+        </div>
+ 
+        <div class="general-white-block">
+          <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
+            <%= check_box_tag 'chart_types[]', 'fit_stats', @selected_chart_types.include?('fit_stats') %>
+            Fit Statistics
+            <p> This analysis summarizes and models growth curves for your data, generating 5 commonly-used metrics as output: AUC (Area Under Curve), Growth Rate, Carrying Capacity, Lag Time, and Doubling Time. </p>
+          </label>
+
+          <div class="radio-container" style="<%= @selected_chart_types.include?('fit_stats') ? 'display: block;' : 'display: none;' %>">
+            <h2> Pool Replicates? </h2>
+             <label class="option-label">
+              <input type="radio" name="pool_replicates" value="yes" <%= @pool_replicates == 'yes' ? 'checked' : '' %>>
+              Yes
+            </label>
+            <label class="option-label">
+              <input type="radio" name="pool_replicates" value="no" <%= @pool_replicates == 'no' || @pool_replicates.blank? ? 'checked' : '' %>>
+              No
+            </label>
+          </div>
+
+          <div class="checkbox-container">
+            <div id="checkbox-content">
+            <h3 id="checkbox-header"></h3>
+            <div class="additional-text">
+              If necessary, please select the variable(s) to pool on. If selecting multiple variables, MicroNet will pool based on all unique combinations of the selected variables and model them jointly. For more information on this process, please <a href="http://firasmidani.github.io/amiga/doc/pooling.html">click here</a>.
+            </div>
+            <% @pool_options.each do |option| %>
+              <% next if option.downcase.include?('well') %>
+              <label>
+                <input type="checkbox" name="pool_options[]" value="<%= option %>" <%= @pool_options_selected.include?(option) ? 'checked' : '' %>>
+                  <%= option %>
+              </label>
+            <% end %>
+          </div>
+        </div>
+    </div>
+
+    <div class="general-white-block">
+        <label>
+          <%= check_box_tag 'chart_types[]', 'heatmap_plot', @selected_chart_types.include?('heatmap_plot') %>
+          Heatmap Plot
+          <p> This analysis will generate a heatmap for the conditions chosen. </p>
+        </label>
+
+        <div class="heatmap-container" style="<%= @selected_chart_types.include?('heatmap_plot') ? 'display: flex;' : 'display: none;' %> gap: 10px; margin-bottom: 2px;">
+            <% if @mapping_file_paths.present? %>
+              <%= hidden_field_tag 'file_data', @file_data_json %>
+              <label style="margin: 0; padding: 0;">
+                <p style="margin: 0;">Choose the heatmap value:</p>
+              </label>
+              <%= select_tag 'heatmap_value', options_for_select([
+                'AUC in units of OD',
+                'Growth Rate',
+                'Linear Carrying Capacity in units of OD',
+                'Lag Time',
+                'Doubling Time'
+              ], @heatmap_value), prompt: 'Select a value', id: 'heatmap_value', class: 'analysis-dropdown' %>
+
+              <p style="margin-top: 10px;">Choose the heatmap axes:</p>
+              <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px;">
+                <p style="margin: 0;">x-axis:</p>
+                <%= select_tag 'heatmap_x', options_for_select(@columns, @heatmap_x), prompt: 'Select x-axis', id: 'heatmap_x', class: 'analysis-dropdown' %>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px;">
+                <p style="margin: 0;">y-axis:</p>
+                <%= select_tag 'heatmap_y', options_for_select(@columns, @heatmap_y), prompt: 'Select y-axis', id: 'heatmap_y', class: 'analysis-dropdown' %>
+              </div>
+            <% end %>
+        </div>
+    </div>
+
+    <div class="general-white-block">
+      <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
+        <%= check_box_tag 'chart_types[]', 'test-hypothesis', @selected_chart_types.include?('test-hypothesis') %>
+        Test Hypothesis
+        <p> This analysis tests differential growth between distinct experimental conditions by computing the log Bayes Factor scores and the functional difference in the OD. </p>
+      </label>
+
+      <div class="test-hypothesis-container" style="<%= @selected_chart_types.include?('test-hypothesis') ? 'display: block;' : 'display: none;' %>">
+        <p>Choose variable to test:</p>
         <% if @mapping_file_paths.present? %>
           <%= hidden_field_tag 'file_data', @file_data_json %>
+          <%= select_tag 'column_test', options_for_select(@columns, @column_test), prompt: 'Select a column', id: 'column-test', class: 'analysis-dropdown' %>
         <% end %>
+      </div>     
 
-        <% if flash[:error] %>
-          <div class="analysis-alert"><%= flash[:error] %></div>
+      <div class="test-hypothesis-options-container" style="display: none;">
+        <p>Choose two to test:</p>
+        <%= select_tag 'condition1_test', '', prompt: 'Select a condition', id: 'condition1-test', class: 'analysis-dropdown' %>
+        <%= select_tag 'condition2_test', '', prompt: 'Select another condition', id: 'condition2-test', class: 'analysis-dropdown' %>
+        <div id="subset-dropdowns-test"></div>
+      </div>
+    </div>
+
+    <div class="general-white-block">
+      <label style="display: inline-block; margin-right: 20px;margin-top: 10px;">
+        <%= check_box_tag 'chart_types[]', 'compare-parameters', @selected_chart_types.include?('compare-parameters') %>
+        Compare Parameters
+        <p> This analysis compares parameters between two conditions of a variable.
+      </label>
+
+      <div class="compare-parameters-container" style="<%= @selected_chart_types.include?('compare-parameters') ? 'display: block;' : 'display: none;' %>">
+        <p>Choose variable to compare on:</p>
+        <% if @mapping_file_paths.present? %>
+          <%= hidden_field_tag 'file_data', @file_data_json %>
+          <%= select_tag 'column_pooled', options_for_select(@columns, @column_pooled), prompt: 'Select a column', id: 'column-pooled', class: 'analysis-dropdown' %>
         <% end %>
+      </div>
 
-        <div class="analyses-grid">
-          <section class="analysis-section">
-            <label class="analysis-card">
-              <%= check_box_tag 'chart_types[]', 'raw_data', @selected_chart_types.include?('raw_data'), class: 'analysis-toggle' %>
-              <span class="analysis-icon icon-bars"></span>
-              <span class="analysis-copy">
-                <span class="analysis-title">Raw Data Plot</span>
-                <span class="analysis-description">Generate a growth curve for each well in the experimental design.</span>
-                <span class="analysis-meta">96-well plate formats only</span>
-              </span>
-              <span class="analysis-check"></span>
-            </label>
-          </section>
+      <div class="compare-options-pooled-container" style="display: none;">
+        <p>Choose two to compare:</p>
+        <%= select_tag 'condition1_pooled', '', prompt: 'Select a condition', id: 'condition1-pooled', class: 'analysis-dropdown' %>
+        <%= select_tag 'condition2_pooled', '', prompt: 'Select another condition', id: 'condition2-pooled', class: 'analysis-dropdown' %>
+  </div>
+  </div>
 
-          <section class="analysis-section">
-            <label class="analysis-card">
-              <%= check_box_tag 'chart_types[]', 'gp_plot', @selected_chart_types.include?('gp_plot'), class: 'analysis-toggle' %>
-              <span class="analysis-icon icon-curve"></span>
-              <span class="analysis-copy">
-                <span class="analysis-title">Gaussian Process Plot</span>
-                <span class="analysis-description">Plot a specified experimental property with one chosen condition.</span>
-                <span class="analysis-meta">Includes optional subsetting</span>
-              </span>
-              <span class="analysis-check"></span>
-            </label>
-
-            <div class="gp-pool-by-container analysis-settings" style="<%= @selected_chart_types.include?('gp_plot') ? '' : 'display: none;' %>">
-              <% if @mapping_file_paths.present? %>
-                <label class="field-label" for="gp-pool-by-select">Pool by column</label>
-                <%= select_tag 'gp_pool_by_column', options_for_select(@columns, @gp_pool_by_column), prompt: 'Select a column', id: 'gp-pool-by-select', class: 'analysis-dropdown' %>
-              <% end %>
-            </div>
-
-            <div class="gp-subset-toggle analysis-settings" style="<%= @selected_chart_types.include?('gp_plot') ? '' : 'display: none;' %>">
-              <p class="field-label">Subset the data?</p>
-              <div class="segmented-options">
-                <label>
-                  <%= radio_button_tag 'gp_subset_choice', 'yes', @gp_subset_choice == 'yes', id: 'gp_subset_yes' %>
-                  <span>Yes</span>
-                </label>
-                <label>
-                  <%= radio_button_tag 'gp_subset_choice', 'no', @gp_subset_choice == 'no' || @gp_subset_choice.blank?, id: 'gp_subset_no' %>
-                  <span>No</span>
-                </label>
-              </div>
-            </div>
-
-            <div class="gp-subset-container analysis-settings compact-setting" style="<%= @gp_subset_choice == 'yes' ? '' : 'display: none;' %>">
-              <% if @mapping_file_paths.present? %>
-                <label class="field-label" for="gp-subset-select">Subset column</label>
-                <%= select_tag 'gp_subset_column', options_for_select(@columns, @gp_subset_column), prompt: 'Select a column', id: 'gp-subset-select', class: 'analysis-dropdown' %>
-              <% end %>
-            </div>
-
-            <div id="gp-condition-checkboxes" class="checkbox-container chip-options" style="display: none;"></div>
-          </section>
-
-          <section class="analysis-section">
-            <label class="analysis-card">
-              <%= check_box_tag 'chart_types[]', 'fit_stats', @selected_chart_types.include?('fit_stats'), class: 'analysis-toggle' %>
-              <span class="analysis-icon icon-stats"></span>
-              <span class="analysis-copy">
-                <span class="analysis-title">Fit Statistics</span>
-                <span class="analysis-description">Summarize AUC, growth rate, carrying capacity, lag time, and doubling time.</span>
-                <span class="analysis-meta">Optional replicate pooling</span>
-              </span>
-              <span class="analysis-check"></span>
-            </label>
-
-            <div class="radio-container analysis-settings" style="<%= @selected_chart_types.include?('fit_stats') ? '' : 'display: none;' %>">
-              <p class="field-label">Pool replicates?</p>
-              <div class="segmented-options">
-                <label>
-                  <input type="radio" name="pool_replicates" value="yes" <%= @pool_replicates == 'yes' ? 'checked' : '' %>>
-                  <span>Yes</span>
-                </label>
-                <label>
-                  <input type="radio" name="pool_replicates" value="no" <%= @pool_replicates == 'no' || @pool_replicates.blank? ? 'checked' : '' %>>
-                  <span>No</span>
-                </label>
-              </div>
-            </div>
-
-            <div class="checkbox-container chip-options">
-              <div id="checkbox-content">
-              <div class="checkbox-grid">
-                <p class="field-label">Pool variables</p>
-                <div class="additional-text">
-                  Select the variable(s) to pool on. Multiple variables are pooled by unique combinations. <a href="http://firasmidani.github.io/amiga/doc/pooling.html">Learn more</a>.
-                </div>
-                <% @pool_options.each do |option| %>
-                  <% next if option.downcase.include?('well') %>
-                  <label>
-                    <input type="checkbox" name="pool_options[]" value="<%= option %>" <%= @pool_options_selected.include?(option) ? 'checked' : '' %>>
-                    <span><%= option %></span>
-                  </label>
-                <% end %>
-              </div>
-              </div>
-            </div>
-          </section>
-
-          <section class="analysis-section">
-            <label class="analysis-card">
-              <%= check_box_tag 'chart_types[]', 'heatmap_plot', @selected_chart_types.include?('heatmap_plot'), class: 'analysis-toggle' %>
-              <span class="analysis-icon icon-grid"></span>
-              <span class="analysis-copy">
-                <span class="analysis-title">Heatmap Plot</span>
-                <span class="analysis-description">Visualize fit statistics across selected conditions and axes.</span>
-                <span class="analysis-meta">Choose metric, x-axis, and y-axis</span>
-              </span>
-              <span class="analysis-check"></span>
-            </label>
-
-            <div class="heatmap-container analysis-settings" style="<%= @selected_chart_types.include?('heatmap_plot') ? '' : 'display: none;' %>">
-              <% if @mapping_file_paths.present? %>
-                <label class="field-label" for="heatmap_value">Heatmap value</label>
-                <%= select_tag 'heatmap_value', options_for_select([
-                  'AUC in units of OD',
-                  'Growth Rate',
-                  'Linear Carrying Capacity in units of OD',
-                  'Lag Time',
-                  'Doubling Time'
-                ], @heatmap_value), prompt: 'Select a value', id: 'heatmap_value', class: 'analysis-dropdown' %>
-
-                <div class="axis-grid">
-                  <div>
-                    <label class="field-label" for="heatmap_x">x-axis</label>
-                    <%= select_tag 'heatmap_x', options_for_select(@columns, @heatmap_x), prompt: 'Select x-axis', id: 'heatmap_x', class: 'analysis-dropdown' %>
-                  </div>
-                  <div>
-                    <label class="field-label" for="heatmap_y">y-axis</label>
-                    <%= select_tag 'heatmap_y', options_for_select(@columns, @heatmap_y), prompt: 'Select y-axis', id: 'heatmap_y', class: 'analysis-dropdown' %>
-                  </div>
-                </div>
-              <% end %>
-            </div>
-          </section>
-
-          <section class="analysis-section">
-            <label class="analysis-card">
-              <%= check_box_tag 'chart_types[]', 'test-hypothesis', @selected_chart_types.include?('test-hypothesis'), class: 'analysis-toggle' %>
-              <span class="analysis-icon icon-hypothesis"></span>
-              <span class="analysis-copy">
-                <span class="analysis-title">Test Hypothesis</span>
-                <span class="analysis-description">Compare differential growth with log Bayes Factor scores and OD differences.</span>
-                <span class="analysis-meta">Choose variable and two conditions</span>
-              </span>
-              <span class="analysis-check"></span>
-            </label>
-
-            <div class="test-hypothesis-container analysis-settings" style="<%= @selected_chart_types.include?('test-hypothesis') ? '' : 'display: none;' %>">
-              <% if @mapping_file_paths.present? %>
-                <label class="field-label" for="column-test">Variable to test</label>
-                <%= select_tag 'column_test', options_for_select(@columns, @column_test), prompt: 'Select a column', id: 'column-test', class: 'analysis-dropdown' %>
-              <% end %>
-            </div>
-
-            <div class="test-hypothesis-options-container analysis-settings" style="display: none;">
-              <p class="field-label">Choose two conditions</p>
-              <div class="axis-grid">
-                <%= select_tag 'condition1_test', '', prompt: 'Select a condition', id: 'condition1-test', class: 'analysis-dropdown' %>
-                <%= select_tag 'condition2_test', '', prompt: 'Select another condition', id: 'condition2-test', class: 'analysis-dropdown' %>
-              </div>
-              <div id="subset-dropdowns-test" class="generated-subsets"></div>
-            </div>
-          </section>
-
-          <section class="analysis-section">
-            <label class="analysis-card">
-              <%= check_box_tag 'chart_types[]', 'compare-parameters', @selected_chart_types.include?('compare-parameters'), class: 'analysis-toggle' %>
-              <span class="analysis-icon icon-compare"></span>
-              <span class="analysis-copy">
-                <span class="analysis-title">Compare Parameters</span>
-                <span class="analysis-description">Compare growth parameters between two conditions of a variable.</span>
-                <span class="analysis-meta">Optional subset controls</span>
-              </span>
-              <span class="analysis-check"></span>
-            </label>
-
-            <div class="compare-parameters-container analysis-settings" style="<%= @selected_chart_types.include?('compare-parameters') ? '' : 'display: none;' %>">
-              <% if @mapping_file_paths.present? %>
-                <label class="field-label" for="column-pooled">Variable to compare</label>
-                <%= select_tag 'column_pooled', options_for_select(@columns, @column_pooled), prompt: 'Select a column', id: 'column-pooled', class: 'analysis-dropdown' %>
-              <% end %>
-            </div>
-
-            <div class="compare-options-pooled-container analysis-settings" style="display: none;">
-              <p class="field-label">Choose two conditions</p>
-              <div class="axis-grid">
-                <%= select_tag 'condition1_pooled', '', prompt: 'Select a condition', id: 'condition1-pooled', class: 'analysis-dropdown' %>
-                <%= select_tag 'condition2_pooled', '', prompt: 'Select another condition', id: 'condition2-pooled', class: 'analysis-dropdown' %>
-              </div>
-              <div id="subset-dropdowns-pooled" class="generated-subsets"></div>
-            </div>
-          </section>
-        </div>
-
-        <div class="analysis-actions">
-          <% if session[:returning_from_review] %>
-            <%= submit_tag 'Back to Review', class: 'analysis-button secondary-action', id: 'review-button' %>
-            <%= link_to 'Start Over', upload_path, class: 'edit-button' %>
-          <% else %>
-            <%= submit_tag 'Review', class: 'analysis-button', id: 'review-button' %>
-          <% end %>
-        </div>
-      <% end %>
-    </main>
+  <div style="text-align: center; margin-top: 20px;">
+    <% if session[:returning_from_review] %>
+      <%= submit_tag 'Back to Review', class: 'analysis-button', id: 'review-button' %>
+      <%= link_to 'Start Over', upload_path, class: 'edit-button', style: 'margin-left: 10px;' %>
+    <% else %>
+      <%= submit_tag 'Review', class: 'analysis-button', id: 'review-button' %>
+    <% end %>
+    <% end %>
+  </div>
 
  <%= render "layouts/footer" %>
 

@@ -10,13 +10,35 @@
     <%= render "layouts/header" %>
 
     <div class="column skinny">
-    <%= render "layouts/stepper", current_step: 3 %>
+    <div class="stepper-wrapper">
+    <div class="stepper-item completed">
+      <a href="<%= upload_path %>" style="text-decoration: none; color: white"> 
+        <div class="step-counter completed">1</div>
+      </a>
+        <div class="step-name">Upload Files</div>
+    </div>
+    <div class="stepper-item completed">
+      <a href="<%= selectanalyses_path %>"style="text-decoration: none; color: white">
+        <div class="step-counter">2</div>
+      </a>
+      <div class="step-name">Select Analyses</div>
+    </div>
+    <div class="stepper-item active">
+      <div class="step-counter">3</div>
+      <a href="<%= review_path %>"style="text-decoration: none; color: white"> </a>
+      <div class="step-name">Review</div>
+    </div>
+    <div class="stepper-item">
+      <div class="step-counter">4</div>
+      <div class="step-name">Submit</div>
+    </div>
+  </div>
 
       <% content_for :title, "Parameters page" %>
       <%= form_with url: '/generate', method: :post do |form| %>
       <h1>Review and Submit</h1>
       <p>Please verify that your details are correct before submitting. When you click "Start My Job," you will receive an email confirming your submission.</p>
-      <div class="review-container">
+      <div class="general-white-block">
 
         <h2>Email</h2>
         <p><%= @user.email %></p>

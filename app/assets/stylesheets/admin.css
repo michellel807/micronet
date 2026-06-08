@@ -4,11 +4,11 @@
 */
 
 /* for the admin screen */
-.adminscreen{
+.adminscreen {
   color: white;
   background-image: linear-gradient(to top, #000750, #405fad);
-
-} 
+  min-height: 100vh;
+}
 .adminscreen h1 {
   font-size: 50px;
   margin-top: 20px;
@@ -66,10 +66,6 @@
   box-shadow: 0 0 15px 0 rgba(0,0,0,.8) inset;
 }
 
-.adminscreen h1{
-  margin:center;
-  margin-left: 50px;
-}
 
 .login{
   margin-left: 50px;
@@ -252,3 +248,10 @@ color: #fff;
     border-radius: 3px;
   }
   
+
+  html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #000750;
+}

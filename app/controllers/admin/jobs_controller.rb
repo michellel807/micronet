@@ -1,7 +1,7 @@
 class Admin::JobsController < ApplicationController
   before_action :check_admin
   def index
-    @jobs = Job.all
+    @jobs = Job.order(created_at: :desc).limit(7)
   end
 
   def show
