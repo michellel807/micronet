@@ -25,23 +25,177 @@
 
 .savebutton{
   background-color: #000750;
-  padding: 5px 15px;
-  border-radius:6px;
+  border: none;
+  border-radius: 6px;
   color: #ffffff;
-  font-size: 20px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 12px 32px;
   text-decoration: none;
   cursor: pointer;
-  border: none;
   display: inline-block;
   text-align: center;
   align-self: center;
   filter: drop-shadow(3px 3px 4px #b4b4b4);
+  transition: all 0.2s ease;
 }
-  
+
 .savebutton:hover{
-  background-color: #384ba1;
+  background-color: #405fad;
   color: white;
   text-decoration: none;
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   SHARED BUTTON STYLES
+   Each shared button class is defined ONCE here.
+   Page-specific buttons (.upload-button, .cancel-button,
+   .login-button, .logout-button) stay in their own CSS files.
+   ============================================================ */
+
+/* Primary action button — used across all pages */
+.analysis-button {
+  background-color: #000750;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 12px 32px;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 128px;
+  text-align: center;
+  filter: drop-shadow(3px 3px 4px #b4b4b4);
+  transition: all 0.2s ease;
+}
+
+.analysis-button:hover {
+  background-color: #405fad;
+  color: #fff;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+/* Secondary/outlined button — used for Edit and Back actions.
+   When combined with .analysis-button (e.g. class="analysis-button secondary-action"),
+   these rules come after and correctly override the primary style. */
+.edit-button,
+.secondary-action {
+  background-color: #fff;
+  border: 1.5px solid #000750;
+  border-radius: 6px;
+  color: #000750;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 10px 24px;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 128px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.edit-button:hover,
+.secondary-action:hover {
+  background-color: #f0f4ff;
+  color: #000750;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+/* Next/forward button with arrow icon — used on upload and parameter pages */
+.next-button {
+  background-color: #000750;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 12px 48px 12px 24px;
+  margin-top: 30px;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-block;
+  text-align: center;
+  filter: drop-shadow(3px 3px 4px #b4b4b4);
+  transition: all 0.2s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='30' viewBox='0 0 7.41 12'%3E%3Cpath d='M10,6,8.59,7.41,13.17,12,8.59,16.59,10,18l6-6Z' transform='translate(-8.59 -6)' fill='%23fff'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 24px center;
+}
+
+.next-button:hover {
+  background-color: #405fad;
+  color: white;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+/* Start job / Submit with arrow icon — used on review and feedbacks pages */
+.start-job-button {
+  margin: auto;
+  margin-top: 30px;
+  background-color: #000750;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 12px 48px 12px 24px;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-block;
+  text-align: center;
+  filter: drop-shadow(3px 3px 4px #b4b4b4);
+  transition: all 0.2s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='30' viewBox='0 0 7.41 12'%3E%3Cpath d='M10,6,8.59,7.41,13.17,12,8.59,16.59,10,18l6-6Z' transform='translate(-8.59 -6)' fill='%23fff'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 24px center;
+}
+
+.start-job-button:hover {
+  background-color: #405fad;
+  color: white;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+/* Submit button — used on feedback page */
+.submit-button {
+  background-color: #000750;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 12px 32px;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-block;
+  text-align: center;
+  filter: drop-shadow(3px 3px 4px #b4b4b4);
+  transition: all 0.2s ease;
+}
+
+.submit-button:hover {
+  background-color: #405fad;
+  color: white;
+  text-decoration: none;
+  transform: translateY(-1px);
 }
 
 .scroll-container {

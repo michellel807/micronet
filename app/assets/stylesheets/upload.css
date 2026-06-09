@@ -3,7 +3,7 @@
 *= require_tree .
 */
 
-/* for the upload screen */
+/* for the upload screen — .upload-button is page-specific (unique large size); shared buttons (.next-button, etc.) are in main.css */
 * {
   font-family: 'Open Sans', Roboto, 'Helvetica Neue', Helvetica, sans-serif;
   font-weight: 300;
@@ -43,8 +43,7 @@
   box-sizing: border-box;
 }
 
-.upload-button,
-.next-button {
+.upload-button {
   background-color: #000750;
   border-radius: 6px;
   color: white;
@@ -58,8 +57,7 @@
   transition: all 0.3s ease;
 }
 
-.upload-button:hover,
-.next-button:hover {
+.upload-button:hover {
   background-color: #405fad;
   color: white;
   text-decoration: none;
@@ -80,16 +78,6 @@
 .upload-button:hover {
   transform: translateY(-2px);
   filter: drop-shadow(5px 5px 6px #808080);
-}
-
-.next-button {
-  margin-top: 30px;
-  font-size: 40px;
-  display: inline-block;
-  padding: 12px 48px 12px 24px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='30' viewBox='0 0 7.41 12'%3E%3Cpath d='M10,6,8.59,7.41,13.17,12,8.59,16.59,10,18l6-6Z' transform='translate(-8.59 -6)' fill='%23fff'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 24px center;
 }
 
 .notice {

@@ -3,6 +3,9 @@
 *= require_tree .
 */
 
+/* Shared button styles (.analysis-button, .edit-button, .secondary-action) are defined in main.css.
+   The @media block below has responsive width overrides for those buttons on this page. */
+
 * {
   font-family: "Open Sans", Roboto, "Helvetica Neue", Helvetica, sans-serif;
 }
@@ -21,6 +24,7 @@
 
 .selectanalyses-heading {
   margin: 22px 0 24px;
+  text-align: center;
 }
 
 .selectanalyses h1 {
@@ -415,55 +419,6 @@
   align-items: center;
   gap: 12px;
   margin-top: 28px;
-}
-
-.analysis-button,
-.edit-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 128px;
-  min-height: 46px;
-  padding: 0 22px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 800;
-  text-decoration: none;
-  cursor: pointer;
-  transition:
-    background .18s ease,
-    border-color .18s ease,
-    transform .18s ease;
-}
-
-.analysis-button {
-  border: 1px solid #1553c7;
-  color: #fff;
-  background: #1553c7;
-}
-
-.analysis-button:hover {
-  border-color: #0f3f9f;
-  color: #fff;
-  background: #0f3f9f;
-  text-decoration: none;
-  transform: translateY(-1px);
-}
-
-.secondary-action,
-.edit-button {
-  border: 1px solid #cbd5e1;
-  color: #334155;
-  background: #fff;
-}
-
-.secondary-action:hover,
-.edit-button:hover {
-  border-color: #94a3b8;
-  color: #111827;
-  background: #f8fafc;
-  text-decoration: none;
-  transform: translateY(-1px);
 }
 
 @media (max-width: 840px) {

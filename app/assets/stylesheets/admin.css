@@ -34,27 +34,25 @@
 .cancel-button {
   margin: auto;
   background-color: #fff;
-  padding: 30px;
-  margin-top: 10px;
+  border: 1.5px solid #000750;
   border-radius: 6px;
-  color: white;
-  font-size: 20px;
-  text-decoration: nonse;
+  color: #000750;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 10px 24px;
+  text-decoration: none;
   cursor: pointer;
-  border: none;
   display: inline-block;
   text-align: center;
-  width: 100px;
-  border: none;
-  padding: 12px 48px 12px 24px;
-  border-radius: 4px;
-  color: #000750;
+  transition: all 0.2s ease;
 }
 
 .cancel-button:hover {
-  background-color: #405fad;
-  color: white;
+  background-color: #f0f4ff;
+  color: #000750;
   text-decoration: none;
+  transform: translateY(-1px);
 }
 
 .option-label {
@@ -72,48 +70,44 @@
 }
 
 .login-button{
-margin-left: 50px;
-background-color: #000750;
-padding: 30px;
-margin-top: 10px;
-margin-bottom: 10px;
-border-radius: 6px;
-color: white;
-font-size: 20px;
-text-decoration: none;
-cursor: pointer;
-border: none;
-display: inline-block;
-text-align: center;
-filter: drop-shadow(3px 3px 4px #b4b4b4);
-width: 90px;
-border: none;
-padding: 12px 48px 12px 24px;
-border-radius: 4px;
-color: #fff;
+  margin-left: 50px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  background-color: #000750;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 12px 32px;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-block;
+  text-align: center;
+  filter: drop-shadow(3px 3px 4px #b4b4b4);
+  transition: all 0.2s ease;
 }
 
 .logout-button{
   margin-left: 30px;
-  background-color: #000750;
-  padding: 30px;
   margin-top: 10px;
   margin-bottom: 10px;
+  background-color: #000750;
+  border: none;
   border-radius: 6px;
-  color: white;
-  font-size: 20px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 12px 32px;
   text-decoration: none;
   cursor: pointer;
-  border: none;
   display: inline-block;
   text-align: center;
   filter: drop-shadow(3px 3px 4px #b4b4b4);
-  width: 100px;
-  border: none;
-  padding: 12px 48px 12px 24px;
-  border-radius: 4px;
-  color: #fff;
-  }
+  transition: all 0.2s ease;
+}
 
   .admin-error{
     margin-left: 30px;
