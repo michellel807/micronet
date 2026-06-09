@@ -3,7 +3,7 @@
 *= require_tree .
 */
 
-/* for the contact screen */
+/* for the contact screen — shared button styles (.analysis-button, .edit-button, etc.) are in main.css */
 * {
   font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
   font-weight: 300;
@@ -33,28 +33,6 @@
 
 .background{
   background-image: linear-gradient(to bottom, #000750, #000750);
-}
-
-.analysis-button {
-  background-color: #000750;
-  padding: 5px 15px;
-  border-radius: 6px;
-  color: white;
-  font-size: 50px;
-  font-weight: 500;
-  text-decoration: none;
-  cursor: pointer;
-  border: none;
-  display: inline-block;
-  text-align: center;
-  align-self: center;
-  filter: drop-shadow(3px 3px 4px #b4b4b4);
-}
-
-.analysis-button:hover {
-  background-color: #405fad;
-  color: white;
-  text-decoration: none;
 }
 
 .contact footer{
