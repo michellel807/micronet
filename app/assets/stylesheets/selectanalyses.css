@@ -16,7 +16,7 @@
 .selectanalyses-shell {
   width: min(1120px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 0 0 0;
+  padding: 28px 0 64px;
 }
 
 .selectanalyses-heading {
@@ -24,6 +24,7 @@
 }
 
 .selectanalyses h1 {
+  color: white;
   font-size: 50px;
   margin-top: 20px;
 }
