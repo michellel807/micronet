@@ -274,34 +274,6 @@
       }
     });
 
-    $("#gp-subset-select").on("change", function () {
-      const selectedColumn = $(this).val();
-      const fileData = JSON.parse($("#file_data").val());
-      const rows = fileData.trim().split("\n");
-      const header = rows.shift().split("\t");
-
-      const colIndex = header.indexOf(selectedColumn);
-      if (colIndex === -1) return;
-
-      const uniqueValues = new Set();
-      rows.forEach(row => {
-        const val = row.split("\t")[colIndex];
-        if (val && val.trim()) uniqueValues.add(val.trim());
-      });
-
-      const $checkboxes = $("#gp-condition-checkboxes");
-      $checkboxes.empty().show();
-
-      $("<p>").text("Choose value(s) from the subset column:").appendTo($checkboxes);
-
-      [...uniqueValues].sort().forEach(value => {
-        const checkbox = $("<label style='margin-right: 10px; display: inline-block;'>")
-          .append($("<input type='checkbox' name='gp_subset_values[]'>").val(value))
-          .append(" " + value);
-        $checkboxes.append(checkbox);
-      });
-    });
-
     $("input[name='chart_types[]'][value='test-hypothesis']").on("change", function() {
       if ($(this).is(":checked")) {
         $(".test-hypothesis-container").show();
@@ -380,9 +352,9 @@
       const conditions = [...new Set(rows.map(row => row.split("\t")[columnIndex])
         .filter(val => val && !column.toLowerCase().includes("well")))];
 
-      // Update condition dropdowns
-      $(`#condition1-${prefix}`).empty().append($('<option>', { text: 'Select a condition' }));
-      $(`#condition2-${prefix}`).empty().append($('<option>', { text: 'Select another condition' }));
+      // Update condition dropdowns (clear stale exclusion filter cache first)
+      $(`#condition1-${prefix}`).removeData('original-options').empty().append($('<option>', { text: 'Select a condition' }));
+      $(`#condition2-${prefix}`).removeData('original-options').empty().append($('<option>', { text: 'Select another condition' }));
       conditions.forEach(condition => {
         $(`#condition1-${prefix}`).append($('<option>', { text: condition, value: condition }));
         $(`#condition2-${prefix}`).append($('<option>', { text: condition, value: condition }));
