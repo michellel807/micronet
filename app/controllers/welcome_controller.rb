@@ -61,12 +61,14 @@ class WelcomeController < ApplicationController
 
   def create_job
     @user = User.find_by(id: session[:user_id])
-    
+
     unless @user
       flash[:alert] = "Please enter your email first."
       redirect_to root_path
       return
     end
+
+    Job.find_by(user_id: @user.id, status: "In Progress")&.destroy
 
     @job = Job.create(user_id: @user.id, status: "In Progress")
     session[:current_user_id] = @job.id
