@@ -3,44 +3,93 @@
 *= require_tree .
 */
 
-/* for the parameter screen — shared button styles (.next-button, etc.) are in main.css */
-* {
-  font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
-  font-weight: 300;
+/* Review screen (renders inside .parameterscreen). Buttons live in main.css. */
+.parameterscreen {
+  color: var(--tx-1);
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
-.parameterscreen{
-  color: white;
-  background-image: linear-gradient(to top, #000750, #405fad);
 
-} 
+.parameterscreen .column.skinny {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 24px 64px;
+  text-align: left;
+  flex: 1;
+}
+
 .parameterscreen h1 {
-  font-size: 50px;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--tx-1);
+  margin: 0 0 8px;
+  text-align: left;
+}
+
+.parameterscreen > .column > form > p,
+.parameterscreen .column > p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--tx-2);
+  text-align: left;
+}
+
+.parameterscreen footer { background: var(--surface); box-shadow: none; }
+
+/* Review summary card */
+.general-white-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-sm);
+  padding: 28px 32px;
   margin-top: 20px;
+  color: var(--tx-1);
 }
 
-.parameterscreen h3 {
-  font-size: 30px;
-  margin-top: 20px;
-  margin: auto;
-}
-.parameterscreen p {
-  font-size: 25px;
-}
-
-.background{
-  background-image: linear-gradient(to bottom, #000750, #000750);
+.general-white-block h2 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tx-3);
+  margin: 28px 0 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-sub);
 }
 
-.additional-text{
-  font-size: 20px;
+.general-white-block h2:first-child { margin-top: 0; }
+
+.general-white-block p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--tx-2);
+  margin: 4px 0;
+  text-align: left;
 }
 
-.option-label {
-  font-size: 30px;
+.general-white-block p strong { color: var(--tx-1); font-weight: 600; }
+
+.general-white-block .edit-button {
+  margin: 10px 0 4px;
+  padding: 6px 16px;
+  font-size: 13px;
+  min-width: 0;
 }
 
-.parameterscreen footer{ 
-  background-color: #000750;
-  box-shadow: 0 0 15px 0 rgba(0,0,0,.8) inset;
+.general-white-block .analysis-button {
+  margin-top: 24px;
+  font-size: 14px;
 }
 
+.additional-text { font-size: 14px; }
+.option-label { font-size: 15px; font-weight: 600; }
+
+@media (max-width: 600px) {
+  .parameterscreen h1 { font-size: 23px; }
+  .general-white-block { padding: 20px; }
+}
