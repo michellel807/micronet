@@ -75,6 +75,8 @@ class Job < ApplicationRecord
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes"
         system("amiga fit -i private/uploads/userexpt --pool-by '#{pool_options_string}' -o fit")
+        raise "Your dataset is too large for the fit statistics analysis. Please try uploading a smaller dataset." if $?.exitstatus == 137
+        raise "The fit statistics analysis failed" unless $?.exitstatus == 0
         puts "AMIGA EXIT STATUS = #{$?.exitstatus}"
         puts "fit_summary exists? #{File.exist?('private/uploads/userexpt/summary/fit_summary.txt')}"
         puts Dir.glob("private/uploads/userexpt/summary/*")
@@ -137,7 +139,8 @@ class Job < ApplicationRecord
         test_hypothesis_txts = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'test-hypothesis', '*report.txt'))
         test_hypothesis_pdfs = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'test-hypothesis', '*.pdf'))
         if test_hypothesis_txts.empty? && test_hypothesis_pdfs.empty?
-          raise "The test hypothesis analysis failed"
+          raise "Your dataset is too large for the test hypothesis analysis. Please try uploading a smaller dataset." if $?.exitstatus == 137
+          raise "The test hypothesis failed. Please check that your input data or selected conditions are correct." if $?.exitstatus != 0
         end
         @test_hypothesis_paths = test_hypothesis_txts
         @test_hypothesis_pdf_paths = test_hypothesis_pdfs
