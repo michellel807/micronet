@@ -28,8 +28,8 @@ class WelcomeController < ApplicationController
       return
     end
 
-    # Check for existing draft (In Progress only, not submitted)
-    draft_job = Job.find_by(user_id: @user.id, status: "In Progress")
+    # Only the most recent draft is kept; collapse any older ones.
+    draft_job = Job.prune_drafts(@user.id)
     if draft_job.present?
       flash.now.alert = "Looks like you have an unsaved job open. Would you like to resume?"
       session[:user_id] = @user.id
@@ -38,13 +38,15 @@ class WelcomeController < ApplicationController
       return
     end
 
-    # Create new job as draft with "In Progress" status
-    @job = Job.create(user_id: @user.id, status: "In Progress")
-    @job.save
+    # Create new job as draft with "In Progress" status. A concurrent
+    # request could race us to the single-draft unique index; if so, fall
+    # back to resuming whichever draft won.
+    begin
+      @job = Job.create!(user_id: @user.id, status: Job::DRAFT_STATUS)
+    rescue ActiveRecord::RecordNotUnique
+      @job = Job.prune_drafts(@user.id)
+    end
     session[:current_user_id] = @job.id
-    puts "Job ID is #{@job.id}"
-    puts "User is #{@user.id}"
-    puts "status is #{@job.status}"
     redirect_to "/upload/delete_files"
   end
 
@@ -68,9 +70,10 @@ class WelcomeController < ApplicationController
       return
     end
 
-    Job.find_by(user_id: @user.id, status: "In Progress")&.destroy
+    # Starting over: discard every existing draft, then create a fresh one.
+    Job.where(user_id: @user.id, status: Job::DRAFT_STATUS).destroy_all
 
-    @job = Job.create(user_id: @user.id, status: "In Progress")
+    @job = Job.create(user_id: @user.id, status: Job::DRAFT_STATUS)
     session[:current_user_id] = @job.id
 
     redirect_to "/upload/delete_files"
