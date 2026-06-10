@@ -19,12 +19,11 @@ def plot_gp_data(derived_path, subset_name=None):
     # Set up the plot
     plt.figure(figsize=(10, 6))
     if 'mu' in data.columns and 'Sigma' in data.columns:
-    #pooled option
+        #pooled option
+        col = data.columns[1]
+        data = data[[col, 'Time', 'mu', 'Sigma']]
+        conditions = data[col].unique()
         for condition in conditions:
-            col = data.columns[1]
-            data = data[[col, 'Time', 'mu', 'Sigma']]
-            conditions = data[col].unique()
-            
             cond_data = data[data[col] == condition].sort_values(by='Time')
             # Extract values
             time = cond_data['Time'].values
