@@ -11,6 +11,9 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[7.0].define(version: 2026_06_10_120000) do
+  # These are extensions that must be enabled in order to support this database
+  enable_extension "plpgsql"
+
   create_table "admins", force: :cascade do |t|
     t.string "username"
     t.string "password_digest"
@@ -46,7 +49,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_06_10_120000) do
 
   create_table "jobs", force: :cascade do |t|
     t.integer "subsample"
-    t.string "factors", default: "{}"
+    t.string "factors", default: [], array: true
     t.string "status"
     t.integer "user_id"
     t.datetime "start_time"
@@ -57,7 +60,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_06_10_120000) do
     t.datetime "updated_at", null: false
     t.datetime "confirm_time"
     t.boolean "completed"
-    t.index ["user_id"], name: "index_jobs_on_single_active_draft", unique: true, where: "status = 'In Progress'"
+    t.index ["user_id"], name: "index_jobs_on_single_active_draft", unique: true, where: "((status)::text = 'In Progress'::text)"
   end
 
   create_table "sessions", force: :cascade do |t|
