@@ -1,9 +1,8 @@
 .stepper-wrapper {
-    margin: 20px auto;
+    margin: 0 auto 40px;
     display: flex;
     justify-content: space-between;
-    width: min(760px, 100%);
-    margin-bottom: 32px;
+    width: min(680px, 100%);
 }
 
 .stepper-item {
@@ -12,32 +11,25 @@
     flex-direction: column;
     align-items: center;
     flex: 1;
-    font-size: 14px;
-    color: #000750;   /* add this */
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--tx-3);
 }
 
 .stepper-item::before,
 .stepper-item::after {
     position: absolute;
     content: "";
-    border-bottom: 2px solid #ccc;
+    border-bottom: 2px solid var(--border);
     width: 100%;
-    top: 20px;
+    top: 17px;
     left: -50%;
     z-index: 2;
 }
 
-.stepper-item::after {
-    left: 50%;
-}
-
-.stepper-item:first-child::before {
-    content: none;
-}
-
-.stepper-item:last-child::after {
-    content: none;
-}
+.stepper-item::after { left: 50%; }
+.stepper-item:first-child::before { content: none; }
+.stepper-item:last-child::after { content: none; }
 
 .stepper-item .step-counter {
     position: relative;
@@ -45,51 +37,44 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background: #ccc;
-    margin-bottom: 6px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
     text-decoration: none;
-    color: white;
+    color: var(--tx-3);
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .stepper-item .step-counter:hover {
-    background-color: #007bff;
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Active step */
+.stepper-item.active { font-weight: 600; color: var(--tx-1); }
+.stepper-item.active .step-counter {
+    background: var(--duke);
+    border-color: var(--duke);
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(1,33,105,0.1);
+}
+.stepper-item.active .step-counter:hover { background: var(--duke-dk); color: #fff; }
+
+/* Completed step */
+.stepper-item.completed { color: var(--tx-2); }
+.stepper-item.completed .step-counter {
+    background: var(--accent);
+    border-color: var(--accent);
     color: #fff;
 }
-
-.stepper-item.active {
-    font-weight: bold;
-    color: white;
-}
-
-.stepper-item.active .step-counter {
-    background-color: #000750;
-    cursor: pointer;
-}
-
-.stepper-item.active .step-counter:hover {
-    background-color: #405fad;
-    color: white;
-}
-
-.stepper-item.completed .step-counter {
-    background-color: #000750;
-    cursor: pointer;
-}
-
-.stepper-item.completed .step-counter:hover {
-    background-color: #405fad;
-    color: white;
-}
-
-.stepper-item.completed::after {
-    border-bottom: 2px solid #000750;
-    z-index: 3;
-}
+.stepper-item.completed .step-counter:hover { background: var(--accent-dk); color: #fff; }
+.stepper-item.completed::after { border-bottom: 2px solid var(--accent); z-index: 3; }
 
 .stepper-item a {
     text-decoration: none;
@@ -99,22 +84,11 @@
     color: inherit;
 }
 
-.step-name {
-    text-align: center;
-}
+.step-name { text-align: center; }
 
-@media (max-width: 840px) {
-  .stepper-item {
-    font-size: 11px;
-  }
-}
-
+@media (max-width: 840px) { .stepper-item { font-size: 11px; } }
 @media (max-width: 560px) {
-  .stepper-wrapper {
-    width: 100%;
-  }
-  .step-counter {
-    width: 32px;
-    height: 32px;
-  }
+  .stepper-wrapper { width: 100%; }
+  .stepper-item .step-counter { width: 30px; height: 30px; font-size: 12px; }
+  .stepper-item::before, .stepper-item::after { top: 14px; }
 }

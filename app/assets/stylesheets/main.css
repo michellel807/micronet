@@ -1,12 +1,19 @@
 * {
-  font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
-  font-weight: 300;
+  font-family: var(--font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
 }
 
+body {
+  background: var(--bg);
+  color: var(--tx-1);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.flex-wrapper { background: var(--bg); }
+
 .background-space {
-  margin-top: -60px;
-  height: 100px;
-  background: #000750;
+  height: 40px;
+  background: transparent;
 }
 
 /* Makes the welcome page responsive to page width changes*/
@@ -24,7 +31,7 @@
 }
 
 .savebutton{
-  background-color: #000750;
+  background-color: var(--duke);
   border: none;
   border-radius: 6px;
   color: #ffffff;
@@ -37,12 +44,11 @@
   display: inline-block;
   text-align: center;
   align-self: center;
-  filter: drop-shadow(3px 3px 4px #b4b4b4);
   transition: all 0.2s ease;
 }
 
 .savebutton:hover{
-  background-color: #405fad;
+  background-color: var(--accent);
   color: white;
   text-decoration: none;
   transform: translateY(-1px);
@@ -57,7 +63,7 @@
 
 /* Primary action button — used across all pages */
 .analysis-button {
-  background-color: #000750;
+  background-color: var(--duke);
   border: none;
   border-radius: 6px;
   color: #fff;
@@ -72,12 +78,11 @@
   justify-content: center;
   min-width: 128px;
   text-align: center;
-  filter: drop-shadow(3px 3px 4px #b4b4b4);
   transition: all 0.2s ease;
 }
 
 .analysis-button:hover {
-  background-color: #405fad;
+  background-color: var(--accent);
   color: #fff;
   text-decoration: none;
   transform: translateY(-1px);
@@ -89,9 +94,9 @@
 .edit-button,
 .secondary-action {
   background-color: #fff;
-  border: 1.5px solid #000750;
+  border: 1.5px solid var(--duke);
   border-radius: 6px;
-  color: #000750;
+  color: var(--duke);
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -108,15 +113,15 @@
 
 .edit-button:hover,
 .secondary-action:hover {
-  background-color: #f0f4ff;
-  color: #000750;
+  background-color: var(--accent-bg);
+  color: var(--duke);
   text-decoration: none;
   transform: translateY(-1px);
 }
 
 /* Next/forward button with arrow icon — used on upload and parameter pages */
 .next-button {
-  background-color: #000750;
+  background-color: var(--duke);
   border: none;
   border-radius: 6px;
   color: #fff;
@@ -129,7 +134,6 @@
   cursor: pointer;
   display: inline-block;
   text-align: center;
-  filter: drop-shadow(3px 3px 4px #b4b4b4);
   transition: all 0.2s ease;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='30' viewBox='0 0 7.41 12'%3E%3Cpath d='M10,6,8.59,7.41,13.17,12,8.59,16.59,10,18l6-6Z' transform='translate(-8.59 -6)' fill='%23fff'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -137,7 +141,7 @@
 }
 
 .next-button:hover {
-  background-color: #405fad;
+  background-color: var(--accent);
   color: white;
   text-decoration: none;
   transform: translateY(-1px);
@@ -147,7 +151,7 @@
 .start-job-button {
   margin: auto;
   margin-top: 30px;
-  background-color: #000750;
+  background-color: var(--duke);
   border: none;
   border-radius: 6px;
   color: #fff;
@@ -159,7 +163,6 @@
   cursor: pointer;
   display: inline-block;
   text-align: center;
-  filter: drop-shadow(3px 3px 4px #b4b4b4);
   transition: all 0.2s ease;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='30' viewBox='0 0 7.41 12'%3E%3Cpath d='M10,6,8.59,7.41,13.17,12,8.59,16.59,10,18l6-6Z' transform='translate(-8.59 -6)' fill='%23fff'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -167,7 +170,7 @@
 }
 
 .start-job-button:hover {
-  background-color: #405fad;
+  background-color: var(--accent);
   color: white;
   text-decoration: none;
   transform: translateY(-1px);
@@ -175,7 +178,7 @@
 
 /* Submit button — used on feedback page */
 .submit-button {
-  background-color: #000750;
+  background-color: var(--duke);
   border: none;
   border-radius: 6px;
   color: white;
@@ -187,12 +190,11 @@
   cursor: pointer;
   display: inline-block;
   text-align: center;
-  filter: drop-shadow(3px 3px 4px #b4b4b4);
   transition: all 0.2s ease;
 }
 
 .submit-button:hover {
-  background-color: #405fad;
+  background-color: var(--accent);
   color: white;
   text-decoration: none;
   transform: translateY(-1px);
@@ -342,7 +344,7 @@ label {
 
 .nav-tabs li a {
   font-size: 15px;
-  color: #000750;
+  color: var(--duke);
 }
 .nav-tabs li a:hover {
   color:blue;
