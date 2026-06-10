@@ -9,6 +9,15 @@ class Job < ApplicationRecord
 
   # Configuration constants
   MAX_ACTIVE_JOBS_PER_USER = 3
+  DRAFT_STATUS = "In Progress".freeze
+
+  # Keep only the most recent draft for a user, destroying any older
+  # "In Progress" jobs. Returns the surviving draft (or nil).
+  def self.prune_drafts(user_id)
+    drafts = where(user_id: user_id, status: DRAFT_STATUS).order(created_at: :desc).to_a
+    drafts.drop(1).each(&:destroy)
+    drafts.first
+  end
 
 
   def analyze(chart_types, pool_replicates, pool_options_string, test_finalsubset, hypothesis, gp_pool_by_column, gp_subset_choice, gp_finalsubset, compare_parameters_pool, compare_finalsubset, heatmap_value, heatmap_x, heatmap_y)
