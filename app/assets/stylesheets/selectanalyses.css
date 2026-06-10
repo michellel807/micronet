@@ -7,7 +7,7 @@
    The @media block below has responsive width overrides for those buttons on this page. */
 
 * {
-  font-family: "Open Sans", Roboto, "Helvetica Neue", Helvetica, sans-serif;
+  font-family: "Open Sans", Roboto, "Helvetica Neue", Helvetica, sans-serif; font-weight: 300;
 }
 
 .selectanalyses {
@@ -28,7 +28,6 @@
 }
 
 .selectanalyses h1 {
-  color: white;
   font-size: 50px;
   margin-top: 20px;
 }

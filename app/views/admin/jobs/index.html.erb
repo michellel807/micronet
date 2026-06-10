@@ -13,17 +13,25 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      align-items: center;
+      align-items: stretch;
       border-radius: 0;
       filter: none;
-      min-width: 80%;
+      width: 100%;
       min-height: 500px;
-      margin: 0 auto;
-      padding: 0;
-} 
+      margin: 0;
+      padding: 0 40px;
+      box-sizing: border-box;
+}
+
+    .filter-tabs-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      margin: 20px 0 0 0;
+      position: relative;
+    }
 
     .filter-tabs {
-      margin: 20px 0 30px 0;
       border-bottom: 2px solid #ddd;
       display: flex;
       gap: 0;
@@ -61,7 +69,7 @@
     .job-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 20px 0;
+      margin: 8px 0 20px 0;
       font-size: 14px;
       background: white;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -165,6 +173,49 @@
       margin-bottom: 15px;
       color: #333;
     }
+
+    .table-scroll-wrapper {
+      max-height: 400px;
+      overflow-y: auto;
+      border-radius: 4px;
+    }
+
+    .table-scroll-wrapper .job-table {
+      margin: 0;
+    }
+
+    .table-scroll-wrapper .job-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .clear-table-btn-wrapper {
+      position: absolute;
+      right: 0;
+      bottom: 4px;
+    }
+
+    .section-header {
+      display: none;
+    }
+
+    .clear-table-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.4);
+      color: rgba(255,255,255,0.7);
+      padding: 5px 14px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .clear-table-btn:hover {
+      border-color: white;
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -174,18 +225,24 @@
     <div class="jobs-container">
       <h1>Jobs Management</h1>
       
-      <div class="filter-tabs">
-        <button class="filter-tab active" data-filter="all">All Jobs</button>
-        <button class="filter-tab" data-filter="active">Active Jobs</button>
-        <button class="filter-tab" data-filter="completed">Completed (7 days)</button>
-        <button class="filter-tab" data-filter="failed">Failed (7 days)</button>
-        <button class="filter-tab" data-filter="cancelled">Cancelled (7 days)</button>
+      <div class="filter-tabs-row">
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-filter="all">All Jobs</button>
+          <button class="filter-tab" data-filter="active">Active Jobs</button>
+          <button class="filter-tab" data-filter="completed">Completed (7 days)</button>
+          <button class="filter-tab" data-filter="failed">Failed (7 days)</button>
+          <button class="filter-tab" data-filter="cancelled">Cancelled (7 days)</button>
+        </div>
+        <div class="clear-table-btn-wrapper">
+          <button class="clear-table-btn" id="clear-btn" onclick="clearActiveTable()">Clear Table</button>
+        </div>
       </div>
 
       <!-- All Jobs Section -->
       <div id="all" class="section active">
         <% if @jobs.any? %>
-          <table class="job-table">
+          <div class="table-scroll-wrapper">
+          <table id="all-table" class="job-table">
             <thead>
               <tr>
                 <th>Email</th>
@@ -251,6 +308,7 @@
               <% end %>
             </tbody>
           </table>
+          </div>
         <% else %>
           <div class="no-jobs-message">No jobs</div>
         <% end %>
@@ -260,7 +318,8 @@
       <div id="active" class="section">
         <% active_jobs = @jobs.select { |j| ["Job submitted", "Analyzing..."].include?(j.status) }.sort_by { |j| j.created_at }.reverse %>
         <% if active_jobs.any? %>
-          <table class="job-table">
+          <div class="table-scroll-wrapper">
+          <table id="active-table" class="job-table">
             <thead>
               <tr>
                 <th>Email</th>
@@ -306,6 +365,7 @@
               <% end %>
             </tbody>
           </table>
+          </div>
         <% else %>
           <div class="no-jobs-message">No active jobs</div>
         <% end %>
@@ -316,7 +376,8 @@
         <% seven_days_ago = 7.days.ago %>
         <% completed_jobs = @jobs.select { |j| j.status == 'Completed' && j.updated_at >= seven_days_ago }.sort_by { |j| j.updated_at }.reverse %>
         <% if completed_jobs.any? %>
-          <table class="job-table">
+          <div class="table-scroll-wrapper">
+          <table id="completed-table" class="job-table">
             <thead>
               <tr>
                 <th>Email</th>
@@ -358,6 +419,7 @@
               <% end %>
             </tbody>
           </table>
+          </div>
         <% else %>
           <div class="no-jobs-message">No completed jobs in the last 7 days</div>
         <% end %>
@@ -368,7 +430,8 @@
         <% seven_days_ago = 7.days.ago %>
         <% failed_jobs = @jobs.select { |j| j.status == 'Failed' && j.updated_at >= seven_days_ago }.sort_by { |j| j.updated_at }.reverse %>
         <% if failed_jobs.any? %>
-          <table class="job-table">
+          <div class="table-scroll-wrapper">
+          <table id="failed-table" class="job-table">
             <thead>
               <tr>
                 <th>Email</th>
@@ -402,6 +465,7 @@
               <% end %>
             </tbody>
           </table>
+          </div>
         <% else %>
           <div class="no-jobs-message">No failed jobs in the last 7 days</div>
         <% end %>
@@ -412,7 +476,8 @@
         <% seven_days_ago = 7.days.ago %>
         <% cancelled_jobs = @jobs.select { |j| j.status == 'Cancelled' && j.updated_at >= seven_days_ago }.sort_by { |j| j.updated_at }.reverse %>
         <% if cancelled_jobs.any? %>
-          <table class="job-table">
+          <div class="table-scroll-wrapper">
+          <table id="cancelled-table" class="job-table">
             <thead>
               <tr>
                 <th>Email</th>
@@ -438,6 +503,7 @@
               <% end %>
             </tbody>
           </table>
+          </div>
         <% else %>
           <div class="no-jobs-message">No cancelled jobs in the last 7 days</div>
         <% end %>
@@ -518,6 +584,14 @@
   <%= render "layouts/footer" %>
 
   <script>
+    function clearActiveTable() {
+      const activeSection = document.querySelector('.section.active');
+      if (activeSection) {
+        const tbody = activeSection.querySelector('tbody');
+        if (tbody) tbody.innerHTML = '';
+      }
+    }
+
     function showCancelModal(jobId, userEmail) {
       document.getElementById('cancelModal').style.display = 'block';
       document.getElementById('jobIdConfirm').innerText = jobId;
