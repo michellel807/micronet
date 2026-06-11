@@ -35,7 +35,7 @@ class AdminController < ApplicationController
   def update_username
     admin = Admin.find(session[:admin_id])
 
-    if admin.authenticate(params[:current_password])
+    if admin&.authenticate(params[:current_password])
       if params[:new_username].blank?
         flash[:error] = 'New username cannot be empty.'
       elsif admin.update(username: params[:new_username])
@@ -52,7 +52,7 @@ class AdminController < ApplicationController
   def update_password
     admin = Admin.find(session[:admin_id])
 
-    if admin.authenticate(params[:current_password])
+    if admin&.authenticate(params[:current_password])
       if params[:new_password].blank?
         flash[:error] = 'New password cannot be empty.'
         redirect_to admin_jobs_path
