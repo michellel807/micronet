@@ -9,7 +9,7 @@ body { margin: 0; }
 /* ── Header ───────────────────────────────────────────────── */
 header {
   background: var(--duke, #012169);
-  min-height: 56px;
+  min-height: 72px;
   display: flex;
   align-items: center;
   gap: 0;
@@ -32,7 +32,7 @@ header > a:first-child {
 
 header img {
   width: auto;
-  height: 30px;
+  height: 60px;
   min-height: 0;
   border-right: 1px solid rgba(255,255,255,0.18);
   padding: 0 18px 0 0;
@@ -80,6 +80,9 @@ header nav a {
   letter-spacing: 0.02em;
   transition: all 0.15s;
 }
+
+header a:visited,
+header nav a:visited { color: rgba(255,255,255,0.72); }
 
 header nav a:hover {
   color: #fff;
@@ -149,7 +152,7 @@ footer span {
 @media (max-width: 640px) {
   header { padding: 0 16px; flex-wrap: wrap; min-height: 52px; }
   header h2 { font-size: 12px; }
-  header img { height: 26px; padding-right: 12px; }
+  header img { height: 36px; padding-right: 12px; }
   header nav a { padding: 6px 9px; }
   footer { padding: 22px 16px; }
 }
