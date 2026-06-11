@@ -58,7 +58,16 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
-
+      target: deps
+    env_file:
+      - .env
+    command: ["rails", "test"] # or `rails test` if using Minitest
+    volumes:
+      - .:/app
+      - bundle:/bundle
+    depends_on:
+      - db
+      - local-email
 volumes:
   postgres-data:
   bundle:
