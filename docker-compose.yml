@@ -2,7 +2,7 @@ version: '3'
 services:
 
   db:
-    image: postgres
+    image: postgres:16
     ports:
       - "5432:5432"
     volumes:
@@ -58,19 +58,8 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
-      target: deps
-    env_file:
-      - .env
-    command: ["rails", "test"] # or `rails test` if using Minitest
-    volumes:
-      - .:/app
-      - bundle:/bundle
-    depends_on:
-      - db
-      - local-email
 
 volumes:
   postgres-data:
   bundle:
   inbucket-storage:
-
