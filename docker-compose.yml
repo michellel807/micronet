@@ -68,9 +68,7 @@ services:
     depends_on:
       - db
       - local-email
-
 volumes:
   postgres-data:
   bundle:
   inbucket-storage:
-
