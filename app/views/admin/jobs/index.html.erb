@@ -28,33 +28,72 @@
 
   <p id="updateinfo-button">Update username/password </p>
 
-  <div id="password-section" style="display: none;">
-  <%= form_tag(update_admin_credentials_path, method: :patch) do %>
-    <label for="current_password">Current Password:</label>
-    <%= password_field_tag :current_password %>
+  <div id="credentials-section" style="display: none;">
+    <div class="credentials-container">
+      <!-- Change Username Form -->
+      <div class="credentials-form-wrapper">
+        <h2>Change Username</h2>
+        <%= form_tag(update_admin_username_path, method: :patch, class: 'credentials-form') do %>
+          <div class="form-group">
+            <label for="current_password_username">Current Password:</label>
+            <%= password_field_tag :current_password, '', class: 'form-control' %>
+          </div>
 
-    <label for="new_username">New Username:</label>
-    <%= text_field_tag :new_username %>s
+          <div class="form-group">
+            <label for="new_username">New Username:</label>
+            <%= text_field_tag :new_username, '', class: 'form-control' %>
+          </div>
 
-    <label for="new_password">New Password:</label>
-    <%= password_field_tag :new_password %>
+          <%= submit_tag 'Update Username', class: 'form-submit' %>
+        <% end %>
 
-    <%= submit_tag 'Update Credentials' %>
-    <% if flash.now[:error] %>
+        <% if flash.now[:error] && flash.now[:error].include?('username') %>
+          <div class="form-error">
+            <%= flash.now[:error] %>
+          </div>
+        <% end %>
+        <% if flash.now[:success] && flash.now[:success].include?('Username') %>
+          <div class="form-success">
+            <%= flash.now[:success] %>
+          </div>
+        <% end %>
+      </div>
 
-  <% end %>
+      <!-- Change Password Form -->
+      <div class="credentials-form-wrapper">
+        <h2>Change Password</h2>
+        <%= form_tag(update_admin_password_path, method: :patch, class: 'credentials-form') do %>
+          <div class="form-group">
+            <label for="current_password">Current Password:</label>
+            <%= password_field_tag :current_password, '', class: 'form-control' %>
+          </div>
 
-</div>
-<div class="admin-error">
-<%= flash.now[:error] %>
-</div>
-<% end %>
+          <div class="form-group">
+            <label for="new_password">New Password:</label>
+            <%= password_field_tag :new_password, '', class: 'form-control' %>
+          </div>
 
-<% if flash.now[:success] %>
-<div class="admin-error">
-<%= flash.now[:success] %>
-</div>
-<% end %>
+          <div class="form-group">
+            <label for="password_confirmation">Confirm New Password:</label>
+            <%= password_field_tag :password_confirmation, '', class: 'form-control' %>
+          </div>
+
+          <%= submit_tag 'Update Password', class: 'form-submit' %>
+        <% end %>
+
+        <% if flash.now[:error] && flash.now[:error].include?('password') %>
+          <div class="form-error">
+            <%= flash.now[:error] %>
+          </div>
+        <% end %>
+        <% if flash.now[:success] && flash.now[:success].include?('Password') %>
+          <div class="form-success">
+            <%= flash.now[:success] %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
 
   <%= button_to "Logout", admin_logout_path, method: :delete, data: { confirm: "Are you sure you want to logout?" }, id: "logout-button", class: "logout-button"%>
   </div>
@@ -88,12 +127,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
 });
 window.addEventListener('load', function () {
-  const welcomeButton = document.getElementById('updateinfo-button');
-  console.log("welcomeButton",welcomeButton)
-  const passwordSection = document.getElementById('password-section');
+  const updateButton = document.getElementById('updateinfo-button');
+  const credentialsSection = document.getElementById('credentials-section');
 
-  welcomeButton.addEventListener('click', function() {
-    passwordSection.style.display = (passwordSection.style.display === 'none') ? 'block' : 'none';
+  updateButton.addEventListener('click', function() {
+    credentialsSection.style.display = (credentialsSection.style.display === 'none') ? 'block' : 'none';
   });
 });
 </script>
