@@ -3,8 +3,9 @@ require 'csv'
 class MappingFile
   attr_reader :file_path, :plate_id, :error_message
 
-  def initialize(file)
+  def initialize(file, upload_root:)
     @file = file
+    @upload_root = upload_root
     valid_extensions = ['.txt', '.asc', '.tsv', '.csv']
     if valid_extensions.include?(File.extname(file.original_filename).downcase)
       print("Valid mapping file detected: #{file.original_filename}\n")
@@ -21,7 +22,7 @@ class MappingFile
   private
 
   def save_file(file)
-    directory_path = Rails.root.join('private', 'uploads', 'userexpt', 'mapping')
+    directory_path = @upload_root.join('mapping')
     FileUtils.mkdir_p(directory_path) unless Dir.exist?(directory_path)
   
     original_filename = file.original_filename

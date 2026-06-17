@@ -3,8 +3,9 @@ require 'csv'
 class DataFile
   attr_reader :file_path, :error_message
 
-  def initialize(file, mapping_plate_id)
+  def initialize(file, mapping_plate_id, upload_root:)
     @file = file
+    @upload_root = upload_root
     valid_extensions = ['.txt', '.asc', '.tsv', '.csv']
     if valid_extensions.include?(File.extname(file.original_filename).downcase)
       @file_path = save_file(file, mapping_plate_id)
@@ -20,7 +21,7 @@ class DataFile
   private
   
   def save_file(file, mapping_plate_id)
-    directory_path = Rails.root.join('private', 'uploads', 'userexpt', 'data')
+    directory_path = @upload_root.join('data')
     FileUtils.mkdir_p(directory_path) unless Dir.exist?(directory_path)
   
     original_filename = file.original_filename
@@ -28,7 +29,7 @@ class DataFile
     csv_data = []
   
     if file_extension == '.csv'
-    raw_data = CSV.read(file.path, encoding: 'UTF-8')
+      raw_data = CSV.read(file.path, encoding: 'UTF-8')
     else
       raw_data = []
       File.open(file.path, "r:ISO-8859-1") do |f|
@@ -43,6 +44,7 @@ class DataFile
 
     # Remove first line if it contains "Well"
     raw_data.shift if raw_data.first&.any? { |v| v.to_s.downcase.include?("well") }
+    raw_data.first[0] = "Well positions" if raw_data.first
 
     # Remove last line if it contains "Date"
     i = raw_data.rindex { |row| row.any?(&:present?) }

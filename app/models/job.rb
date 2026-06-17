@@ -7,6 +7,23 @@ class Job < ApplicationRecord
   belongs_to :user
   attr_accessor :title
 
+  def upload_root
+    Rails.root.join("private", "uploads", "jobs", id.to_s)
+  end
+
+  def data_dir = upload_root.join("data")
+  def mapping_dir = upload_root.join("mapping")
+  def summary_dir = upload_root.join("summary")
+  def derived_dir = upload_root.join("derived")
+  def models_dir = upload_root.join("models")
+  def figures_dir = upload_root.join("figures")
+  def parameters_dir = upload_root.join("parameters")
+  def ensure_upload_directories!
+    [data_dir, mapping_dir, parameters_dir, figures_dir, summary_dir, derived_dir, models_dir].each { |d| FileUtils.mkdir_p(d) }
+  end
+  def clear_uploads!
+    FileUtils.rm_rf(upload_root)
+  end
 
   def analyze(chart_types, pool_replicates, pool_options_string, test_finalsubset, hypothesis, gp_pool_by_column, gp_subset_choice, gp_finalsubset, compare_parameters_pool, compare_finalsubset, heatmap_value, heatmap_x, heatmap_y)
     self.status = "Analyzing..."
@@ -49,39 +66,39 @@ class Job < ApplicationRecord
 
       if @selected_chart_types.include?('gp_plot')
         if @gp_subset_choice == "no"
-          system("amiga fit -i private/uploads/userexpt --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
+          system("amiga fit -i #{upload_root} --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
         elsif @gp_subset_choice == "yes"
-          system("amiga fit -i private/uploads/userexpt -s #{gp_finalsubset} --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
+          system("amiga fit -i #{upload_root} -s #{gp_finalsubset} --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
         else
           raise "Invalid GP subset choice"
         end
-        Python.exec("lib/scripts/otherscripts/gpplot.py private/uploads/userexpt/derived #{gp_finalsubset}")
-        gp_plot_path = Rails.root.join('private', 'uploads', 'userexpt', 'derived', 'gp_plot.pdf')
-        gp_plot_data = Rails.root.join('private', 'uploads', 'userexpt', 'derived', 'plot_gp_data.txt')
+        Python.exec("lib/scripts/otherscripts/gpplot.py #{derived_dir} #{gp_finalsubset}")
+        gp_plot_path = derived_dir.join('gp_plot.pdf')
+        gp_plot_data = derived_dir.join('plot_gp_data.txt')
         raise "The GP plot analysis failed" unless File.exist?(gp_plot_path) && File.exist?(gp_plot_data)
-        @gp_plot_path = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'derived', 'gp_plot.pdf'))
-        @gp_plot_data = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'derived', 'plot_gp_data.txt'))
+        @gp_plot_path = Dir.glob(derived_dir.join('gp_plot.pdf'))
+        @gp_plot_data = Dir.glob(derived_dir.join('plot_gp_data.txt'))
         logger.debug("done with gp_plot ...")
       end
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "no"
-        system("amiga fit -i private/uploads/userexpt -o fit")
-        fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
-        Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
+        system("amiga fit -i #{upload_root} -o fit")
+        fit_summary_path = summary_dir.join('fit_summary_modified.txt')
+        Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
         raise "The fit statistics analysis failed" unless File.exist?(fit_summary_path)
-        @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
+        @fit_stats_paths = Dir.glob(summary_dir.join('fit_summary_modified.txt'))
         logger.debug("done with fit_stats yes ...")
       end
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes"
-        system("amiga fit -i private/uploads/userexpt --pool-by '#{pool_options_string}' -o fit")
+        system("amiga fit -i #{upload_root} --pool-by '#{pool_options_string}' -o fit")
         puts "AMIGA EXIT STATUS = #{$?.exitstatus}"
-        puts "fit_summary exists? #{File.exist?('private/uploads/userexpt/summary/fit_summary.txt')}"
-        puts Dir.glob("private/uploads/userexpt/summary/*")
-        Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
-        fit_stats_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
+        puts "fit_summary exists? #{File.exist?(summary_dir.join('fit_summary.txt'))}"
+        puts Dir.glob(summary_dir.join('*'))
+        Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
+        fit_stats_path = summary_dir.join('fit_summary_modified.txt')
         raise "The fit statistics (pooling requested) analysis failed" if not File.exist?(fit_stats_path)
-        @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
+        @fit_stats_paths = Dir.glob(summary_dir.join('fit_summary_modified.txt'))
         logger.debug("done with fit_stats no ...")
       end
 
@@ -93,36 +110,36 @@ class Job < ApplicationRecord
             puts "HEATMAP VALUE = #{@heatmap_value}"
             puts "HEATMAP X = #{@heatmap_x}"
             puts "HEATMAP Y = #{@heatmap_y}"
-            system("amiga heatmap -i private/uploads/userexpt/summary/fit_summary_modified.txt -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
+            system("amiga heatmap -i #{summary_dir.join('fit_summary_modified.txt')} -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
           else
             heatmap_x = @heatmap_x == "Well positions" ? "Well" : @heatmap_x
             heatmap_y = @heatmap_y == "Well positions" ? "Well" : @heatmap_y
             puts "HEATMAP VALUE = #{@heatmap_value.inspect}"
             puts "HEATMAP X = #{@heatmap_x.inspect}"
             puts "HEATMAP Y = #{@heatmap_y.inspect}"
-            system("amiga fit -i private/uploads/userexpt -o fit")
-            Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
-            heatmap_fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
+            system("amiga fit -i #{upload_root} -o fit")
+            Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
+            heatmap_fit_summary_path = summary_dir.join('fit_summary_modified.txt')
             raise "The heatmap plot failed" unless File.exist?(heatmap_fit_summary_path)
-            system("amiga heatmap -i private/uploads/userexpt/summary/fit_summary_modified.txt -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
+            system("amiga heatmap -i #{summary_dir.join('fit_summary_modified.txt')} -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
           end
         else
           raise "Heatmap value, x-axis, or y-axis not selected"
         end
-        heatmap_plot_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'heatmap_plot.pdf')
+        heatmap_plot_path = summary_dir.join('heatmap_plot.pdf')
         raise "The heatmap plot analysis failed" unless File.exist?(heatmap_plot_path)
-        @heatmap_plot_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'heatmap_plot.pdf'))
+        @heatmap_plot_paths = Dir.glob(summary_dir.join('heatmap_plot.pdf'))
         logger.debug("done with heatmap_plot ...")
       end
 
       if @selected_chart_types.include?('compare-parameters')
-        system("amiga fit -i private/uploads/userexpt --sample-posterior --pool-by #{compare_parameters_pool} -o compare")
-        system("amiga compare -i private/uploads/userexpt/summary/compare_summary.txt -o compare-parameters -s #{compare_finalsubset} --verbose")
+        system("amiga fit -i #{upload_root} --sample-posterior --pool-by #{compare_parameters_pool} -o compare")
+        system("amiga compare -i #{summary_dir.join('compare_summary.txt')} -o compare-parameters -s #{compare_finalsubset} --verbose")
         old_path = "compare-parameters.txt"
-        new_path = "private/uploads/userexpt/models/compare-parameters.txt"
+        new_path = models_dir.join("compare-parameters.txt")
         File.rename(old_path, new_path) if File.exist?(old_path)
-        fit_stats_sample_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'compare_summary.txt'))
-        compare_params_txts = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', '*.txt'))
+        fit_stats_sample_paths = Dir.glob(summary_dir.join('compare_summary.txt'))
+        compare_params_txts = Dir.glob(models_dir.join('*.txt'))
         logger.debug("compare_params_txts: #{compare_params_txts}")
         if compare_params_txts.empty? && fit_stats_sample_paths.empty?
           raise "The compare parameters analysis failed"
@@ -133,9 +150,9 @@ class Job < ApplicationRecord
       save # Save the instance of Job
 
       if @selected_chart_types.include?('test-hypothesis')
-        system("amiga test -i private/uploads/userexpt -s #{test_finalsubset} -y #{hypothesis} -o 'test-hypothesis'")
-        test_hypothesis_txts = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'test-hypothesis', '*report.txt'))
-        test_hypothesis_pdfs = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'test-hypothesis', '*.pdf'))
+        system("amiga test -i #{upload_root} -s #{test_finalsubset} -y #{hypothesis} -o 'test-hypothesis'")
+        test_hypothesis_txts = Dir.glob(models_dir.join('test-hypothesis', '*report.txt'))
+        test_hypothesis_pdfs = Dir.glob(models_dir.join('test-hypothesis', '*.pdf'))
         if test_hypothesis_txts.empty? && test_hypothesis_pdfs.empty?
           raise "The test hypothesis analysis failed"
         end
@@ -191,8 +208,8 @@ class Job < ApplicationRecord
   end
 
   def deleteoldfiles
-    FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'figures'))
-    FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'summary'))
+    FileUtils.rm_rf(figures_dir)
+    FileUtils.rm_rf(summary_dir)
   end
 
   def self.admin_can_manage_jobs?(admin)
