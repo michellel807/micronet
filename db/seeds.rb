@@ -10,7 +10,7 @@
 # DEFAULT ADMIN CREDENTIALS
 # ============================================================================
 # Default username: admin
-# Default password: admin123
+# Default password: admin123!
 #
 # These credentials are ONLY used during initial setup (first db:seed).
 # After setup, credentials are stored in the database and updated through the web UI.
@@ -28,7 +28,7 @@
 # ============================================================================
 
 DEFAULT_ADMIN_USERNAME = 'admin'
-DEFAULT_ADMIN_PASSWORD = 'admin123'
+DEFAULT_ADMIN_PASSWORD = 'admin123!'
 
 Admin.create(
   username: DEFAULT_ADMIN_USERNAME,

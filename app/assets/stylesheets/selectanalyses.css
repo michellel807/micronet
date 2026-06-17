@@ -3,79 +3,382 @@
 *= require_tree .
 */
 
-/* for the home screen */
-* {
-  font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
-  font-weight: 300;
-}
-.selectanalyses{
-  color: white;
-  background-image: linear-gradient(to top, #000750, #405fad);
+/* Shared buttons (.analysis-button, .edit-button, .secondary-action) live in main.css. */
 
-} 
-.selectanalyses h1 {
-  font-size: 50px;
-  margin-top: 20px;
-}
-
-.selectanalyses h3 {
-  font-size: 30px;
-  margin-top: 20px;
-  margin: auto;
-}
-.selectanalyses p {
-  font-size: 25px;
-}
-
-.selectanalyses label {
-  font-size: 30px;
-}
-
-.background{
-  background-image: linear-gradient(to bottom, #000750, #000750);
-}
-
-.analysis-button {
-  background-color: #000750;
-  padding: 5px 15px;
-  border-radius: 6px;
-  color: white;
-  font-size: 50px;
-  font-weight: 500;
-  text-decoration: none;
-  cursor: pointer;
-  border: none;
-  display: inline-block;
-  text-align: center;
-  align-self: center;
-  filter: drop-shadow(3px 3px 4px #b4b4b4);
-}
-
-.analysis-button:hover {
-  background-color: #405fad;
-  color: white;
-  text-decoration: none;
-}
-
-.selectanalyses footer{
-  background-color: #000750;
-  box-shadow: 0 0 15px 0 rgba(0,0,0,.8) inset;
-}
-.general-white-block {
-  padding: 20px;
-  border: 1px solid #ddd;
-  width: 80%; /* Adjust the width as per your requirement */
-  height: 10%; /* Adjust the maximum height as per your requirement */
-  overflow: auto; /* Add scrollbars if the content exceeds the maximum height */
+.selectanalyses {
+  min-height: 100vh;
+  color: var(--tx-1);
+  background: var(--bg);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+}
+
+.selectanalyses-shell {
+  width: min(1080px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 40px 0 64px;
+  flex: 1;
+}
+
+.selectanalyses-heading {
+  margin: 0 0 28px;
+  text-align: center;
+}
+
+.selectanalyses h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--tx-1);
+  margin: 0 0 8px;
+}
+
+.selectanalyses-heading p {
+  color: var(--tx-2);
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.selectanalyses footer { background: var(--surface); box-shadow: none; }
+
+/* ── Grid of analysis cards ───────────────────────────────── */
+.analyses-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.analysis-section {
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  overflow: hidden;
+  box-shadow: var(--sh-sm);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.analysis-section:has(.analysis-toggle:checked) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(5,119,177,0.08), var(--sh-sm);
+}
+
+.analysis-card {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  grid-template-columns: 56px 1fr 24px;
+  gap: 16px;
+  align-items: start;
+  padding: 20px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.analysis-toggle {
+  position: absolute;
+  width: 1px; height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.analysis-icon {
+  position: relative;
+  display: block;
+  width: 48px; height: 48px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg);
+}
+
+.analysis-icon::before,
+.analysis-icon::after { position: absolute; content: ""; }
+
+/* Icon art (recolored to accent) */
+.icon-bars::before {
+  left: 11px; bottom: 10px; width: 6px; height: 23px;
+  border: 1px solid var(--accent);
+  border-top-width: 3px;
+  box-shadow:
+    10px 6px 0 -1px var(--surface), 10px 6px 0 0 var(--accent),
+    19px -2px 0 -1px var(--surface), 19px -2px 0 0 var(--accent);
+}
+.icon-curve::before {
+  left: 10px; bottom: 11px; width: 29px; height: 21px;
+  border-bottom: 3px solid var(--accent);
+  border-left: 3px solid var(--accent);
+}
+.icon-curve::after {
+  left: 13px; top: 15px; width: 28px; height: 18px;
+  border-top: 3px solid var(--accent);
+  border-radius: 48% 0 0 0;
+  transform: rotate(-18deg);
+}
+.icon-stats::before {
+  left: 9px; top: 10px; width: 30px; height: 30px;
+  background-image:
+    linear-gradient(var(--duke) 1px, transparent 1px),
+    linear-gradient(90deg, var(--duke) 1px, transparent 1px);
+  background-size: 10px 10px;
+}
+.icon-grid::before {
+  inset: 10px;
+  border: 2px solid var(--duke);
+  background-image:
+    linear-gradient(var(--duke) 2px, transparent 2px),
+    linear-gradient(90deg, var(--duke) 2px, transparent 2px);
+  background-size: 9px 9px;
+}
+.icon-hypothesis::before {
+  left: 10px; top: 11px; width: 28px; height: 26px;
+  border-bottom: 2px solid var(--duke);
+  border-left: 2px solid var(--duke);
+}
+.icon-hypothesis::after {
+  left: 13px; top: 15px; width: 26px; height: 21px;
+  background:
+    radial-gradient(circle at 4px 16px, var(--accent) 0 2px, transparent 3px),
+    radial-gradient(circle at 12px 11px, var(--accent) 0 2px, transparent 3px),
+    radial-gradient(circle at 19px 6px, var(--accent) 0 2px, transparent 3px),
+    linear-gradient(140deg, transparent 0 35%, var(--accent) 36% 41%, transparent 42%);
+}
+.icon-compare::before {
+  left: 12px; top: 13px; width: 24px; height: 24px;
+  border: 3px solid var(--duke);
+  border-radius: 50%;
+}
+.icon-compare::after {
+  left: 22px; top: 7px; width: 3px; height: 36px;
+  background: var(--accent);
+  transform: rotate(45deg);
+}
+
+.analysis-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.analysis-title {
+  color: var(--tx-1);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.analysis-description {
+  color: var(--tx-2);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.analysis-meta {
+  margin-top: 2px;
+  color: var(--tx-3);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.analysis-check {
+  display: grid;
+  width: 20px; height: 20px;
+  place-items: center;
+  border: 2px solid #CBD5E1;
+  border-radius: 5px;
+  background: var(--surface);
+  transition: all 0.15s;
+}
+
+.analysis-card:has(.analysis-toggle:checked) .analysis-check {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.analysis-card:has(.analysis-toggle:checked) .analysis-check::before {
+  color: #fff;
+  content: "✓";
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* ── Inline settings panels ───────────────────────────────── */
+.analysis-settings,
+.chip-options {
+  margin: 0;
+  padding: 18px 20px;
+  border-top: 1px solid var(--border-sub);
+  background: var(--surface-2);
+}
+
+.radio-container { display: flex; align-items: center; gap: 16px; }
+.compact-setting { border-top: 1px solid var(--border-sub); }
+
+.analysis-settings p,
+.chip-options p,
+.chip-options h3 {
+  display: block;
+  margin: 0 0 8px;
+  color: var(--tx-1);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--tx-2);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .analysis-dropdown {
-  font-size: 20px;
-  padding: 6px;
   width: 100%;
-  max-width: 300px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--tx-1);
+  background-color: var(--surface);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font);
+}
+
+.analysis-dropdown:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(5,119,177,0.12);
+}
+
+.axis-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* Segmented Yes/No toggle */
+.segmented-options {
+  display: inline-flex;
+  gap: 4px;
+  height: 38px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+}
+
+.segmented-options label { cursor: pointer; }
+.segmented-options input { position: absolute; opacity: 0; pointer-events: none; }
+
+.segmented-options span {
+  display: flex;
+  align-items: center;
+  min-width: 52px;
+  padding: 0 14px;
+  height: 100%;
   border-radius: 4px;
+  color: var(--tx-2);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.segmented-options input:checked + span {
+  color: #fff;
+  background: var(--accent);
+}
+
+.chip-options { border-radius: 0; }
+
+.chip-options .additional-text {
+  margin-bottom: 12px;
+  color: var(--tx-2);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.chip-options a, .selectanalyses a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.chip-options a:hover, .selectanalyses a:hover { text-decoration: underline; }
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 10px 24px;
+  margin-top: 14px;
+  text-align: left;
+}
+
+.checkbox-grid label,
+.chip-options label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  color: var(--tx-2);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.generated-subsets { margin-top: 14px; }
+.generated-subsets label { display: inline-flex; align-items: center; gap: 8px; }
+.generated-subsets .analysis-dropdown { margin: 0 8px 8px 0; }
+
+.chip-options input[type="checkbox"],
+.checkbox-grid input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
+
+#checkbox-content { text-align: left; }
+#checkbox-content .field-label {
+  margin-bottom: 8px;
+  color: var(--tx-1);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.analysis-alert {
+  margin-bottom: 16px;
+  padding: 11px 14px;
+  border: 1px solid var(--err-bd);
+  border-radius: var(--r-sm);
+  color: #991B1B;
+  background: var(--err-bg);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.analysis-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+@media (max-width: 840px) {
+  .selectanalyses-shell { width: min(100% - 24px, 620px); padding-top: 24px; }
+  .analyses-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .selectanalyses h1 { font-size: 23px; }
+  .analysis-card { grid-template-columns: 44px 1fr 22px; gap: 14px; padding: 16px; }
+  .analysis-icon { width: 44px; height: 44px; }
+  .axis-grid { grid-template-columns: 1fr; }
+  .analysis-actions { flex-direction: column-reverse; align-items: stretch; }
+  .analysis-button, .edit-button { width: 100%; }
 }

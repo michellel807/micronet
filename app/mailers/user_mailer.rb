@@ -35,6 +35,12 @@ class UserMailer < ApplicationMailer
     mail(to: @job.user.email, subject: 'Schmid Lab Microbial Growth Model: Job Failed')
   end
 
+  def job_cancelled_email(job, admin_name = nil)
+    @job = job
+    @admin_name = admin_name || "Administrator"
+    mail(to: @job.user.email, subject: 'Schmid Lab Microbial Growth Model: Job Cancelled')
+  end
+
   def failed_heatmap_email(job, exception_message)
     @job = job
     @exception_message = ERB::Util.html_escape(exception_message)
