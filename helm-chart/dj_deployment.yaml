@@ -39,7 +39,7 @@ spec:
               limits:
                 memory: '30Gi'
               requests:
-                memory: '20Gi'
+                memory: '19Gi'
       volumes:
           - name: micronet-app-data
             persistentVolumeClaim:
