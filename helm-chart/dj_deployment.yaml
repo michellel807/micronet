@@ -50,4 +50,4 @@ spec:
           effect: NoSchedule
       restartPolicy: Always
   strategy:
-    type: RollingUpdate
+    type: Recreate
