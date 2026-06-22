@@ -23,6 +23,13 @@ class Job < ApplicationRecord
   def analyze(chart_types, pool_replicates, pool_options_string, test_finalsubset, hypothesis, gp_pool_by_column, gp_subset_choice, gp_finalsubset, compare_parameters_pool, compare_finalsubset, heatmap_value, heatmap_x, heatmap_y)
     self.status = "Analyzing..."
     self.start_time = DateTime.now
+
+    # ADD THESE 4 LINES HERE
+    FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'summary'))
+    FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'derived'))
+    FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'models'))
+    FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'figures'))
+    
     @selected_chart_types = chart_types || []
     @pool_replicates = pool_replicates
     @pool_options_string = pool_options_string || []
