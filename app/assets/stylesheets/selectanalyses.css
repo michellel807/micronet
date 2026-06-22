@@ -269,29 +269,27 @@
 /* Segmented Yes/No toggle */
 .segmented-options {
   display: inline-flex;
+  align-items: center;
   gap: 4px;
+  width: fit-content;
   height: 38px;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  background: var(--surface);
+  padding: 0;
 }
 
-.segmented-options label { cursor: pointer; }
-.segmented-options input { position: absolute; opacity: 0; pointer-events: none; }
+.segmented-options label { cursor: pointer; display: flex; }
+.segmented-options input { display: none; }
 
 .segmented-options span {
   display: flex;
   align-items: center;
+  justify-content: center;
   min-width: 52px;
+  height: 30px;
   padding: 0 14px;
-  height: 100%;
   border-radius: 4px;
   color: var(--tx-2);
   font-size: 13px;
   font-weight: 600;
-  text-align: center;
-  justify-content: center;
   transition: all 0.15s;
 }
 
