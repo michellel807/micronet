@@ -49,18 +49,19 @@
               <span class="analysis-copy">
                 <span class="analysis-title">Gaussian Process Plot</span>
                 <span class="analysis-description">Plot a specified experimental property with one chosen condition.</span>
-                <span class="analysis-meta">Includes optional subsetting</span>
+                <span class="analysis-meta">Includes optional subsetting<% if @mapping_file_paths.blank? %> with mapping file<% end %></span>
               </span>
               <span class="analysis-check"></span>
             </label>
 
+            <% if @mapping_file_paths.present? %>
             <div class="gp-pool-by-container analysis-settings" style="<%= @selected_chart_types.include?('gp_plot') ? '' : 'display: none;' %>">
-              <% if @mapping_file_paths.present? %>
-                <label class="field-label" for="gp-pool-by-select">Pool by column</label>
-                <%= select_tag 'gp_pool_by_column', options_for_select(@columns, @gp_pool_by_column), prompt: 'Select a column', id: 'gp-pool-by-select', class: 'analysis-dropdown' %>
-              <% end %>
+              <label class="field-label" for="gp-pool-by-select">Pool by column</label>
+              <%= select_tag 'gp_pool_by_column', options_for_select(@columns, @gp_pool_by_column), prompt: 'Select a column', id: 'gp-pool-by-select', class: 'analysis-dropdown' %>
             </div>
+            <% end %>
 
+            <% if @mapping_file_paths.present? %>
             <div class="gp-subset-toggle analysis-settings" style="<%= @selected_chart_types.include?('gp_plot') ? '' : 'display: none;' %>">
               <p class="field-label">Subset the data?</p>
               <div class="segmented-options">
@@ -76,11 +77,12 @@
             </div>
 
             <div class="gp-subset-container analysis-settings compact-setting" style="<%= @gp_subset_choice == 'yes' ? '' : 'display: none;' %>">
-              <% if @mapping_file_paths.present? %>
-                <label class="field-label" for="gp-subset-select">Subset column</label>
-                <%= select_tag 'gp_subset_column', options_for_select(@columns, @gp_subset_column), prompt: 'Select a column', id: 'gp-subset-select', class: 'analysis-dropdown' %>
-              <% end %>
+              <label class="field-label" for="gp-subset-select">Subset column</label>
+              <%= select_tag 'gp_subset_column', options_for_select(@columns, @gp_subset_column), prompt: 'Select a column', id: 'gp-subset-select', class: 'analysis-dropdown' %>
             </div>
+            <% else %>
+            <%= hidden_field_tag 'gp_subset_choice', 'no' %>
+            <% end %>
 
             <div id="gp-condition-checkboxes" class="checkbox-container chip-options" style="display: none;"></div>
           </section>
@@ -100,17 +102,21 @@
             <div class="radio-container analysis-settings" style="<%= @selected_chart_types.include?('fit_stats') ? '' : 'display: none;' %>">
               <p class="field-label">Pool replicates?</p>
               <div class="segmented-options">
-                <label>
-                  <input type="radio" name="pool_replicates" value="yes" <%= @pool_replicates == 'yes' ? 'checked' : '' %>>
+                <label class="<%= @mapping_file_paths.blank? ? 'pool-yes-locked' : '' %>">
+                  <input type="radio" name="pool_replicates" value="yes" <%= @pool_replicates == 'yes' ? 'checked' : '' %> <%= @mapping_file_paths.blank? ? 'disabled' : '' %>>
                   <span>Yes</span>
                 </label>
                 <label>
-                  <input type="radio" name="pool_replicates" value="no" <%= @pool_replicates == 'no' || @pool_replicates.blank? ? 'checked' : '' %>>
+                  <input type="radio" name="pool_replicates" value="no" <%= @pool_replicates == 'no' || @pool_replicates.blank? || @mapping_file_paths.blank? ? 'checked' : '' %>>
                   <span>No</span>
                 </label>
               </div>
+              <% if @mapping_file_paths.blank? %>
+                <p class="pool-locked-note">Pooling requires a mapping file</p>
+              <% end %>
             </div>
 
+            <% if @mapping_file_paths.present? %>
             <div class="checkbox-container chip-options">
               <div id="checkbox-content">
                 <h3 id="checkbox-header">Pool variables</h3>
@@ -126,16 +132,18 @@
                 <% end %>
               </div>
             </div>
+            <% end %>
           </section>
 
           <section class="analysis-section">
             <label class="analysis-card">
-              <%= check_box_tag 'chart_types[]', 'heatmap_plot', @selected_chart_types.include?('heatmap_plot'), class: 'analysis-toggle' %>
+              <%= check_box_tag 'chart_types[]', 'heatmap_plot', @selected_chart_types.include?('heatmap_plot'), class: 'analysis-toggle', disabled: @mapping_file_paths.blank? %>
               <span class="analysis-icon icon-grid"></span>
               <span class="analysis-copy">
                 <span class="analysis-title">Heatmap Plot</span>
                 <span class="analysis-description">Visualize fit statistics across selected conditions and axes.</span>
                 <span class="analysis-meta">Choose metric, x-axis, and y-axis</span>
+                <% if @mapping_file_paths.blank? %><span class="analysis-requires-mapping">Upload a mapping file to unlock</span><% end %>
               </span>
               <span class="analysis-check"></span>
             </label>
@@ -167,12 +175,13 @@
 
           <section class="analysis-section">
             <label class="analysis-card">
-              <%= check_box_tag 'chart_types[]', 'test-hypothesis', @selected_chart_types.include?('test-hypothesis'), class: 'analysis-toggle' %>
+              <%= check_box_tag 'chart_types[]', 'test-hypothesis', @selected_chart_types.include?('test-hypothesis'), class: 'analysis-toggle', disabled: @mapping_file_paths.blank? %>
               <span class="analysis-icon icon-hypothesis"></span>
               <span class="analysis-copy">
                 <span class="analysis-title">Test Hypothesis</span>
                 <span class="analysis-description">Compare differential growth with log Bayes Factor scores and OD differences.</span>
                 <span class="analysis-meta">Choose variable and two conditions</span>
+                <% if @mapping_file_paths.blank? %><span class="analysis-requires-mapping">Upload a mapping file to unlock</span><% end %>
               </span>
               <span class="analysis-check"></span>
             </label>
@@ -196,12 +205,13 @@
 
           <section class="analysis-section">
             <label class="analysis-card">
-              <%= check_box_tag 'chart_types[]', 'compare-parameters', @selected_chart_types.include?('compare-parameters'), class: 'analysis-toggle' %>
+              <%= check_box_tag 'chart_types[]', 'compare-parameters', @selected_chart_types.include?('compare-parameters'), class: 'analysis-toggle', disabled: @mapping_file_paths.blank? %>
               <span class="analysis-icon icon-compare"></span>
               <span class="analysis-copy">
                 <span class="analysis-title">Compare Parameters</span>
                 <span class="analysis-description">Compare growth parameters between two conditions of a variable.</span>
                 <span class="analysis-meta">Optional subset controls</span>
+                <% if @mapping_file_paths.blank? %><span class="analysis-requires-mapping">Upload a mapping file to unlock</span><% end %>
               </span>
               <span class="analysis-check"></span>
             </label>

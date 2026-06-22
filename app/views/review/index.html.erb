@@ -71,24 +71,20 @@
 
           <% if session[:chart_types].include?('raw_data') %>
             <p>Raw Data Plots (Per Well)</p>
-          <% else %>
-            <p>N/A (Raw data plots not requested)</p>
           <% end %>
 
           <% if session[:chart_types].include?('gp_plot') %>
             <% if session[:gp_pool_by_column].present? %>
               <% if session[:gp_subset_choice] == "yes" && session[:gp_subset_column].present? %>
-                <p>Gaussian Pocess Plot (Pooled by <%= session[:gp_pool_by_column] %> and Subset on <%= session[:gp_subset_column] %>)</p>
+                <p>Gaussian Process Plot (Pooled by <%= session[:gp_pool_by_column] %> and Subset on <%= session[:gp_subset_column] %>)</p>
               <% elsif session[:gp_subset_choice] == "no" %>
-                <p>Gaussian Pocess Plot (Pooled by <%= session[:gp_pool_by_column] %>)</p>
+                <p>Gaussian Process Plot (Pooled by <%= session[:gp_pool_by_column] %>)</p>
               <% else %>
                 <p>Gaussian Process Plot (Pooled by <%= session[:gp_pool_by_column] %> but no subset specified)</p>
               <% end %>
             <% else %>
               <p>Gaussian Process Plot (No pooling specified)</p>
             <% end %>
-          <% else %>
-            <p>N/A (Gaussian Process Plot not requested)</p>
           <% end %>
 
           <% if session[:chart_types].include?('fit_stats') %>
@@ -99,8 +95,6 @@
             <% else %>
               <p>Pooling information not provided.</p>
             <% end %>
-          <% else %>
-            <p>N/A (Fit statistics not requested)</p>
           <% end %>
 
           <% if session[:chart_types].include?('heatmap_plot') %>
@@ -109,8 +103,6 @@
             <% else %>
               <p>Heatmap Plot (Incomplete parameters)</p>
             <% end %>
-          <% else %>
-            <p>N/A (Heatmap plot not requested)</p>
           <% end %>
 
           <% if session[:chart_types].include?('test-hypothesis') %>
@@ -119,8 +111,6 @@
             <% else %>
               <p>Test Hypothesis (Test on <%= session[:column_test] %>)</p>
             <% end %>
-          <% else %>
-            <p>N/A (Test hypothesis not requested)</p>
           <% end %>
 
           <% if session[:chart_types].include?('compare-parameters') %>
@@ -129,12 +119,12 @@
             <% else %>
               <p>Compare Growth (Compare by <%= session[:column_pooled] %>)</p>
             <% end %>
-          <% else %>
-            <p>N/A (Compare growth not requested)</p>
           <% end %>
         <%= link_to 'Edit Analyses', selectanalyses_path(returning_from_review: 'true'), class: 'edit-button' %>
 
-        <%= submit_tag 'Start My Job', class: 'analysis-button' %>
+        <div>
+          <%= submit_tag 'Start My Job', class: 'analysis-button' %>
+        </div>
         <p style="margin-top: 10px;"> Note: Submitting may take a few seconds. Please be patient. </p>
         <% end %>
       <% end %>

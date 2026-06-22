@@ -11,6 +11,10 @@ def delete_files
   session[:mapping_file_paths] = nil
   session[:meta_file_path] = nil
   session[:interval_file_path] = nil
+  session[:usr_data_file_paths] = nil
+  session[:usr_mapping_file_paths] = nil
+  session[:usr_meta_file_path] = nil
+  session[:usr_interval_file_path] = nil
   @data_file_paths = session[:data_file_paths]
   @mapping_file_paths = session[:mapping_file_paths]
   @meta_file_path = session[:meta_file_path]
@@ -92,6 +96,24 @@ def upload
     end
     @usr_interval_file_path = interval_files.original_filename.to_s
     @interval_file_path = interval_file.file_path.to_s
+  end
+
+  # If the user uploaded only data files (no mapping, no meta)
+  if data_files.present? && mapping_files.blank? && meta_files.blank?
+    ordered_data_names = JSON.parse(params[:ordered_data_files]) rescue []
+    ordered_data_files = reorder_files.call(data_files, ordered_data_names)
+
+    ordered_data_files.each do |data_file_input|
+      data_file = DataFile.new(data_file_input, nil)
+
+      unless data_file.valid?
+        flash.alert = data_file.error_message
+        return render :index
+      end
+
+      @usr_data_file_paths << data_file_input.original_filename.to_s
+      @data_file_paths << data_file.file_path.to_s
+    end
   end
 
   # If the user uploaded data files and one meta file
@@ -196,7 +218,11 @@ def upload
     if meta_file.plate_id_values.sort == @data_file_paths.map { |fp| File.basename(fp, '.*') }.sort
       success = true
     end
-  
+
+  # Case 3: data files only (no mapping, no meta)
+  elsif @data_file_paths.present? && @mapping_file_paths.blank? && @meta_file_path.nil?
+    success = true
+
   else
     success = false
   end
@@ -220,6 +246,12 @@ def upload
     session[:usr_meta_file_path] = @usr_meta_file_path
     session[:interval_file_path] = @interval_file_path
     session[:usr_interval_file_path] = @usr_interval_file_path
+    # Reset analysis selections so a new upload starts fresh
+    %i[chart_types pool_replicates pool_options gp_pool_by_column
+       gp_subset_choice gp_subset_column gp_conditions
+       heatmap_value heatmap_x heatmap_y column_test column_pooled].each do |key|
+      session.delete(key)
+    end
     flash.notice = "Files uploaded successfully! Proceeding to analyses selection..."
     # Redirect directly to next step (SelectAnalyses) on successful upload
     redirect_to '/selectanalyses'
