@@ -37,10 +37,12 @@ class ReviewController < ApplicationController
       end
     end
 
+    if @mapping_file_paths.present?
       first_file_path = @mapping_file_paths.first
       file_data = File.read(first_file_path, encoding: 'iso-8859-1:utf-8')
       @columns = file_data.lines.first.chomp.split("\t")
       @pool_options = @columns.reject { |column| column.downcase.include?('well') }
+    end
 
       session[:pool_replicates] = params[:pool_replicates] || []
       session[:pool_options] = params[:pool_options] || []

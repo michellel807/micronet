@@ -51,7 +51,8 @@ class DataFile
     csv_data = raw_data
 
     # Save everything as .txt (tab-separated)
-    new_filename = "#{File.basename(mapping_plate_id.to_s, '.*')}.txt"
+    base = mapping_plate_id.present? ? mapping_plate_id.to_s : original_filename
+    new_filename = "#{File.basename(base, '.*')}.txt"
     txt_file = directory_path.join(new_filename)
 
     File.open(txt_file, 'w') do |f|
