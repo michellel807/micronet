@@ -1,4 +1,7 @@
 class ReviewController < ApplicationController
+  require 'json'
+  require 'open3'
+
   skip_before_action :verify_authenticity_token
 
   def index
@@ -20,17 +23,22 @@ class ReviewController < ApplicationController
     @usr_meta_file_name = File.basename(@usr_meta_file_path) if @usr_meta_file_path.present?
     @usr_interval_file_name = File.basename(@usr_interval_file_path) if @usr_interval_file_path.present?
 
-    # Validate that each data file has exactly 96 rows (excluding header) if "raw_data" was selected
+    # Validate that each data file has exactly 96 wells if "raw_data" was selected.
     session[:chart_types] = params[:chart_types] || []
     if session[:chart_types]&.include?("raw_data")
       invalid_files = []
 
-      @data_file_paths.each do |file_path|
-        data_lines = File.readlines(file_path, encoding: 'utf-8').reject { |line| line.strip.empty? }
-        data_rows = data_lines.drop(1) # Skip header
-        invalid_files << File.basename(file_path) if data_rows.length != 96
+      data_paths = Array(@data_file_paths)
+      mapping_paths = Array(@mapping_file_paths)
+
+      data_paths.each_with_index do |data_file_path, index|
+        mapping_file_path = mapping_paths[index]
+        result = compare_file_counts(data_file_path, mapping_file_path)
+        data_well_count = result&.dig("data_well_count")
+        invalid_files << File.basename(data_file_path) unless data_well_count == 96
       end
 
+      puts "INVALID FILES: #{invalid_files.inspect}"
       unless invalid_files.empty?
         flash[:error] = "Each uploaded file must include 96 wells for Raw Data Plot analysis."
         redirect_to selectanalyses_path and return
@@ -111,5 +119,26 @@ class ReviewController < ApplicationController
     @heatmap_value = session[:heatmap_value]
     @heatmap_x = session[:heatmap_x]
     @heatmap_y = session[:heatmap_y]
+  end
+
+  private
+
+  def compare_file_counts(data_file_path, mapping_file_path)
+    script_path = Rails.root.join("lib/scripts/otherscripts/comparedataandmapping.py").to_s
+    command = [python_executable, script_path, "--json", data_file_path.to_s, mapping_file_path.to_s]
+    stdout, stderr, status = Open3.capture3(*command)
+    Rails.logger.debug("comparedataandmapping status=#{status.exitstatus} stdout=#{stdout.inspect} stderr=#{stderr.inspect}")
+    JSON.parse(stdout)
+  rescue JSON::ParserError => e
+    Rails.logger.error("Failed to parse comparedataandmapping JSON for #{data_file_path}: #{e.message}")
+    nil
+  rescue => e
+    Rails.logger.error("Failed comparedataandmapping for #{data_file_path}: #{e.message}")
+    nil
+  end
+
+  def python_executable
+    preferred = "/opt/uvenv/bin/python"
+    File.executable?(preferred) ? preferred : "python3"
   end
 end

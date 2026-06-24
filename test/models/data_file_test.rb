@@ -52,7 +52,7 @@ class DataFileTest < ActiveSupport::TestCase
     assert_includes content, "A\tB"
   end
 
-  test "accepts txt, tsv, asc and saves as txt with header replaced" do
+  test "accepts txt, tsv, asc and preserves content" do
     %w[data.txt data.tsv data.asc].each do |filename|
       file = fake_uploaded_file(filename, "Col1\tCol2\n1\t2\n3\t4\n")
       data_file = DataFile.new(file, @mapping_file.path, upload_root: @upload_root)
@@ -60,9 +60,18 @@ class DataFileTest < ActiveSupport::TestCase
       assert data_file.valid?, "File #{filename} should be valid"
       assert_match(/\.txt\z/, data_file.file_path)
       content = File.read(data_file.file_path)
-      assert_includes content, "Well positions\tCol2" # Header replaced to "Well positions"
+      assert_includes content, "Col1\tCol2"
       assert_includes content, "1\t2"
     end
+  end
+
+  test "preserves trailing rows for non-csv files" do
+    file = fake_uploaded_file('data.txt', "Col1\tCol2\n1\t2\nDate\t2024-01-01\n")
+    data_file = DataFile.new(file, @mapping_file.path, upload_root: @upload_root)
+
+    assert data_file.valid?
+    content = File.read(data_file.file_path)
+    assert_includes content, "Date\t2024-01-01"
   end
 
   test "data file is named using mapping file plate_id" do

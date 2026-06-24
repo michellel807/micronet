@@ -45,7 +45,7 @@ class MappingFileTest < ActiveSupport::TestCase
     assert_includes mapping_file.file_path, expected_name
 
     content = File.read(mapping_file.file_path)
-    assert_includes content, "Well positions\tPlate_ID"
+    assert_includes content, "Well\tPlate_ID"
   end
 
   test "accepts and processes txt, tsv, asc" do
@@ -58,7 +58,7 @@ class MappingFileTest < ActiveSupport::TestCase
       expected_name = '2020-06-22-R1.txt'
       assert_includes mapping_file.file_path, expected_name
       content = File.read(mapping_file.file_path)
-      assert_includes content, "Well positions\tPlate_ID"
+      assert_includes content, "Well\tPlate_ID"
     end
   end
 end
