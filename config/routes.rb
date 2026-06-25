@@ -34,6 +34,8 @@ Rails.application.routes.draw do
 
   get '/healthcheck' => 'healthcheck#index'
 
+  post "/cluster/callback/:job_id", to: "cluster#callback"
+
   patch '/admin/update_username', to: 'admin#update_username', as: :update_admin_username
   patch '/admin/update_password', to: 'admin#update_password', as: :update_admin_password
 

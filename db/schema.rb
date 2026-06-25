@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2026_06_10_120000) do
+ActiveRecord::Schema[7.0].define(version: 2026_06_24_201604) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -60,6 +60,8 @@ ActiveRecord::Schema[7.0].define(version: 2026_06_10_120000) do
     t.datetime "updated_at", null: false
     t.datetime "confirm_time"
     t.boolean "completed"
+    t.string "slurm_job_id"
+    t.string "cluster_status"
     t.index ["user_id"], name: "index_jobs_on_single_active_draft", unique: true, where: "((status)::text = 'In Progress'::text)"
   end
 

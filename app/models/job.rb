@@ -7,6 +7,24 @@ class Job < ApplicationRecord
   belongs_to :user
   attr_accessor :title
 
+  def upload_root
+    Rails.root.join("private", "uploads", "jobs", id.to_s)
+  end
+
+  def data_dir = upload_root.join("data")
+  def mapping_dir = upload_root.join("mapping")
+  def summary_dir = upload_root.join("summary")
+  def derived_dir = upload_root.join("derived")
+  def models_dir = upload_root.join("models")
+  def figures_dir = upload_root.join("figures")
+  def parameters_dir = upload_root.join("parameters")
+  def ensure_upload_directories!
+    [data_dir, mapping_dir, parameters_dir, figures_dir, summary_dir, derived_dir, models_dir].each { |d| FileUtils.mkdir_p(d) }
+  end
+  def clear_uploads!
+    FileUtils.rm_rf(upload_root)
+  end
+
   # Configuration constants
   MAX_ACTIVE_JOBS_PER_USER = 3
   DRAFT_STATUS = "In Progress".freeze
@@ -29,7 +47,7 @@ class Job < ApplicationRecord
     FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'derived'))
     FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'models'))
     FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'figures'))
-    
+
     @selected_chart_types = chart_types || []
     @pool_replicates = pool_replicates
     @pool_options_string = pool_options_string || []
@@ -43,6 +61,34 @@ class Job < ApplicationRecord
     @heatmap_value = heatmap_value
     @heatmap_x = heatmap_x
     @heatmap_y = heatmap_y
+    if ENV["DCC_ENABLED"] == "true"
+      payload = {
+        chart_types: @selected_chart_types,
+        pool_replicates: @pool_replicates,
+        pool_options_string: @pool_options_string,
+        test_finalsubset: @test_finalsubset,
+        hypothesis: @hypothesis,
+        gp_pool_by_column: @gp_pool_by_column,
+        gp_subset_choice: @gp_subset_choice,
+        gp_finalsubset: @gp_finalsubset,
+        compare_parameters_pool: @compare_parameters_pool,
+        compare_finalsubset: @compare_finalsubset,
+        heatmap_value: @heatmap_value,
+        heatmap_x: @heatmap_x,
+        heatmap_y: @heatmap_y
+      }
+      slurm_id = DccClient.new.submit_job(
+        self,
+        payload,
+        "private/uploads/userexpt"
+      )
+      self.slurm_job_id = slurm_id
+      self.cluster_status = "queued"
+      
+      save!
+      return
+    end
+
     raw_data_results = nil
     fit_summary_path = nil
     fit_stats_path = nil
@@ -70,47 +116,41 @@ class Job < ApplicationRecord
       logger.debug("done with raw_data ...")
 
       if @selected_chart_types.include?('gp_plot')
-        # Only pass --pool-by when a real mapping column was chosen.
-        # gp_pool_by_column defaults to "None"/'None' (and may be blank) when
-        # there is no mapping file; passing that to amiga makes it look for a
-        # column literally named "None" and abort before writing plot_gp_data.txt.
         pool_by_clean = gp_pool_by_column.to_s.gsub(/\A'|'\z/, '').strip
         pool_by_flag = pool_by_clean.present? && pool_by_clean != "None" ? "--pool-by '#{pool_by_clean}'" : ""
-        if @gp_subset_choice == "yes"
-          system("amiga fit -i private/uploads/userexpt -s #{gp_finalsubset} #{pool_by_flag} --save-gp-data -o plot")
+        if @gp_subset_choice == "no"
+          system("amiga fit -i #{upload_root} --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
+        elsif @gp_subset_choice == "yes"
+          system("amiga fit -i #{upload_root} -s #{gp_finalsubset} --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
         else
-          system("amiga fit -i private/uploads/userexpt #{pool_by_flag} --save-gp-data -o plot")
+          raise "Invalid GP subset choice"
         end
         raise "Your dataset is too large for the GP plot analysis. Please try a smaller dataset or selecting a different variable." if $?.exitstatus == 137
-        Python.exec("lib/scripts/otherscripts/gpplot.py private/uploads/userexpt/derived #{gp_finalsubset}")
-        gp_plot_path = Rails.root.join('private', 'uploads', 'userexpt', 'derived', 'gp_plot.pdf')
-        gp_plot_data = Rails.root.join('private', 'uploads', 'userexpt', 'derived', 'plot_gp_data.txt')
+        Python.exec("lib/scripts/otherscripts/gpplot.py #{derived_dir} #{gp_finalsubset}")
+        gp_plot_path = derived_dir.join('gp_plot.pdf')
+        gp_plot_data = derived_dir.join('plot_gp_data.txt')
         raise "The GP plot analysis failed" unless File.exist?(gp_plot_path) && File.exist?(gp_plot_data)
-        @gp_plot_path = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'derived', 'gp_plot.pdf'))
-        @gp_plot_data = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'derived', 'plot_gp_data.txt'))
+        @gp_plot_path = Dir.glob(derived_dir.join('gp_plot.pdf'))
+        @gp_plot_data = Dir.glob(derived_dir.join('plot_gp_data.txt'))
         logger.debug("done with gp_plot ...")
       end
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "no"
-        system("amiga fit -i private/uploads/userexpt -o fit")
-        fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
-        raise "Your dataset is too large for the fit statistics analysis. Please try a smaller dataset or selecting a different variable." if $?.exitstatus == 137
-        Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
         raise "The fit statistics analysis failed" unless File.exist?(fit_summary_path)
-        @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
+        @fit_stats_paths = Dir.glob(summary_dir.join('fit_summary_modified.txt'))
         logger.debug("done with fit_stats yes ...")
       end
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes"
-        system("amiga fit -i private/uploads/userexpt --pool-by '#{pool_options_string}' -o fit")
+        system("amiga fit -i #{upload_root} --pool-by '#{pool_options_string}' -o fit")
         raise "Your dataset is too large for the fit statistics analysis. Please try uploading a smaller dataset." if $?.exitstatus == 137
         puts "AMIGA EXIT STATUS = #{$?.exitstatus}"
-        puts "fit_summary exists? #{File.exist?('private/uploads/userexpt/summary/fit_summary.txt')}"
-        puts Dir.glob("private/uploads/userexpt/summary/*")
-        Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
-        fit_stats_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
+        puts "fit_summary exists? #{File.exist?(summary_dir.join('fit_summary.txt'))}"
+        puts Dir.glob(summary_dir.join('*'))
+        Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
+        fit_stats_path = summary_dir.join('fit_summary_modified.txt')
         raise "The fit statistics (pooling requested) analysis failed" if not File.exist?(fit_stats_path)
-        @fit_stats_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt'))
+        @fit_stats_paths = Dir.glob(summary_dir.join('fit_summary_modified.txt'))
         logger.debug("done with fit_stats no ...")
       end
 
@@ -122,10 +162,10 @@ class Job < ApplicationRecord
             puts "HEATMAP VALUE = #{@heatmap_value}"
             puts "HEATMAP X = #{@heatmap_x}"
             puts "HEATMAP Y = #{@heatmap_y}"
-            system("amiga fit -i private/uploads/userexpt -o heatmap_fit")
+            system("amiga fit -i #{upload_root} -o heatmap_fit")
             raise "Your dataset is too large for the heatmap analysis. Please try uploading a smaller dataset or selecting a different variable." if $?.exitstatus == 137
-            Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/heatmap_fit_summary.txt")        # ADD THIS
-            heatmap_fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'heatmap_fit_summary_modified.txt')
+            Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('heatmap_fit_summary.txt')}")
+            heatmap_fit_summary_path = summary_dir.join('heatmap_fit_summary_modified.txt')
             raise "The heatmap analysis failed. Please check your axis/value selections." unless File.exist?(heatmap_fit_summary_path)
             system("amiga heatmap -i #{heatmap_fit_summary_path} -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
           else
@@ -134,40 +174,38 @@ class Job < ApplicationRecord
             puts "HEATMAP VALUE = #{@heatmap_value.inspect}"
             puts "HEATMAP X = #{@heatmap_x.inspect}"
             puts "HEATMAP Y = #{@heatmap_y.inspect}"
-            system("amiga fit -i private/uploads/userexpt -o fit")
+            system("amiga fit -i #{upload_root} -o fit")
             raise "Your dataset is too large for the heatmap analysis. Please try a smaller dataset or selecting a different variable." if $?.exitstatus == 137
-            Python.exec("lib/scripts/otherscripts/simplifyfit.py private/uploads/userexpt/summary/fit_summary.txt")
-            heatmap_fit_summary_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'fit_summary_modified.txt')
+            Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
+            heatmap_fit_summary_path = summary_dir.join('fit_summary_modified.txt')
             raise "The heatmap analysis failed. Please check your axis/value selections." unless File.exist?(heatmap_fit_summary_path)
-            system("amiga heatmap -i private/uploads/userexpt/summary/fit_summary_modified.txt -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
+            system("amiga heatmap -i #{summary_dir.join('fit_summary_modified.txt')} -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
           end
         else
           raise "Heatmap value, x-axis, or y-axis not selected"
         end
-        heatmap_plot_path = Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'heatmap_plot.pdf')
+        heatmap_plot_path = summary_dir.join('heatmap_plot.pdf')
         unless File.exist?(heatmap_plot_path)
           raise "Your dataset is too large for the heatmap analysis. Please try a smaller datasetor selecting a different variable." if $?.exitstatus == 137
           raise "The heatmap plot analysis failed. Please check your axis/value selections." 
         end
-        @heatmap_plot_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'heatmap_plot.pdf'))
+        @heatmap_plot_paths = Dir.glob(summary_dir.join('heatmap_plot.pdf'))
         logger.debug("done with heatmap_plot ...")
       end
 
       if @selected_chart_types.include?('compare-parameters')
-        FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'compare-parameters.txt')) 
-        #ensures the previous job files are removed before calling amiga 
-        system("amiga fit -i private/uploads/userexpt --sample-posterior --pool-by #{compare_parameters_pool} -o compare")
+        system("amiga fit -i #{upload_root} --sample-posterior --pool-by #{compare_parameters_pool} -o compare")
         puts "AMIGA EXIT STATUS = #{$?.inspect}"
         unless File.exist?('private/uploads/userexpt/summary/compare_summary.txt')
           raise "Your dataset is too large for the compare parameters analysis. Please try uploading a smaller dataset or selecting a different variable." if $?.exitstatus == 137 || $?.signaled?
           raise "The compare parameters analysis failed."
         end
-        system("amiga compare -i private/uploads/userexpt/summary/compare_summary.txt -o compare-parameters -s #{compare_finalsubset} --verbose")
+        system("amiga compare -i #{summary_dir.join('compare_summary.txt')} -o compare-parameters -s #{compare_finalsubset} --verbose")
         old_path = "compare-parameters.txt"
-        new_path = "private/uploads/userexpt/models/compare-parameters.txt"
+        new_path = models_dir.join("compare-parameters.txt")
         File.rename(old_path, new_path) if File.exist?(old_path)
-        fit_stats_sample_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'summary', 'compare_summary.txt'))
-        compare_params_txts = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', '*.txt'))
+        fit_stats_sample_paths = Dir.glob(summary_dir.join('compare_summary.txt'))
+        compare_params_txts = Dir.glob(models_dir.join('*.txt'))
         logger.debug("compare_params_txts: #{compare_params_txts}")
         if compare_params_txts.empty? && fit_stats_sample_paths.empty?
           raise "Your dataset is too large for the compare parameters analysis. Please try uploading a smaller dataset or selecting a different variable." if $?.exitstatus == 137 || $?.signaled?
@@ -179,11 +217,9 @@ class Job < ApplicationRecord
       save # Save the instance of Job
 
       if @selected_chart_types.include?('test-hypothesis')
-        FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'test-hypothesis'))
-        #ensures the previous job files are removed before calling amiga 
-        system("amiga test -i private/uploads/userexpt -s #{test_finalsubset} -y #{hypothesis} -o 'test-hypothesis'")
-        test_hypothesis_txts = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'test-hypothesis', '*report.txt'))
-        test_hypothesis_pdfs = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'models', 'test-hypothesis', '*.pdf'))
+        system("amiga test -i #{upload_root} -s #{test_finalsubset} -y #{hypothesis} -o 'test-hypothesis'")
+        test_hypothesis_txts = Dir.glob(models_dir.join('test-hypothesis', '*report.txt'))
+        test_hypothesis_pdfs = Dir.glob(models_dir.join('test-hypothesis', '*.pdf'))
         if test_hypothesis_txts.empty? && test_hypothesis_pdfs.empty?
           raise "Your dataset is too large for the test hypothesis analysis. Please try uploading a smaller dataset or selecting a different variable." if $?.exitstatus == 137
           raise "The test hypothesis failed. Please check that your input data or selected conditions are correct." 
@@ -250,8 +286,8 @@ class Job < ApplicationRecord
   end
 
   def deleteoldfiles
-    FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'figures'))
-    FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'summary'))
+    FileUtils.rm_rf(figures_dir)
+    FileUtils.rm_rf(summary_dir)
   end
 
   def self.admin_can_manage_jobs?(admin)
