@@ -30,7 +30,7 @@
   text-align: left;
 }
 
-.uploadscreen h2 {
+.uploadscreen .column.skinny h2 {
   font-size: 14px;
   font-weight: 600;
   color: var(--tx-1);

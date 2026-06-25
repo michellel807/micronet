@@ -70,12 +70,16 @@ class Job < ApplicationRecord
       logger.debug("done with raw_data ...")
 
       if @selected_chart_types.include?('gp_plot')
-        if @gp_subset_choice == "no"
-          system("amiga fit -i private/uploads/userexpt --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
-        elsif @gp_subset_choice == "yes"
-          system("amiga fit -i private/uploads/userexpt -s #{gp_finalsubset} --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
+        # Only pass --pool-by when a real mapping column was chosen.
+        # gp_pool_by_column defaults to "None"/'None' (and may be blank) when
+        # there is no mapping file; passing that to amiga makes it look for a
+        # column literally named "None" and abort before writing plot_gp_data.txt.
+        pool_by_clean = gp_pool_by_column.to_s.gsub(/\A'|'\z/, '').strip
+        pool_by_flag = pool_by_clean.present? && pool_by_clean != "None" ? "--pool-by '#{pool_by_clean}'" : ""
+        if @gp_subset_choice == "yes"
+          system("amiga fit -i private/uploads/userexpt -s #{gp_finalsubset} #{pool_by_flag} --save-gp-data -o plot")
         else
-          raise "Invalid GP subset choice"
+          system("amiga fit -i private/uploads/userexpt #{pool_by_flag} --save-gp-data -o plot")
         end
         raise "Your dataset is too large for the GP plot analysis. Please try a smaller dataset or selecting a different variable." if $?.exitstatus == 137
         Python.exec("lib/scripts/otherscripts/gpplot.py private/uploads/userexpt/derived #{gp_finalsubset}")
