@@ -207,6 +207,38 @@
   font-weight: 800;
 }
 
+/* ── Locked state (requires mapping file) ─────────────────── */
+.analysis-section:has(.analysis-toggle:disabled) {
+  opacity: 0.6;
+}
+.analysis-section:has(.analysis-toggle:disabled) .analysis-card {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.analysis-requires-mapping {
+  display: inline-block;
+  margin-top: 5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--border-sub, #f1f5f9);
+  color: var(--tx-3);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.pool-yes-locked {
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+.pool-locked-note {
+  margin-top: 6px;
+  color: var(--tx-3);
+  font-size: 12px;
+  font-style: italic;
+}
+
 /* ── Inline settings panels ───────────────────────────────── */
 .analysis-settings,
 .chip-options {
