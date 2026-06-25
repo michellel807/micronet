@@ -29,7 +29,7 @@ class Job < ApplicationRecord
     FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'derived'))
     FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'models'))
     FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'figures'))
-    
+
     @selected_chart_types = chart_types || []
     @pool_replicates = pool_replicates
     @pool_options_string = pool_options_string || []
@@ -43,6 +43,34 @@ class Job < ApplicationRecord
     @heatmap_value = heatmap_value
     @heatmap_x = heatmap_x
     @heatmap_y = heatmap_y
+    if ENV["DCC_ENABLED"] == "true"
+      payload = {
+        chart_types: @selected_chart_types,
+        pool_replicates: @pool_replicates,
+        pool_options_string: @pool_options_string,
+        test_finalsubset: @test_finalsubset,
+        hypothesis: @hypothesis,
+        gp_pool_by_column: @gp_pool_by_column,
+        gp_subset_choice: @gp_subset_choice,
+        gp_finalsubset: @gp_finalsubset,
+        compare_parameters_pool: @compare_parameters_pool,
+        compare_finalsubset: @compare_finalsubset,
+        heatmap_value: @heatmap_value,
+        heatmap_x: @heatmap_x,
+        heatmap_y: @heatmap_y
+      }
+      slurm_id = DccClient.new.submit_job(
+        self,
+        payload,
+        "private/uploads/userexpt"
+      )
+      self.slurm_job_id = slurm_id
+      self.cluster_status = "queued"
+      
+      save!
+      return
+    end
+
     raw_data_results = nil
     fit_summary_path = nil
     fit_stats_path = nil
