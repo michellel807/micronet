@@ -11,6 +11,7 @@ class AdminController < ApplicationController
 
   def authenticate_admin
     if request.post?
+      # Handle login form submission
       admin = Admin.find_by(username: params[:username])
       if admin && admin.authenticate(params[:password])
         session[:admin_id] = admin.id
@@ -20,6 +21,9 @@ class AdminController < ApplicationController
         puts "Incorrect login"
         render :login
       end
+    else
+      # Check if user is already logged in for non-POST requests
+      redirect_to login_path unless session[:admin_id]
     end
   end
 
@@ -28,21 +32,42 @@ class AdminController < ApplicationController
     redirect_to login_path
   end
 
-  def update_credentials
+  def update_username
     admin = Admin.find(session[:admin_id])
 
-    # Check if the submitted parameters are valid
     if admin&.authenticate(params[:current_password])
-      if params[:new_username].present?
-        admin.update(username: params[:new_username])
+      if params[:new_username].blank?
+        flash[:error] = 'New username cannot be empty.'
+      elsif admin.update(username: params[:new_username])
+        flash[:success] = 'Username updated successfully.'
+      else
+        flash[:error] = admin.errors.full_messages.join(', ')
       end
+    else
+      flash[:error] = 'Invalid current password. Please try again.'
+    end
+    redirect_to admin_jobs_path
+  end
 
-      if params[:new_password].present?
-        admin.update(password: params[:new_password])
+  def update_password
+    admin = Admin.find(session[:admin_id])
+
+    if admin&.authenticate(params[:current_password])
+      if params[:new_password].blank?
+        flash[:error] = 'New password cannot be empty.'
+        redirect_to admin_jobs_path
+      elsif params[:new_password] != params[:password_confirmation]
+        flash[:error] = 'Password confirmation does not match.'
+        redirect_to admin_jobs_path
+      elsif admin.update(password: params[:new_password])
+        # Force logout after password change for security
+        session[:admin_id] = nil
+        flash[:success] = 'Password updated successfully. Please log in with your new password.'
+        redirect_to login_path
+      else
+        flash[:error] = admin.errors.full_messages.join(', ')
+        redirect_to admin_jobs_path
       end
-
-      flash[:success] = 'Username and/or password updated successfully.'
-      redirect_to admin_jobs_path
     else
       flash[:error] = 'Invalid current password. Please try again.'
       redirect_to admin_jobs_path

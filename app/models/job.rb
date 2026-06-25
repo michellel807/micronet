@@ -25,9 +25,29 @@ class Job < ApplicationRecord
     FileUtils.rm_rf(upload_root)
   end
 
+  # Configuration constants
+  MAX_ACTIVE_JOBS_PER_USER = 3
+  DRAFT_STATUS = "In Progress".freeze
+
+  # Keep only the most recent draft for a user, destroying any older
+  # "In Progress" jobs. Returns the surviving draft (or nil).
+  def self.prune_drafts(user_id)
+    drafts = where(user_id: user_id, status: DRAFT_STATUS).order(created_at: :desc).to_a
+    drafts.drop(1).each(&:destroy)
+    drafts.first
+  end
+
+
   def analyze(chart_types, pool_replicates, pool_options_string, test_finalsubset, hypothesis, gp_pool_by_column, gp_subset_choice, gp_finalsubset, compare_parameters_pool, compare_finalsubset, heatmap_value, heatmap_x, heatmap_y)
     self.status = "Analyzing..."
     self.start_time = DateTime.now
+
+    # ADD THESE 4 LINES HERE
+    FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'summary'))
+    FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'derived'))
+    FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'models'))
+    FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'figures'))
+    
     @selected_chart_types = chart_types || []
     @pool_replicates = pool_replicates
     @pool_options_string = pool_options_string || []
@@ -57,7 +77,10 @@ class Job < ApplicationRecord
       logger.debug("Starting analysis...")
       raw_data_results = RawDataGenerator.generate_raw_data()
       if @selected_chart_types.include?('raw_data')
-        raise "The plotting analysis failed" unless raw_data_results[:raw_data_pdf_paths].present?
+        unless raw_data_results[:raw_data_pdf_paths].present?
+          raise "Your dataset is too large for the Raw Data plot analysis. Please try uploading a smaller dataset." if $?.exitstatus == 137
+          raise "The plotting analysis failed. Please check your input and data files." if $?.exitstatus != 0
+        end
         @raw_data_pdf_paths = raw_data_results[:raw_data_pdf_paths].select do |path|
           File.exist?(path)
         end
@@ -72,6 +95,7 @@ class Job < ApplicationRecord
         else
           raise "Invalid GP subset choice"
         end
+        raise "Your dataset is too large for the GP plot analysis. Please try a smaller dataset or selecting a different variable." if $?.exitstatus == 137
         Python.exec("lib/scripts/otherscripts/gpplot.py #{derived_dir} #{gp_finalsubset}")
         gp_plot_path = derived_dir.join('gp_plot.pdf')
         gp_plot_data = derived_dir.join('plot_gp_data.txt')
@@ -82,9 +106,6 @@ class Job < ApplicationRecord
       end
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "no"
-        system("amiga fit -i #{upload_root} -o fit")
-        fit_summary_path = summary_dir.join('fit_summary_modified.txt')
-        Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
         raise "The fit statistics analysis failed" unless File.exist?(fit_summary_path)
         @fit_stats_paths = Dir.glob(summary_dir.join('fit_summary_modified.txt'))
         logger.debug("done with fit_stats yes ...")
@@ -92,6 +113,7 @@ class Job < ApplicationRecord
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes"
         system("amiga fit -i #{upload_root} --pool-by '#{pool_options_string}' -o fit")
+        raise "Your dataset is too large for the fit statistics analysis. Please try uploading a smaller dataset." if $?.exitstatus == 137
         puts "AMIGA EXIT STATUS = #{$?.exitstatus}"
         puts "fit_summary exists? #{File.exist?(summary_dir.join('fit_summary.txt'))}"
         puts Dir.glob(summary_dir.join('*'))
@@ -110,7 +132,12 @@ class Job < ApplicationRecord
             puts "HEATMAP VALUE = #{@heatmap_value}"
             puts "HEATMAP X = #{@heatmap_x}"
             puts "HEATMAP Y = #{@heatmap_y}"
-            system("amiga heatmap -i #{summary_dir.join('fit_summary_modified.txt')} -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
+            system("amiga fit -i #{upload_root} -o heatmap_fit")
+            raise "Your dataset is too large for the heatmap analysis. Please try uploading a smaller dataset or selecting a different variable." if $?.exitstatus == 137
+            Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('heatmap_fit_summary.txt')}")
+            heatmap_fit_summary_path = summary_dir.join('heatmap_fit_summary_modified.txt')
+            raise "The heatmap analysis failed. Please check your axis/value selections." unless File.exist?(heatmap_fit_summary_path)
+            system("amiga heatmap -i #{heatmap_fit_summary_path} -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
           else
             heatmap_x = @heatmap_x == "Well positions" ? "Well" : @heatmap_x
             heatmap_y = @heatmap_y == "Well positions" ? "Well" : @heatmap_y
@@ -118,22 +145,31 @@ class Job < ApplicationRecord
             puts "HEATMAP X = #{@heatmap_x.inspect}"
             puts "HEATMAP Y = #{@heatmap_y.inspect}"
             system("amiga fit -i #{upload_root} -o fit")
+            raise "Your dataset is too large for the heatmap analysis. Please try a smaller dataset or selecting a different variable." if $?.exitstatus == 137
             Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
             heatmap_fit_summary_path = summary_dir.join('fit_summary_modified.txt')
-            raise "The heatmap plot failed" unless File.exist?(heatmap_fit_summary_path)
+            raise "The heatmap analysis failed. Please check your axis/value selections." unless File.exist?(heatmap_fit_summary_path)
             system("amiga heatmap -i #{summary_dir.join('fit_summary_modified.txt')} -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
           end
         else
           raise "Heatmap value, x-axis, or y-axis not selected"
         end
         heatmap_plot_path = summary_dir.join('heatmap_plot.pdf')
-        raise "The heatmap plot analysis failed" unless File.exist?(heatmap_plot_path)
+        unless File.exist?(heatmap_plot_path)
+          raise "Your dataset is too large for the heatmap analysis. Please try a smaller datasetor selecting a different variable." if $?.exitstatus == 137
+          raise "The heatmap plot analysis failed. Please check your axis/value selections." 
+        end
         @heatmap_plot_paths = Dir.glob(summary_dir.join('heatmap_plot.pdf'))
         logger.debug("done with heatmap_plot ...")
       end
 
       if @selected_chart_types.include?('compare-parameters')
         system("amiga fit -i #{upload_root} --sample-posterior --pool-by #{compare_parameters_pool} -o compare")
+        puts "AMIGA EXIT STATUS = #{$?.inspect}"
+        unless File.exist?('private/uploads/userexpt/summary/compare_summary.txt')
+          raise "Your dataset is too large for the compare parameters analysis. Please try uploading a smaller dataset or selecting a different variable." if $?.exitstatus == 137 || $?.signaled?
+          raise "The compare parameters analysis failed."
+        end
         system("amiga compare -i #{summary_dir.join('compare_summary.txt')} -o compare-parameters -s #{compare_finalsubset} --verbose")
         old_path = "compare-parameters.txt"
         new_path = models_dir.join("compare-parameters.txt")
@@ -142,6 +178,7 @@ class Job < ApplicationRecord
         compare_params_txts = Dir.glob(models_dir.join('*.txt'))
         logger.debug("compare_params_txts: #{compare_params_txts}")
         if compare_params_txts.empty? && fit_stats_sample_paths.empty?
+          raise "Your dataset is too large for the compare parameters analysis. Please try uploading a smaller dataset or selecting a different variable." if $?.exitstatus == 137 || $?.signaled?
           raise "The compare parameters analysis failed"
         end
         @compare_params_paths = compare_params_txts
@@ -154,7 +191,8 @@ class Job < ApplicationRecord
         test_hypothesis_txts = Dir.glob(models_dir.join('test-hypothesis', '*report.txt'))
         test_hypothesis_pdfs = Dir.glob(models_dir.join('test-hypothesis', '*.pdf'))
         if test_hypothesis_txts.empty? && test_hypothesis_pdfs.empty?
-          raise "The test hypothesis analysis failed"
+          raise "Your dataset is too large for the test hypothesis analysis. Please try uploading a smaller dataset or selecting a different variable." if $?.exitstatus == 137
+          raise "The test hypothesis failed. Please check that your input data or selected conditions are correct." 
         end
         @test_hypothesis_paths = test_hypothesis_txts
         @test_hypothesis_pdf_paths = test_hypothesis_pdfs
@@ -176,12 +214,22 @@ class Job < ApplicationRecord
       UserMailer.processedjob_email(file_names, self).deliver_now
     rescue => e
       logger.error("Error processing job: #{e.message}")
-      self.status = "Failed"
-      save
-      UserMailer.failedjob_email(self, e.message).deliver_now
+      # Reload from DB to check if job was cancelled while this was running
+      self.reload
+      # Don't mark as failed if job was cancelled by admin
+      if self.status != "Cancelled"
+        self.status = "Failed"
+        self.end_time = DateTime.now
+        save
+        UserMailer.failedjob_email(self, e.message).deliver_now
+      else
+        logger.info("Job #{id} was cancelled by admin, skipping error email")
+      end
     ensure
-      if self.status != "Failed"
+      self.reload
+      if self.status == "Analyzing..."
         self.status = "Completed"
+        self.end_time = DateTime.now
         save
       end
     end
@@ -218,6 +266,30 @@ class Job < ApplicationRecord
 
   def admin_can_manage_jobs?(admin)
     admin&.is_admin?
+  end
+
+  # Count active submitted jobs (queued or running only)
+  def self.count_active_for_user(user_id)
+    where(user_id: user_id, status: ["Job submitted", "Analyzing..."]).count
+  end
+
+  # Check if user can submit another job
+  def self.can_user_submit?(user_id)
+    count_active_for_user(user_id) < MAX_ACTIVE_JOBS_PER_USER
+  end
+
+  # Mark job as cancelled without destroying it
+  def mark_cancelled(admin_name = nil)
+    self.status = "Cancelled"
+    self.end_time = DateTime.now
+    save
+    UserMailer.job_cancelled_email(self, admin_name).deliver_now
+  end
+
+  # Set end_time when job finishes
+  def set_end_time
+    self.end_time = DateTime.now
+    save
   end
 end
 

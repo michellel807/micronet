@@ -11,13 +11,13 @@
   <%= render "layouts/header" %>
   <div class="column skinny">
     <% content_for :title, "Resources page" %>
-    <h1>Need Help? Linda edited this</h1>
+    <h1>Need Help?</h1>
     <p>If you require assistance understanding how MicroNet works, or would like to see examples of how input data must be formatted, we recommend stepping through the workflow using our toy dataset below.
       Simply download both the "Data" and "Mapping" files, then return to the <a href="/">home page</a> and upload them when prompted. 
       <a href="https://firasmidani.github.io/amiga/" target="_blank">Click here</a> to learn more.
     </p>
 
-    <div class="general-white-block">
+    <div class="help-container">
       <h2>MicroNet Guide and Data Cleaning Pipeline</h2>
       <p>For detailed information for the different features of MicroNet and how to clean your data in the desired format, please refer to our comprehensive  documentation:</p>
       <div class="documentation-link">
@@ -25,7 +25,7 @@
       </div>
     </div>
 
-    <div class="general-white-block">
+    <div class="help-container">
       <h2>Example Files</h2>
       <% files_by_type = {
         data_files: ["exampledata1.txt", "exampledata2.txt"],
