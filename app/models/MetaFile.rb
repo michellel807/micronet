@@ -3,8 +3,9 @@ require 'csv'
 class MetaFile
   attr_reader :file_path, :error_message, :plate_id_values
 
-  def initialize(file)
+  def initialize(file, upload_root:)
     @file = file
+    @upload_root = upload_root
     @plate_id_values = []
     valid_extensions = ['.txt', '.asc', '.tsv', '.csv']
     
@@ -22,7 +23,7 @@ class MetaFile
   private
 
   def save_file(file)
-    directory_path = Rails.root.join('private', 'uploads', 'userexpt', 'mapping')
+    directory_path = @upload_root.join('mapping')
     FileUtils.mkdir_p(directory_path) unless Dir.exist?(directory_path)
 
     original_filename = file.original_filename

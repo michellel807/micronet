@@ -4,13 +4,18 @@ skip_before_action :verify_authenticity_token
 
 def delete_files
   # Clear data
-  FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt'))
+  @job = Job.find(session[:current_user_id]) if session[:current_user_id]
+  @job.clear_uploads! if @job
   puts "files deleted"
   # Clear session variables
   session[:data_file_paths] = nil
   session[:mapping_file_paths] = nil
   session[:meta_file_path] = nil
   session[:interval_file_path] = nil
+  session[:usr_data_file_paths] = nil
+  session[:usr_mapping_file_paths] = nil
+  session[:usr_meta_file_path] = nil
+  session[:usr_interval_file_path] = nil
   @data_file_paths = session[:data_file_paths]
   @mapping_file_paths = session[:mapping_file_paths]
   @meta_file_path = session[:meta_file_path]
@@ -68,6 +73,9 @@ def upload
   @interval_file_path = nil
   @usr_interval_file_path = nil
 
+  current_job = Job.find(session[:current_user_id])
+  current_job.ensure_upload_directories!
+
   # Get uploaded files
   data_files = Array(params[:data_files])
   mapping_files = Array(params[:mapping_files])
@@ -84,7 +92,7 @@ def upload
 
   # Initialize the interval file if it exists
   if interval_files.present?
-    interval_file = IntervalFile.new(interval_files)
+    interval_file = IntervalFile.new(interval_files, upload_root: current_job.upload_root)
     unless interval_file.valid?
       flash[:alert] = interval_file.error_message
       @interval_file_path = nil
@@ -94,9 +102,27 @@ def upload
     @interval_file_path = interval_file.file_path.to_s
   end
 
+  # If the user uploaded only data files (no mapping, no meta)
+  if data_files.present? && mapping_files.blank? && meta_files.blank?
+    ordered_data_names = JSON.parse(params[:ordered_data_files]) rescue []
+    ordered_data_files = reorder_files.call(data_files, ordered_data_names)
+
+    ordered_data_files.each do |data_file_input|
+      data_file = DataFile.new(data_file_input, nil)
+
+      unless data_file.valid?
+        flash.alert = data_file.error_message
+        return render :index
+      end
+
+      @usr_data_file_paths << data_file_input.original_filename.to_s
+      @data_file_paths << data_file.file_path.to_s
+    end
+  end
+
   # If the user uploaded data files and one meta file
   if meta_files.present? && mapping_files.blank?
-    meta_file = MetaFile.new(meta_files)
+    meta_file = MetaFile.new(meta_files, upload_root: current_job.upload_root)
     unless meta_file.valid?
       flash[:alert] = meta_file.error_message
       @meta_file_path = nil
@@ -114,7 +140,7 @@ def upload
     end
 
     ordered_data_files.zip(meta_file.plate_id_values).each do |data_file_input, plate_id|
-      data_file = DataFile.new(data_file_input, plate_id)
+      data_file = DataFile.new(data_file_input, plate_id, upload_root: current_job.upload_root)
 
       unless data_file.valid?
         flash.alert = data_file.error_message
@@ -134,7 +160,7 @@ def upload
     end
 
     if meta_files.present?
-      meta_file = MetaFile.new(meta_files)
+      meta_file = MetaFile.new(meta_files, upload_root: current_job.upload_root)
       unless meta_file.valid?
         flash[:alert] = meta_file.error_message
         @meta_file_path = nil
@@ -157,8 +183,8 @@ def upload
     mapping_files = ordered_mapping_files
 
     data_files.zip(mapping_files).each do |data_file_input, mapping_file_input|
-      mapping_file = MappingFile.new(mapping_file_input)
-      data_file = DataFile.new(data_file_input, mapping_file.plate_id)
+      mapping_file = MappingFile.new(mapping_file_input, upload_root: current_job.upload_root)
+      data_file = DataFile.new(data_file_input, mapping_file.plate_id, upload_root: current_job.upload_root)
 
       @usr_data_file_paths << data_file_input.original_filename.to_s
       @usr_mapping_file_paths << mapping_file_input.original_filename.to_s
@@ -196,15 +222,19 @@ def upload
     if meta_file.plate_id_values.sort == @data_file_paths.map { |fp| File.basename(fp, '.*') }.sort
       success = true
     end
-  
+
+  # Case 3: data files only (no mapping, no meta)
+  elsif @data_file_paths.present? && @mapping_file_paths.blank? && @meta_file_path.nil?
+    success = true
+
   else
     success = false
   end
 
   if @meta_file_path.present? && @data_file_paths.present?
     # Run the Python script to merge meta data with data files
-    Python.exec("lib/scripts/otherscripts/mergemeta.py private/uploads/userexpt/data private/uploads/userexpt/mapping")
-    @mapping_file_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'mapping', '*.txt'))
+    Python.exec("lib/scripts/otherscripts/mergemeta.py #{current_job.data_dir} #{current_job.mapping_dir}")
+    @mapping_file_paths = Dir.glob(current_job.mapping_dir.join('*.txt'))
                          .reject { |path| File.basename(path) == 'meta.txt' }
                          .map(&:to_s)
 
@@ -220,6 +250,12 @@ def upload
     session[:usr_meta_file_path] = @usr_meta_file_path
     session[:interval_file_path] = @interval_file_path
     session[:usr_interval_file_path] = @usr_interval_file_path
+    # Reset analysis selections so a new upload starts fresh
+    %i[chart_types pool_replicates pool_options gp_pool_by_column
+       gp_subset_choice gp_subset_column gp_conditions
+       heatmap_value heatmap_x heatmap_y column_test column_pooled].each do |key|
+      session.delete(key)
+    end
     flash.notice = "Files uploaded successfully! Proceeding to analyses selection..."
     # Redirect directly to next step (SelectAnalyses) on successful upload
     redirect_to '/selectanalyses'
