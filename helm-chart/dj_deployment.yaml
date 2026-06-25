@@ -1,0 +1,53 @@
+{{- $parentContext := .Values.essweb_library_chart -}}
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: {{ .Values.global.application.name }}-delayed-job
+  namespace: {{ .Values.global.application.project }}
+  labels:
+    {{- include .Values.global.labels_template $parentContext | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.global.application.name }}-delayed-job
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.global.application.name }}-delayed-job
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/worker-highmem: ''
+      containers:
+        - name: {{ .Values.global.application.name }}-delayed-job
+          image: {{ .Values.global.application.name }}:{{ .Values.global.image.commit_sha }}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ .Values.global.deploy.container_port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.global.application.name }}-config
+          volumeMounts:
+              - mountPath: /app/private
+                name: micronet-app-data
+          command: [
+                'rake',
+                'jobs:work'
+              ] 
+          resources:
+              limits:
+                memory: '30Gi'
+              requests:
+                memory: '19Gi'
+      volumes:
+          - name: micronet-app-data
+            persistentVolumeClaim:
+              claimName: micronet-app-data
+      tolerations:
+        - key: node-role.kubernetes.io/worker-highmem
+          operator: Exists
+          effect: NoSchedule
+      restartPolicy: Always
+  strategy:
+    type: Recreate

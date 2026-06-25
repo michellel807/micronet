@@ -1,100 +1,204 @@
-
-/* for the welcome screen */
-.welcomescreen{
-  color: #ffffff;
-  min-height: 100%;
-  background-image: linear-gradient(to top, #000750, #405fad);
-  padding-bottom: 100px;
-  min-width:800px;
-  overflow:visible;
-  display: flex;
+/* ── Welcome / landing ────────────────────────────────────── */
+.welcomescreen {
+  color: var(--tx-1);
+  background: var(--bg);
+  min-width: 0;
   min-height: 100vh;
+  display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  background-color: #000750;
-} 
+}
+
+.welcome-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 72px 24px;
+}
+
+.welcome-hero {
+  max-width: 680px;
+  width: 100%;
+  text-align: center;
+}
+
+.welcome-eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+
 .welcomescreen h1 {
-  font-size: 50px;
-}
-.welcomescreen p {
-  font-size: 25px;
-}
-.welcomescreen input[type=submit]{
-  background-color: #12105a;
-  padding: 7px;
-  color: white;
-  border-radius: 6px;
-  font-weight:300;
-  font-size: 20px;
-  cursor: pointer;
-  border: none;
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  color: var(--tx-1);
+  margin: 0 0 20px;
 }
 
-.welcomescreen input[type=submit]:hover{
-  background-color: #0036b4;
-}
-.welcomescreen header{
-  background: transparent;
-  box-shadow: none;
-}
-.welcomescreen h2 {
-  font-size: 18px;
-}
-.welcomescreen input[type=text]{
-  width: 250px;
-  height: 25px;
-  font-size: 15px;
-}
-.welcomescreen label{
-  font-weight: normal;
-}
-.welcomescreen footer {
-  background: transparent;
-  margin-top: 90px;
-  margin-bottom: -100px;
+.welcome-sub {
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--tx-2);
+  margin: 0 auto 16px;
+  max-width: 600px;
 }
 
-#help_link{
-  color:white;
-  place-items: center;
-  font-weight: 300;
-  font-size: 20px;
+.welcome-note {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--tx-3);
+  margin: 0 auto 36px;
+  max-width: 560px;
 }
 
-#help_link:hover{
-  color: #1287ed;
+/* CTA card */
+.welcome-cta {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-md);
+  padding: 28px;
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: left;
 }
 
-.input_email{
-  font-size: 20px;
-  font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
-  font-weight: 300px;
+.welcome-form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx-1);
+  margin-bottom: 10px;
 }
 
-.wel_nav:hover{
-  color: #52a8f3;
+.welcome-form-row {
+  display: flex;
+  gap: 10px;
 }
 
-.unsavedjob-alert{
-  margin: auto;
-  color: orange;
+.welcome-email-input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  font-family: var(--font);
+  color: var(--tx-1);
+  background: var(--surface);
+  outline: none;
+  transition: all 0.15s;
 }
-.unsavedjob-alert p{
-  margin: auto;
-  color: orange;
+
+.welcome-email-input::placeholder { color: var(--tx-3); }
+
+.welcome-email-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(5,119,177,0.1);
+}
+
+.welcome-cta .ds-btn-lg { height: 44px; }
+
+.welcome-helprow { margin-top: 14px; }
+
+#help_link {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+#help_link:hover { text-decoration: underline; }
+
+.email-alert:empty { display: none; }
+.email-alert {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--accent-dk);
+  background: var(--accent-bg);
+  border: 1px solid var(--info-bd);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+}
+
+/* Resume prompt */
+.welcome-resume {
+  margin: 24px auto 0;
+  max-width: 520px;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-bd);
+  border-radius: var(--r-md);
+  padding: 18px;
+}
+
+.unsavedjob-alert {
+  margin: 0 0 14px;
+  color: #92400E;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
 }
 
 .button-group {
   display: flex;
+  gap: 10px;
   justify-content: center;
-  margin: auto;
 }
 
-.home_link {
- margin-top: 19px;
- font-weight: 250px;
- font-size: 40px;
+/* Header link override on this page */
+.home_link { margin: 0; font-size: 14px; font-weight: 700; }
+.home_link:hover { text-decoration: none; }
+.wel_nav:hover { color: #fff; }
+
+/* ── Privacy page (shares this stylesheet) ────────────────── */
+.privacy-container {
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 48px auto;
+  border-radius: var(--r-lg);
+  padding: 48px 56px;
+  box-shadow: var(--sh-md);
+  border: 1px solid var(--border);
+  font-size: 15px;
+  line-height: 1.7;
+  max-width: 760px;
+  color: var(--tx-2);
 }
-.home_link:hover{
-  text-decoration: none;
+
+.privacy-container p { text-align: left; width: 100%; margin: 0 0 14px; }
+
+.privacy-container h1 {
+  color: var(--tx-1);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 18px;
+}
+
+.privacy-container h3 {
+  color: var(--tx-1);
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 28px;
+  width: 100%;
+  text-align: left;
+}
+
+@media (max-width: 600px) {
+  .welcomescreen h1 { font-size: 32px; }
+  .welcome-sub { font-size: 15px; }
+  .welcome-main { padding: 48px 16px; }
+  .welcome-cta { padding: 20px; }
+  .welcome-form-row { flex-direction: column; }
+  .welcome-cta .ds-btn-lg { width: 100%; }
+  .privacy-container { padding: 28px 22px; }
 }

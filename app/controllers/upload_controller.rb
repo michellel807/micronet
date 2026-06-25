@@ -78,6 +78,14 @@ def upload
   meta_files = params[:meta_files]
   interval_files = params[:interval_files]
 
+  reorder_files = lambda do |files, ordered_names|
+    ordered_files = ordered_names.map do |name|
+      files.find { |file| file.original_filename == name }
+    end.compact
+
+    ordered_files.length == files.length ? ordered_files : files
+  end
+
   # Initialize the interval file if it exists
   if interval_files.present?
     interval_file = IntervalFile.new(interval_files, upload_root: current_job.upload_root)
@@ -102,9 +110,7 @@ def upload
     @meta_file_path = meta_file.file_path.to_s
 
     ordered_data_names = JSON.parse(params[:ordered_data_files]) rescue []
-    ordered_data_files = ordered_data_names.map do |name|
-      data_files.find { |f| f.original_filename == name }
-    end.compact
+    ordered_data_files = reorder_files.call(data_files, ordered_data_names)
 
     if meta_file.plate_id_values.length != data_files.length
       flash.alert = "The number of data files does not match the number of plate IDs in the meta file."
@@ -125,7 +131,7 @@ def upload
   end
 
   # If the user uploaded data files and mapping files
-  if mapping_files.present?    
+  if mapping_files.present?
     if data_files.size != mapping_files.size
       flash.alert = "The number of data files and mapping files does not match."
       redirect_to upload_path and return
@@ -146,14 +152,9 @@ def upload
     ordered_data_names = JSON.parse(params[:ordered_data_files]) rescue []
     ordered_mapping_names = JSON.parse(params[:ordered_mapping_files]) rescue []
 
-    # Reorder the uploaded files to match the submitted order
-    ordered_data_files = ordered_data_names.map do |name|
-      data_files.find { |file| file.original_filename == name }
-    end.compact
-
-    ordered_mapping_files = ordered_mapping_names.map do |name|
-      mapping_files.find { |file| file.original_filename == name }
-    end.compact
+    # Reorder the uploaded files to match the submitted order when available.
+    ordered_data_files = reorder_files.call(data_files, ordered_data_names)
+    ordered_mapping_files = reorder_files.call(mapping_files, ordered_mapping_names)
 
     # Use these for processing
     data_files = ordered_data_files
@@ -223,7 +224,9 @@ def upload
     session[:usr_meta_file_path] = @usr_meta_file_path
     session[:interval_file_path] = @interval_file_path
     session[:usr_interval_file_path] = @usr_interval_file_path
-    flash.notice = "Files uploaded successfully." # Use flash instead of flash.now
+    flash.notice = "Files uploaded successfully! Proceeding to analyses selection..."
+    # Redirect directly to next step (SelectAnalyses) on successful upload
+    redirect_to '/selectanalyses'
   else
     # If the Python script failed, clear the session variables
     session[:data_file_paths] = nil
@@ -238,8 +241,6 @@ def upload
     delete_files # Clear the uploaded files
     return
   end
-
-  redirect_to '/upload'
 end
 
 
