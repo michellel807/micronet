@@ -26,6 +26,7 @@ class DataFile
   
     original_filename = file.original_filename
     file_extension = File.extname(original_filename).downcase
+    base = mapping_plate_id.present? ? mapping_plate_id.to_s : original_filename
     new_filename = "#{File.basename(mapping_plate_id.to_s, '.*')}.txt"
     txt_file = directory_path.join(new_filename)
   

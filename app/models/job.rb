@@ -88,6 +88,8 @@ class Job < ApplicationRecord
       logger.debug("done with raw_data ...")
 
       if @selected_chart_types.include?('gp_plot')
+        pool_by_clean = gp_pool_by_column.to_s.gsub(/\A'|'\z/, '').strip
+        pool_by_flag = pool_by_clean.present? && pool_by_clean != "None" ? "--pool-by '#{pool_by_clean}'" : ""
         if @gp_subset_choice == "no"
           system("amiga fit -i #{upload_root} --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
         elsif @gp_subset_choice == "yes"
