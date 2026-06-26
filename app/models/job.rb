@@ -29,6 +29,26 @@ class Job < ApplicationRecord
   MAX_ACTIVE_JOBS_PER_USER = 3
   DRAFT_STATUS = "In Progress".freeze
 
+  def upload_root
+    Rails.root.join("private", "uploads", "jobs", id.to_s)
+  end
+
+  def data_dir = upload_root.join("data")
+  def mapping_dir = upload_root.join("mapping")
+  def summary_dir = upload_root.join("summary")
+  def derived_dir = upload_root.join("derived")
+  def models_dir = upload_root.join("models")
+  def figures_dir = upload_root.join("figures")
+  def parameters_dir = upload_root.join("parameters")
+
+  def ensure_upload_directories!
+    [data_dir, mapping_dir, parameters_dir, figures_dir, summary_dir, derived_dir, models_dir].each { |d| FileUtils.mkdir_p(d) }
+  end
+
+  def clear_uploads!
+    FileUtils.rm_rf(upload_root)
+  end
+
   # Keep only the most recent draft for a user, destroying any older
   # "In Progress" jobs. Returns the surviving draft (or nil).
   def self.prune_drafts(user_id)
@@ -42,12 +62,8 @@ class Job < ApplicationRecord
     self.status = "Analyzing..."
     self.start_time = DateTime.now
 
-    # ADD THESE 4 LINES HERE
-    FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'summary'))
-    FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'derived'))
-    FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'models'))
-    FileUtils.mkdir_p(Rails.root.join('private', 'uploads', 'userexpt', 'figures'))
-
+    ensure_upload_directories!
+    
     @selected_chart_types = chart_types || []
     @pool_replicates = pool_replicates
     @pool_options_string = pool_options_string || []
@@ -103,7 +119,7 @@ class Job < ApplicationRecord
     begin
 
       logger.debug("Starting analysis...")
-      raw_data_results = RawDataGenerator.generate_raw_data()
+      raw_data_results = RawDataGenerator.generate_raw_data(upload_root)
       if @selected_chart_types.include?('raw_data')
         unless raw_data_results[:raw_data_pdf_paths].present?
           raise "Your dataset is too large for the Raw Data plot analysis. Please try uploading a smaller dataset." if $?.exitstatus == 137
@@ -118,12 +134,10 @@ class Job < ApplicationRecord
       if @selected_chart_types.include?('gp_plot')
         pool_by_clean = gp_pool_by_column.to_s.gsub(/\A'|'\z/, '').strip
         pool_by_flag = pool_by_clean.present? && pool_by_clean != "None" ? "--pool-by '#{pool_by_clean}'" : ""
-        if @gp_subset_choice == "no"
-          system("amiga fit -i #{upload_root} --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
-        elsif @gp_subset_choice == "yes"
-          system("amiga fit -i #{upload_root} -s #{gp_finalsubset} --pool-by '#{gp_pool_by_column}' --save-gp-data -o plot")
+        if @gp_subset_choice == "yes"
+          system("amiga fit -i #{upload_root} -s #{gp_finalsubset} #{pool_by_flag} --save-gp-data -o plot")
         else
-          raise "Invalid GP subset choice"
+          system("amiga fit -i #{upload_root} #{pool_by_flag} --save-gp-data -o plot")
         end
         raise "Your dataset is too large for the GP plot analysis. Please try a smaller dataset or selecting a different variable." if $?.exitstatus == 137
         Python.exec("lib/scripts/otherscripts/gpplot.py #{derived_dir} #{gp_finalsubset}")
@@ -136,6 +150,10 @@ class Job < ApplicationRecord
       end
 
       if @selected_chart_types.include?('fit_stats') && @pool_replicates == "no"
+        system("amiga fit -i #{upload_root} -o fit")
+        fit_summary_path = summary_dir.join('fit_summary_modified.txt')
+        raise "Your dataset is too large for the fit statistics analysis. Please try a smaller dataset or selecting a different variable." if $?.exitstatus == 137
+        Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
         raise "The fit statistics analysis failed" unless File.exist?(fit_summary_path)
         @fit_stats_paths = Dir.glob(summary_dir.join('fit_summary_modified.txt'))
         logger.debug("done with fit_stats yes ...")
@@ -194,9 +212,11 @@ class Job < ApplicationRecord
       end
 
       if @selected_chart_types.include?('compare-parameters')
+        FileUtils.rm_rf(models_dir.join('compare-parameters.txt'))
+        #ensures the previous job files are removed before calling amiga 
         system("amiga fit -i #{upload_root} --sample-posterior --pool-by #{compare_parameters_pool} -o compare")
         puts "AMIGA EXIT STATUS = #{$?.inspect}"
-        unless File.exist?('private/uploads/userexpt/summary/compare_summary.txt')
+        unless File.exist?(summary_dir.join('compare_summary.txt'))
           raise "Your dataset is too large for the compare parameters analysis. Please try uploading a smaller dataset or selecting a different variable." if $?.exitstatus == 137 || $?.signaled?
           raise "The compare parameters analysis failed."
         end
@@ -217,6 +237,8 @@ class Job < ApplicationRecord
       save # Save the instance of Job
 
       if @selected_chart_types.include?('test-hypothesis')
+        FileUtils.rm_rf(models_dir.join('test-hypothesis'))
+        #ensures the previous job files are removed before calling amiga 
         system("amiga test -i #{upload_root} -s #{test_finalsubset} -y #{hypothesis} -o 'test-hypothesis'")
         test_hypothesis_txts = Dir.glob(models_dir.join('test-hypothesis', '*report.txt'))
         test_hypothesis_pdfs = Dir.glob(models_dir.join('test-hypothesis', '*.pdf'))
@@ -267,7 +289,7 @@ class Job < ApplicationRecord
 
   def serve_image
     filename = params[:filename]
-    file_path = Rails.root.join('private', 'uploads', 'userexpt', 'figures', filename)
+    file_path = figures_dir.join(filename)
     if File.exist?(file_path) && File.file?(file_path)
       send_file file_path, disposition: 'inline'
     else
@@ -322,4 +344,3 @@ class Job < ApplicationRecord
     save
   end
 end
-
