@@ -18,7 +18,7 @@ Rails.application.routes.draw do
   get '/generate', to: 'generate#index'
   post '/generate', to: 'generate#run'
   post '/upload', to: 'upload#upload'
-  get '/uploads/userexpt/figures/:filename', to: 'home#serve_image', as: 'serve_image'
+  get '/uploads/figures/:filename', to: 'home#serve_image', as: 'serve_image'
   get "/confirm", to: "confirm#index"
   post "/confirm", to: "confirm#final"
   post "/confirm/update", to: "confirm#update"

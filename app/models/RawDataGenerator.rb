@@ -1,9 +1,8 @@
 class RawDataGenerator
-  def self.generate_raw_data()
-    #FileUtils.rm_rf(Rails.root.join('private', 'uploads', 'userexpt', 'figures') #clear out figures first
-    system("amiga summarize -i private/uploads/userexpt")
+  def self.generate_raw_data(upload_root)
+    system("amiga summarize -i #{upload_root}")
 
-    raw_data_pdf_paths = Dir.glob(Rails.root.join('private', 'uploads', 'userexpt', 'figures', '*.pdf'))
+    raw_data_pdf_paths = Dir.glob(upload_root.join('figures', '*.pdf'))
 
     raw_data_png_paths = []
     raw_data_pdf_paths.each do |pdf_path|
@@ -19,4 +18,3 @@ class RawDataGenerator
     { raw_data_pdf_paths: raw_data_pdf_paths, raw_data_png_paths: raw_data_png_paths }
   end
 end
-

@@ -4,8 +4,8 @@ skip_before_action :verify_authenticity_token
 
 def delete_files
   # Clear data
-  @job = Job.find(session[:current_user_id]) if session[:current_user_id]
-  @job.clear_uploads! if @job
+  @job = Job.find_by(id: session[:current_user_id])
+  @job&.clear_uploads!
   puts "files deleted"
   # Clear session variables
   session[:data_file_paths] = nil
@@ -37,7 +37,7 @@ def index
   @job = Job.find(session[:current_user_id]) if session[:current_user_id]
   @selected_chart_types = [] # Initialize the selected_chart_types variable
   @charts_data = {}
-  DirectoryInitializer.create_upload_directory()
+  DirectoryInitializer.create_upload_directory(@job)
 
   @data_file_paths = session[:data_file_paths] || []     # Assign an empty array if session value is nil
   session[:data_file_paths] = @data_file_paths           # Set the session value if it's nil
@@ -72,6 +72,8 @@ def upload
   @usr_meta_file_path = nil
   @interval_file_path = nil
   @usr_interval_file_path = nil
+  current_job = Job.find(session[:current_user_id])
+  current_job.ensure_upload_directories!
 
   current_job = Job.find(session[:current_user_id])
   current_job.ensure_upload_directories!
@@ -108,7 +110,7 @@ def upload
     ordered_data_files = reorder_files.call(data_files, ordered_data_names)
 
     ordered_data_files.each do |data_file_input|
-      data_file = DataFile.new(data_file_input, nil)
+      data_file = DataFile.new(data_file_input, nil, upload_root: current_job.upload_root)
 
       unless data_file.valid?
         flash.alert = data_file.error_message
@@ -293,8 +295,9 @@ end
 
 helper_method :convert_asc_to_tab_delimited
 def convert_asc_to_tab_delimited(file_path)
+  current_job = Job.find(session[:current_user_id])
   input_file_path = file_path
-  output_file_path = Rails.root.join('private', 'uploads', 'userexpt', 'data', File.basename(file_path, '.*') + '.txt')
+  output_file_path = current_job.data_dir.join(File.basename(file_path, '.*') + '.txt')
 
   # Call the Python script and check for errors
   success = Python.exec("lib/scripts/otherscripts/convertasc.py #{input_file_path} #{output_file_path}")
@@ -306,11 +309,6 @@ end
 
 
 require 'fileutils'
-
-#def delete_files
-#  upload_directory = Rails.root.join('private', 'uploads', 'userexpt')
-#  FileUtils.rm_rf(upload_directory)
-#end
 
 #at_exit do
 #  UploadController.new.delete_files
