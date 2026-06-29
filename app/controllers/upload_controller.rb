@@ -37,7 +37,11 @@ def index
   @job = Job.find(session[:current_user_id]) if session[:current_user_id]
   @selected_chart_types = [] # Initialize the selected_chart_types variable
   @charts_data = {}
+<<<<<<< HEAD
   DirectoryInitializer.create_upload_directory(@job)
+=======
+  @job&.ensure_upload_directories!
+>>>>>>> 9c63dc349 (removed all userexpt commands)
 
   @data_file_paths = session[:data_file_paths] || []     # Assign an empty array if session value is nil
   session[:data_file_paths] = @data_file_paths           # Set the session value if it's nil
