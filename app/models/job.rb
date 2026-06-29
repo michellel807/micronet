@@ -62,7 +62,15 @@ class Job < ApplicationRecord
     self.status = "Analyzing..."
     self.start_time = DateTime.now
 
+<<<<<<< HEAD
     ensure_upload_directories!
+=======
+    # ADD THESE 4 LINES HERE
+    FileUtils.mkdir_p(summary_dir)
+    FileUtils.mkdir_p(derived_dir)
+    FileUtils.mkdir_p(models_dir)
+    FileUtils.mkdir_p(figures_dir)
+>>>>>>> 9c63dc349 (removed all userexpt commands)
     
     @selected_chart_types = chart_types || []
     @pool_replicates = pool_replicates
@@ -288,12 +296,19 @@ class Job < ApplicationRecord
   end
 
   def serve_image
+    job = Job.find(params[:job_id])
     filename = params[:filename]
+<<<<<<< HEAD
     file_path = figures_dir.join(filename)
+=======
+
+    file_path = job.upload_root.join("figures", filename)
+
+>>>>>>> 9c63dc349 (removed all userexpt commands)
     if File.exist?(file_path) && File.file?(file_path)
-      send_file file_path, disposition: 'inline'
+      send_file file_path, disposition: "inline"
     else
-      head :not_found
+      render plain: "File not found", status: :not_found
     end
   end
 
