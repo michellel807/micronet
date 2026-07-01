@@ -3,36 +3,49 @@
 *= require_tree .
 */
 
-/* for the generate screen */
-* {
-  font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
-  font-weight: 300;
-}
-.generatescreen{
-  color: white;
-  background-image: linear-gradient(to top, #000750, #405fad);
-  padding-bottom: 100px;
-  min-width:800px;
-  overflow:visible;
+/* Submission success screen */
+.generatescreen {
+  color: var(--tx-1);
+  background: var(--bg);
+  min-width: 0;
+  overflow: visible;
   display: flex;
   min-height: 100vh;
   flex-direction: column;
   justify-content: flex-start;
-} 
+}
+
 .generatescreen h1 {
-  font-size: 50px;
-  margin-top: 50px;
-  margin-left: 50px;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--tx-1);
+  margin: 64px auto 12px;
+  max-width: 640px;
+  padding: 0 24px;
+  width: 100%;
+  text-align: center;
+}
+
+.generatescreen h1::before {
+  content: "";
+  display: block;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: var(--ok-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 24 24' fill='none' stroke='%23059669' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E") center/26px no-repeat;
+  border: 1px solid var(--ok-bd);
 }
 
 .generatescreen p {
-  font-size: 25px;
-  margin-left: 50px;
-  margin-right: 50px;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--tx-2);
+  margin: 0 auto;
+  max-width: 560px;
+  padding: 0 24px;
+  text-align: center;
 }
 
-.background{
-  background-image: linear-gradient(to bottom, #000750, #000750);
-}
-
-
+.generatescreen footer { background: var(--surface); box-shadow: none; }

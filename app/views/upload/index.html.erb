@@ -13,6 +13,10 @@
       var header = document.getElementById("data-files-header");
       var button = document.getElementById("view-files-button");
       var tableContainer = document.getElementById("data-files-table-container");
+
+      if (!container || !header || !button || !tableContainer) {
+        return;
+      }
   
       button.style.display = "none"; // Hide the button initially
   
@@ -41,27 +45,7 @@
   <%= render "layouts/header" %>
 
   <div class="column skinny">
-  <div class="stepper-wrapper">
-  <div class="stepper-item active">
-    <a href="<%= upload_path %>" style="text-decoration: none; color: #000750"> 
-      <div class="step-counter">1</div>
-      <div class="step-name">Upload Files</div>
-    </a>
-  </div>
-  <div class="stepper-item">
-      <div class="step-counter">2</div>
-    </a>
-    <div class="step-name">Select Analyses</div>
-  </div>
-  <div class="stepper-item">
-    <div class="step-counter">3</div>
-    <div class="step-name">Review</div>
-  </div>
-  <div class="stepper-item">
-    <div class="step-counter">4</div>
-    <div class="step-name">Submit</div>
-  </div>
-</div>
+  <%= render "layouts/stepper", current_step: 1 %>
 
 <h1>MicroNet: Upload Files</h1>
 <p>
@@ -73,6 +57,26 @@
   If you are uploading data files with mapping files, please drag and arrange them to match each data file with its corresponding mapping file.
 </p>
 
+<% if @usr_data_file_names.present? || @usr_mapping_file_names.present? || @usr_meta_file_name.present? || @usr_interval_file_name.present? %>
+  <div class="current-uploads" style="text-align: left; background: #f4f4f4; color: #333; padding: 12px 16px; border-radius: 6px; margin: 20px 0;">
+    <strong>Currently uploaded.</strong> Submitting replaces <em>all</em> of these &mdash; re-select every file you want to keep, not just the ones you're changing:
+    <ul style="margin: 8px 0 0; padding-left: 20px;">
+      <% if @usr_data_file_names.present? %>
+        <li>Data Files: <%= @usr_data_file_names.join(", ") %></li>
+      <% end %>
+      <% if @usr_mapping_file_names.present? %>
+        <li>Mapping Files: <%= @usr_mapping_file_names.join(", ") %></li>
+      <% end %>
+      <% if @usr_meta_file_name.present? %>
+        <li>Meta File: <%= @usr_meta_file_name %></li>
+      <% end %>
+      <% if @usr_interval_file_name.present? %>
+        <li>Interval File: <%= @usr_interval_file_name %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
 <form id="upload-form" method="post" enctype="multipart/form-data" action="<%= upload_path %>">
   <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
   <input type="hidden" name="ordered_data_files" id="ordered_data_files">
@@ -83,14 +87,22 @@
     <div>
       <h2>Data Files</h2>
       <ul id="data-files-list" class="sortable-list"></ul>
-      <input type="file" id="data-file-input" multiple name="data_files[]">
+      <input type="file"
+       id="data-file-input"
+       multiple
+       name="data_files[]"
+       accept=".asc,.tsv,.txt,.csv">
     </div>
 
     <!-- Mapping Files Column -->
     <div>
       <h2>Mapping Files</h2>
       <ul id="mapping-files-list" class="sortable-list"></ul>
-      <input type="file" id="mapping-file-input" multiple name="mapping_files[]">
+      <input type="file"
+       id="mapping-file-input"
+       multiple
+       name="mapping_files[]"
+       accept=".asc,.tsv,.txt,.csv">
     </div>
   </div>
 
@@ -118,8 +130,8 @@
     <input type="file" id="meta-file-input" name="meta_files" accept=".txt,.tsv,.csv,.asc">
   </div>
 
-<p style="font-weight: 500; color: white; margin-top: 50px; text-align: left;">
-  The default measurement interval is set to 600s. If you want to specify specific time intervals, please upload the interval file below. 
+<p style="font-weight: 500; margin-top: 50px; text-align: left;">
+  The default measurement interval is set to 600s. If you want to specify specific time intervals, please upload the interval file below.
 </p>
 
     <!-- Interval Files Upload -->
@@ -128,7 +140,7 @@
     <input type="file" id="interval-file-input" name="interval_files" accept=".txt,.tsv,.csv,.asc">
   </div>
 
-  <input type="submit" value="Upload" class="upload-button" style="margin-top: 40px;">
+  <input type="submit" value="Upload and Continue" class="upload-button">
 </form>
 
 <% if flash.now[:alert] %>
@@ -139,29 +151,6 @@
   <div class="error"><%= flash.now[:error] %></div>
 <% end %>
 
-
-  <% if (@data_file_paths.present? &&
-      (@mapping_file_paths.present? || @meta_file_path.present?)) %>
-  <div class="notice">
-    <p>
-      <span class="success" style="color: green; font-weight: 500;">Files uploaded successfully! </span>
-    </p>
-    <div class="upload-notice" style="color: white; font-weight: light; text-align: left;">
-      <p>
-        <span class="current", style="font-size: 20px;">Currently uploaded data file(s): <%= @usr_data_file_names %></span>
-      </p>
-      <p>
-        <span class="current", style="font-size: 20px;">Currently uploaded mapping file(s): <%= @usr_mapping_file_names %></span>
-      </p>
-      <p>
-        <span class="current", style="font-size: 20px;">Currently uploaded meta file: <%= @usr_meta_file_name %></span>
-      </p>
-      <p>
-        <span class="current", style="font-size: 20px;">Currently uploaded interval file: <%= @usr_interval_file_name %></span>
-      </p>
-    </div>
-  </div>
-<% end %>
 
 <script>
 document.getElementById('meta-file-input').addEventListener('change', function(event) {
@@ -208,21 +197,64 @@ document.getElementById('meta-file-input').addEventListener('change', function(e
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    new Sortable(document.getElementById('data-files-list'), { animation: 150 });
-    new Sortable(document.getElementById('mapping-files-list'), { animation: 150 });
+    if (window.Sortable) {
+      new Sortable(document.getElementById('data-files-list'), { animation: 150 });
+      new Sortable(document.getElementById('mapping-files-list'), { animation: 150 });
+    }
 
     function handleFileInput(inputId, listId) {
       const input = document.getElementById(inputId);
       const list = document.getElementById(listId);
+      let selectedFiles = [];
 
-      input.addEventListener('change', () => {
+      function syncInputFiles() {
+        const dataTransfer = new DataTransfer();
+        selectedFiles.forEach(file => dataTransfer.items.add(file));
+        input.files = dataTransfer.files;
+      }
+
+      function renderFileList() {
         list.innerHTML = '';
-        Array.from(input.files).forEach(file => {
+        selectedFiles.forEach(file => {
           const li = document.createElement('li');
           li.className = 'sortable-item';
-          li.innerText = file.name;
+          li.style.display = 'flex';
+          li.style.justifyContent = 'space-between';
+          li.style.alignItems = 'center';
+          const nameSpan = document.createElement('span');
+          nameSpan.innerText = file.name;
+
+          const removeButton = document.createElement('button');
+          removeButton.type = 'button';
+          removeButton.innerText = 'x';
+          removeButton.setAttribute('aria-label', `Remove ${file.name}`);
+          removeButton.style.background = 'none';
+          removeButton.style.border = 'none';
+          removeButton.style.color = '#ff6b6b';
+          removeButton.style.cursor = 'pointer';
+          removeButton.style.fontSize = '18px';
+          removeButton.style.marginLeft = '10px';
+
+          removeButton.addEventListener('click', () => {
+            selectedFiles = selectedFiles.filter(selectedFile => selectedFile.name !== file.name);
+            syncInputFiles();
+            renderFileList();
+          });
+
+          li.appendChild(nameSpan);
+          li.appendChild(removeButton);
           list.appendChild(li);
         });
+      }
+
+      input.addEventListener('change', () => {
+        Array.from(input.files).forEach(file => {
+          if (!selectedFiles.some(selectedFile => selectedFile.name === file.name)) {
+            selectedFiles.push(file);
+          }
+        });
+        syncInputFiles();
+        renderFileList();
       });
     }
 
@@ -232,8 +264,8 @@ document.getElementById('meta-file-input').addEventListener('change', function(e
     // On form submission, capture file order
     const form = document.getElementById('upload-form');
     form.addEventListener('submit', (e) => {
-      const dataList = Array.from(document.querySelectorAll('#data-files-list .sortable-item')).map(el => el.innerText);
-      const mappingList = Array.from(document.querySelectorAll('#mapping-files-list .sortable-item')).map(el => el.innerText);
+      const dataList = Array.from(document.querySelectorAll('#data-files-list .sortable-item')).map(el => el.querySelector('span').innerText);
+      const mappingList = Array.from(document.querySelectorAll('#mapping-files-list .sortable-item')).map(el => el.querySelector('span').innerText);
 
       document.getElementById('ordered_data_files').value = JSON.stringify(dataList);
       document.getElementById('ordered_mapping_files').value = JSON.stringify(mappingList);
@@ -241,14 +273,6 @@ document.getElementById('meta-file-input').addEventListener('change', function(e
   });
 </script>
 
-  <% if (
-      @data_file_paths.present? &&
-      (
-        (@mapping_file_paths.present?) || (@meta_file_path.present?)
-      )
-    ) %>
-  <%= link_to "Next", 'selectanalyses', class: "next-button" %>
-  <% end %>
 <div class="background-space"></div>
 
 </div>
