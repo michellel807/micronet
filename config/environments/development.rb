@@ -62,6 +62,8 @@ Rails.application.configure do
   config.assets.quiet = true
 
   config.hosts << /[a-z0-9-]+\.ngrok\.io/
+  config.hosts << "micronet-01.oit.duke.edu"
+
 
   config.web_console.permissions = "172.21.0.1"
 
