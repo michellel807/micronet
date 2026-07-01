@@ -3,129 +3,110 @@
 *= require_tree .
 */
 
-/* for the feedbacks screen */
-* {
-  font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
-  font-weight: 300;
+/* Feedback screen */
+.feedbacksscreen {
+  color: var(--tx-1);
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
-.feedbacksscreen{
-  color: white;
-  background-image: linear-gradient(to top, #000750, #405fad);
 
-} 
 .feedbacksscreen h1 {
-  font-size: 50px;
-  margin-top: 20px;
-  margin-left: 20px;
-
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--tx-1);
+  margin: 28px 0 8px 20px;
 }
 
-.feedbacksscreen h3 {
-  font-size: 30px;
-  margin-top: 20px;
-  margin: auto;
-  margin-left: 20px;
+.feedbacksscreen h3 { font-size: 18px; font-weight: 600; margin: 16px 0 0 20px; }
+.feedbacksscreen p { font-size: 15px; line-height: 1.6; color: var(--tx-2); margin-left: 20px; }
+.feedbacksscreen footer { background: var(--surface); box-shadow: none; }
 
-}
-.feedbacksscreen p {
-  font-size: 25px;
-  margin-left: 20px;
+.additional-text { font-size: 14px; margin-left: 20px; }
+.option-label { font-size: 15px; font-weight: 600; }
+.field { margin-left: 20px; }
 
-}
-
-.background{
-  background-image: linear-gradient(to bottom, #000750, #000750);
-}
-
-.additional-text{
-  font-size: 20px;
-  margin-left: 20px;
-
-}
-
-.start-job-button {
-  margin: auto;
-  background-color: #000750;
-  padding: 60px;
-  margin-top: 30px;
-  border-radius: 6px;
-  color: white;
-  font-size: 50px;
-  text-decoration: none;
-  cursor: pointer;
-  border: none;
-  display: inline-block;
-  text-align: center;
-  filter: drop-shadow(3px 3px 4px #b4b4b4);
-  width: 500px;
-  border: none;
-  padding: 12px 48px 12px 24px;
-  border-radius: 4px;
+/* Inline action link/button */
+.actions {
+  margin: 0 0 10px 20px;
+  background: var(--duke);
+  padding: 9px 18px;
+  border-radius: var(--r-sm);
   color: #fff;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='30' viewBox='0 0 7.41 12'%3E%3Cpath d='M10,6,8.59,7.41,13.17,12,8.59,16.59,10,18l6-6Z' transform='translate(-8.59 -6)' fill='%23fff'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 24px center;
-}
-
-.next-button:hover {
-  background-color: #405fad;
-  color: white;
-  text-decoration: none;
-}
-
-.option-label {
-  font-size: 30px;
-}
-
-.feedbacksscreen footer{ 
-  background-color: #000750;
-  box-shadow: 0 0 15px 0 rgba(0,0,0,.8) inset;
-}
-
-.submit-button {
-  background-color: #000750;
-  padding: 5px 15px;
-  border-radius: 6px;
-  margin-bottom: 10px;
-  color: white;
-  font-size: 30px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
   border: none;
   display: inline-block;
   text-align: center;
-  align-self: center;
-  filter: drop-shadow(3px 3px 4px #b4b4b4);
-  margin-left: 20px;
+  transition: all 0.15s ease;
+}
+.actions:hover { background: var(--duke-dk); color: #fff; }
+
+/* Feedback card */
+.feedback-container {
+  color: var(--tx-1);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: var(--r-lg);
+  padding: 36px 40px 40px;
+  box-shadow: var(--sh-md);
+  border: 1px solid var(--border);
+  margin: 40px auto;
+  max-width: 720px;
+  width: calc(100% - 48px);
 }
 
-.submit-button:hover {
-  background-color: #405fad;
-  color: white;
-  text-decoration: none;
-}
-
-.field {
-  margin-left: 20px;
-}
-
-.actions{
-  margin-left: 20px;
-  background-color: #000750;
-  padding: 5px 15px;
-  border-radius: 6px;
-  margin-bottom: 10px;
-  color: white;
-  font-size: 30px;
-  font-weight: 500;
-  text-decoration: none;
-  cursor: pointer;
-  border: none;
-  display: inline-block;
+.feedback-container h1 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--tx-1);
   text-align: center;
-  align-self: center;
-  filter: drop-shadow(3px 3px 4px #b4b4b4);
-  margin-left: 20px;
+  margin: 0 0 8px;
 }
 
+.feedback-container p { font-size: 14px; padding: 6px 0; text-align: center; color: var(--tx-2); }
+
+.feedback-container label {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tx-2);
+  margin-top: 14px;
+  align-self: flex-start;
+}
+
+.feedback-container form { display: flex; flex-direction: column; width: 100%; max-width: 600px; }
+
+.feedback-container input[type="text"],
+.feedback-container input[type="email"],
+.feedback-container textarea,
+.feedback-container select {
+  width: 100%;
+  padding: 9px 12px;
+  margin-top: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  font-family: var(--font);
+  color: var(--tx-1);
+  background: var(--surface);
+  outline: none;
+  transition: all 0.15s;
+}
+
+.feedback-container input:focus,
+.feedback-container textarea:focus,
+.feedback-container select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(5,119,177,0.1);
+}
+
+.feedback-container textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
