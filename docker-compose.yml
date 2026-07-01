@@ -8,9 +8,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     environment:
-      # POSTGRES_DB: mydb
-      # POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: micronet_app_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
   web:
     build:
@@ -24,7 +22,7 @@ services:
       - bundle:/bundle
       - .:/app
     ports:
-      - "127.0.0.1:3000:3000"
+      - "3000:3000"
     depends_on:
       - db
       - delayed_job
@@ -59,7 +57,22 @@ services:
       context: ./
       dockerfile: Dockerfile
 
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: nginx_reverse_proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt/live/micronet-01.oit.duke.edu:/etc/letsencrypt/live/micronet-01.oit.duke.edu:ro
+      - /etc/letsencrypt/archive/micronet-01.oit.duke.edu:/etc/letsencrypt/archive/micronet-01.oit.duke.edu:ro
+
 volumes:
+  letsencrypt:
+    external: true
   postgres-data:
   bundle:
   inbucket-storage:
+
