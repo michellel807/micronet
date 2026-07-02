@@ -1,36 +1,49 @@
 
-<div class = "welcomescreen">
+<div class="welcomescreen">
     <%= render "layouts/header" %>
 
-    <div class="column skinny">
-      </br>
-      <h1>WELCOME!</h1>
-      </br>
-      <p>
-        MicroNet is a webapp designed to help researchers visualize and model trends in microbial growth data. It utilizes a non-parametric modelling approach, implemented
-        via Gaussian Process regression, to estimate standard microbial growth parameters, and thus is particularly useful for cases in which growth deviates from the expected logistic or sigmoidal growth curves. 
-        Results are usually reported within a few hours, and an automated email will be sent to you once your results are ready.
-      </p>
-      <p>To begin, please submit the email you would like results to be sent to, then select “Begin Now” to start your analysis. </p>
-      </br>
+    <main class="welcome-main">
+      <section class="welcome-hero">
+        <span class="welcome-eyebrow">Schmid Lab · Duke University</span>
+        <h1>Model microbial growth with confidence</h1>
+        <p class="welcome-sub">
+          MicroNet helps researchers visualize and model trends in microbial growth data.
+          Using a non-parametric Gaussian Process regression approach, it estimates standard
+          growth parameters — even when growth deviates from expected logistic or sigmoidal curves.
+        </p>
+        <p class="welcome-note">
+          Results are typically reported within a few hours, with an automated email sent once
+          your analysis is ready.
+        </p>
 
-      <%= form_with url: "/", method: :post do |form|%>
-        <%= form.label :email, "Input Email:", class: "input_email"%>
-        <%= form.text_field :email, value: (params[:email] || session[:email]) %>
-        <%= form.submit "Begin Now!"%>
-      <% end %>
+        <div class="welcome-cta">
+          <%= form_with url: "/", method: :post, class: "welcome-form" do |form| %>
+            <label class="welcome-form-label" for="email">Where should we send your results?</label>
+            <div class="welcome-form-row">
+              <%= form.text_field :email,
+                    value: (params[:email] || session[:email]),
+                    placeholder: "you@institution.edu",
+                    class: "welcome-email-input" %>
+              <%= form.submit "Begin analysis", class: "ds-btn ds-btn-accent ds-btn-lg" %>
+            </div>
+          <% end %>
+          <div class="welcome-helprow">
+            <%= link_to 'Need help getting started?', "help", id: "help_link" %>
+          </div>
+          <div class="email-alert"><%= flash[:notice] %></div>
+        </div>
 
-      <div class="email-alert"><%=flash[:notice]%></div>
-      <%= link_to 'Need help?', "help", id: "help_link" %>
-    </div>
-    
-    <% if flash[:alert].present? && flash[:alert] != "Need help?" %>      
-      <div class="unsavedjob-alert"><%=flash[:alert]%></div>  
-      <div class="button-group">
-      <%= button_to "Yes", resume_job_path, method: :post %>
-      <%= button_to "No", create_job_path, method: :post %>
-      </div>
-    <% end %>
+        <% if flash[:alert].present? && flash[:alert] != "Need help?" %>
+          <div class="welcome-resume">
+            <p class="unsavedjob-alert"><%= flash[:alert] %></p>
+            <div class="button-group">
+              <%= button_to "Resume", resume_job_path, method: :post, class: "ds-btn ds-btn-primary" %>
+              <%= button_to "Start new", create_job_path, method: :post, class: "ds-btn ds-btn-secondary" %>
+            </div>
+          </div>
+        <% end %>
+      </section>
+    </main>
 
     <%= render "layouts/footer" %>
 </div>
