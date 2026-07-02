@@ -1,4 +1,4 @@
-version: '3'
+
 services:
 
   db:
@@ -56,6 +56,16 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
+      target: deps
+    env_file:
+      - .env
+    command: ["rails", "test"] # or `rails test` if using Minitest
+    volumes:
+      - .:/app
+      - bundle:/bundle
+    depends_on:
+      - db
+      - local-email
 
   nginx-proxy:
     image: nginx:alpine
