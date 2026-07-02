@@ -15,8 +15,7 @@
  */
 
  * {
-    font-family: 'Open Sans',Roboto,'Helvetica Neue',Helvetica,sans-serif;
-    font-weight: 300;
+    font-family: var(--font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
     overscroll-behavior: none;
   }
 
