@@ -13,34 +13,36 @@ plt.rcParams.update({
 
 def plot_gp_data(derived_path, subset_name=None):
     data = pd.read_csv(os.path.join(derived_path, "plot_gp_data.txt"), sep='\t', encoding='utf-8')
-    col = data.columns[1]
-    data = data[[col, 'Time', 'mu', 'Sigma']]
-    conditions = data[col].unique()
+    print("COLUMNS:")
+    print(data.columns.tolist())
 
     # Set up the plot
     plt.figure(figsize=(10, 6))
-
-    # Loop through each condition
-    for condition in conditions:
-        # Filter the data for this condition
-        cond_data = data[data[col] == condition].sort_values(by='Time')
-        
-        # Extract values
-        time = cond_data['Time'].values
-        mean = cond_data['mu'].values
-        std_dev = np.sqrt(cond_data['Sigma'].values)
-
-        # Confidence interval (95%)
-        z = 1.96
-        lower = mean - z * std_dev
-        upper = mean + z * std_dev
-
-        # Plot mean line
-        plt.plot(time, mean, label=f'{condition} Mean')
-        
-        # Plot confidence interval
-        plt.fill_between(time, lower, upper, alpha=0.2)
-
+    if 'mu' in data.columns and 'Sigma' in data.columns:
+        #pooled option
+        col = data.columns[1]
+        data = data[[col, 'Time', 'mu', 'Sigma']]
+        conditions = data[col].unique()
+        for condition in conditions:
+            cond_data = data[data[col] == condition].sort_values(by='Time')
+            # Extract values
+            time = cond_data['Time'].values
+            mean = cond_data['mu'].values
+            std_dev = np.sqrt(cond_data['Sigma'].values)
+            # Confidence interval (95%)
+            z = 1.96
+            lower = mean - z * std_dev
+            upper = mean + z * std_dev
+            # Plot mean line
+            plt.plot(time, mean, label=f'{condition} Mean')
+            # Plot confidence interval
+            plt.fill_between(time, lower, upper, alpha=0.2)
+            # Filter the data for this condition
+    else:
+    # non-pooled option
+        for sample in data['Sample_ID'].unique():
+            cond_data = data[data['Sample_ID'] == sample].sort_values(by='Time')
+            plt.plot (cond_data['Time'], cond_data['OD_Fit'], label=sample)
     # Final touches
     plt.xlabel('Time')
     plt.ylabel('Predicted OD')

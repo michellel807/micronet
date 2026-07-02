@@ -30,7 +30,9 @@
 DEFAULT_ADMIN_USERNAME = 'admin'
 DEFAULT_ADMIN_PASSWORD = 'admin123'
 
-Admin.create(
-  username: DEFAULT_ADMIN_USERNAME,
-  password: DEFAULT_ADMIN_PASSWORD
-) unless Admin.exists?(username: DEFAULT_ADMIN_USERNAME)
+admin = Admin.find_or_initialize_by(username: DEFAULT_ADMIN_USERNAME)
+
+admin.password = DEFAULT_ADMIN_PASSWORD
+admin.password_confirmation = DEFAULT_ADMIN_PASSWORD
+
+admin.save!
