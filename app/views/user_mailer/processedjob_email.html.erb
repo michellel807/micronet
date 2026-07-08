@@ -1,8 +1,79 @@
-<div class = "general-white-block-email">
-    <body class = "email">
-      <h1>MicroNet Analysis Results</h1>
-      <p>Hello,<p>
-        <p>Attached is your final analyzed data.</p>
-        <p>For more information, check out the papers under the Resources page of MicroNet. Thank you for using MicroNet!</p>
-    </body>
+<div class="general-white-block-email">
+  <body class="email">
+
+    <h1>MicroNet Analysis Results</h1>
+
+    <p>Hello,</p>
+
+    <p>
+      Attached are the results from your completed MicroNet analysis.
+    </p>
+
+    <h3>Your Time Step Setting</h3>
+
+    <p>
+      You selected a Gaussian Process time step size of
+      <strong><%= @requested_tss %></strong> for this job.
+      <% if @requested_tss == Job::DEFAULT_TSS %>
+        This is the default setting and keeps the original time-point
+        resolution unless MicroNet needs to retry an analysis.
+      <% else %>
+        This tells MicroNet to fit the model using fewer time points, which can
+        lower memory use but may reduce temporal resolution.
+      <% end %>
+    </p>
+
+    <% if @optimized_tss.present? %>
+
+      <h3>MicroNet Adjusted This Job</h3>
+
+      <p>
+        MicroNet first tried your selected setting. The
+        <%= @optimized_tss.size == 1 ? "analysis below needed" : "analyses below needed" %>
+        a larger time step size to finish, so MicroNet reran
+        <%= @optimized_tss.size == 1 ? "it" : "them" %> and completed
+        <%= @optimized_tss.size == 1 ? "it" : "them" %> successfully.
+      </p>
+
+      <ul>
+        <% @optimized_tss.each do |analysis, info| %>
+
+          <li>
+            <strong><%= analysis %></strong><br>
+            Started with time step size:
+            <strong><%= info[:requested] %></strong><br>
+            Completed using time step size:
+            <strong><%= info[:used] %></strong>
+
+            <% if info[:high_impact] %>
+              <br>
+              <em>
+                This is a high time step size, so subtle or rapid growth
+                changes may be harder to detect.
+              </em>
+            <% end %>
+          </li>
+
+        <% end %>
+      </ul>
+
+      <p>
+        This does not change your uploaded data or the groups you selected. It
+        only means the listed analysis was fit on a coarser set of time points
+        to reduce memory use. If you need the highest temporal resolution,
+        rerun with a smaller time step size on a system with more memory.
+      </p>
+
+    <% end %>
+
+    <p>
+      For more information, check out the papers under the Resources page
+      of MicroNet.
+    </p>
+
+    <p>
+      Thank you for using MicroNet!
+    </p>
+
+  </body>
 </div>
