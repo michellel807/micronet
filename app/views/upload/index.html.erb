@@ -130,21 +130,82 @@
     <input type="file" id="meta-file-input" name="meta_files" accept=".txt,.tsv,.csv,.asc">
   </div>
 
-<p style="font-weight: 500; margin-top: 50px; text-align: left;">
-  The default measurement interval is set to 600s. If you want to specify specific time intervals, please upload the interval file below.
-</p>
+  <% selected_tss_value = @gp_time_step_size.presence || Job::DEFAULT_TSS %>
+  <% show_tss_options = selected_tss_value.to_s != Job::DEFAULT_TSS.to_s %>
 
-    <!-- Interval Files Upload -->
-  <div style="margin-top: 30px;">
-    <h2>Interval File (Optional)</h2>
-    <input type="file" id="interval-file-input" name="interval_files" accept=".txt,.tsv,.csv,.asc">
+  <div class="optional-upload-settings">
+    <div style="flex: 1; min-width: 0;">
+      <h2>Interval File (Optional)</h2>
+      <p>
+        The default measurement interval is 600s. Upload an interval file only
+        if your measurements use specific or non-default time intervals.
+      </p>
+      <input type="file" id="interval-file-input" name="interval_files" accept=".txt,.tsv,.csv,.asc">
+    </div>
+
+    <div style="flex: 1; min-width: 0;">
+      <h2>Data Thinning (Optional)</h2>
+      <p>
+        MicroNet uses a Gaussian Process time step size of
+        <strong><span id="gp-time-step-size-current"><%= selected_tss_value %></span></strong>.
+        The default value is <%= Job::DEFAULT_TSS %>, which keeps the full
+        time-point resolution.
+      </p>
+
+      <div
+        class="tss-control-shell"
+        id="tss-control-shell"
+        style="<%= show_tss_options ? 'display: none;' : '' %>"
+      >
+        <button
+          type="button"
+          id="show-tss-options"
+          class="tss-toggle-button"
+        >
+          Change
+        </button>
+        <span class="tss-control-status">Default thinning setting</span>
+      </div>
+
+      <div id="gp-time-step-size-options" class="tss-options-panel" style="<%= show_tss_options ? '' : 'display: none;' %>">
+        <label for="gp-time-step-size" class="field-label">
+        Time step size
+        </label>
+
+        <input
+          type="text"
+          id="gp-time-step-size"
+          name="gp_time_step_size"
+          value="<%= selected_tss_value %>"
+          inputmode="numeric"
+          pattern="[1-9][0-9]*"
+          autocomplete="off"
+          required
+          class="tss-number-input"
+        >
+
+        <p style="margin-top: 10px;">
+          Larger values use fewer time points, which can reduce memory use but
+          may affect interpretation of rapid growth dynamics. MicroNet will ask
+          you to choose a lower value if it leaves fewer than
+          <%= Job::MIN_GP_TIME_POINTS %> time points for fitting.
+        </p>
+
+        <p style="margin-top: 10px;">
+          If the selected value still runs out of memory, MicroNet will retry up
+          to three more times, increasing the time step size by 2 each time
+          while keeping at least <%= Job::MIN_GP_TIME_POINTS %> time points for
+          fitting.
+        </p>
+      </div>
+    </div>
   </div>
 
   <input type="submit" value="Upload and Continue" class="upload-button">
 </form>
 
-<% if flash.now[:alert] %>
-  <div class="error"><%= flash.now[:alert] %></div>
+<% if flash[:alert] %>
+  <div class="error"><%= flash[:alert] %></div>
 <% end %>
 
 <% if flash.now[:error] %>
@@ -260,6 +321,42 @@ document.getElementById('meta-file-input').addEventListener('change', function(e
 
     handleFileInput('data-file-input', 'data-files-list');
     handleFileInput('mapping-file-input', 'mapping-files-list');
+
+    const gpTimeStepInput = document.getElementById('gp-time-step-size');
+    const gpTimeStepPanel = document.getElementById('gp-time-step-size-options');
+    const gpTimeStepButton = document.getElementById('show-tss-options');
+    const gpTimeStepShell = document.getElementById('tss-control-shell');
+    const gpTimeStepCurrent = document.getElementById('gp-time-step-size-current');
+
+    if (gpTimeStepButton && gpTimeStepPanel) {
+      gpTimeStepButton.addEventListener('click', () => {
+        gpTimeStepPanel.style.display = 'block';
+        if (gpTimeStepShell) {
+          gpTimeStepShell.style.display = 'none';
+        }
+        if (gpTimeStepInput) {
+          gpTimeStepInput.focus();
+        }
+      });
+    }
+
+    if (gpTimeStepInput) {
+      gpTimeStepInput.addEventListener('input', () => {
+        gpTimeStepInput.value = gpTimeStepInput.value.replace(/\D/g, '').replace(/^0+/, '');
+        if (gpTimeStepCurrent) {
+          gpTimeStepCurrent.textContent = gpTimeStepInput.value || '<%= Job::DEFAULT_TSS %>';
+        }
+      });
+
+      gpTimeStepInput.addEventListener('blur', () => {
+        if (gpTimeStepInput.value === '') {
+          gpTimeStepInput.value = '<%= Job::DEFAULT_TSS %>';
+        }
+        if (gpTimeStepCurrent) {
+          gpTimeStepCurrent.textContent = gpTimeStepInput.value;
+        }
+      });
+    }
 
     // On form submission, capture file order
     const form = document.getElementById('upload-form');

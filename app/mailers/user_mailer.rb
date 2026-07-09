@@ -1,8 +1,13 @@
 class UserMailer < ApplicationMailer
   default from: "noreply@duke.edu"
-  def processedjob_email(file_paths, job)
+  def processedjob_email(file_paths, job, used_tss = {}, requested_tss = Job::DEFAULT_TSS, analysis_failures = [])
     @user = User.find(job.user_id)
     @file_names = file_paths.map { |fp| File.basename(fp) }
+    @used_tss = used_tss || {}
+    @requested_tss = requested_tss.to_s.to_i
+    @requested_tss = Job::DEFAULT_TSS if @requested_tss < Job::DEFAULT_TSS
+    @optimized_tss = @used_tss.select { |_analysis, info| info[:retried] }
+    @analysis_failures = analysis_failures || []
 
     file_paths.each do |file_path|
       if File.exist?(file_path)
@@ -52,4 +57,3 @@ class UserMailer < ApplicationMailer
     mail(to: 'hrd11@duke.edu', subject: 'Schmid Lab Microbial Growth Model: Job Submitted')
   end
 end
-

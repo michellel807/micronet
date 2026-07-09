@@ -773,7 +773,7 @@
     <%# Stat cards — also serve as tab navigation %>
     <%
       _active_jobs    = @jobs.select { |j| ["Job submitted","Analyzing..."].include?(j.status) }
-      _completed_jobs = @jobs.select { |j| j.status == "Completed"  && j.updated_at >= 7.days.ago }
+      _completed_jobs = @jobs.select { |j| ["Completed", "Completed with warnings"].include?(j.status) && j.updated_at >= 7.days.ago }
       _failed_jobs    = @jobs.select { |j| j.status == "Failed"     && j.updated_at >= 7.days.ago }
       _cancelled_jobs = @jobs.select { |j| j.status == "Cancelled"  && j.updated_at >= 7.days.ago }
     %>
@@ -827,7 +827,7 @@
                        when "In Progress"    then "draft"
                        when "Job submitted"  then "queued"
                        when "Analyzing..."   then "running"
-                       when "Completed"      then "completed"
+                       when "Completed", "Completed with warnings" then "completed"
                        when "Failed"         then "failed"
                        when "Cancelled"      then "cancelled"
                        else "draft" end
