@@ -177,6 +177,90 @@
 .meta-description,
 .interval-description { margin-top: 40px; text-align: left; }
 
+.optional-upload-settings {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  align-items: flex-start;
+  margin-top: 50px;
+}
+
+.optional-upload-settings > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.tss-control-shell {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 320px;
+  min-height: 94px;
+  box-sizing: border-box;
+  color: var(--tx-2);
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--r-md);
+  padding: 14px;
+  transition: all 0.15s;
+}
+
+.tss-control-shell:hover {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.tss-toggle-button {
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--duke);
+  border: none;
+  border-radius: var(--r-sm);
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.tss-toggle-button:hover { background: var(--duke-dk); }
+
+.tss-control-status {
+  font-size: 13px;
+  color: var(--tx-2);
+}
+
+.tss-options-panel {
+  width: 100%;
+  max-width: 360px;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.tss-number-input {
+  width: 120px;
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--tx-1);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  box-sizing: border-box;
+}
+
+.tss-number-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
 .bold-text { font-weight: 600; }
 
 #meta-file-preview {
@@ -250,5 +334,6 @@ table tr td:first-child { font-weight: 600; background: var(--surface); }
 @media (max-width: 640px) {
   .uploadscreen h1 { font-size: 23px; }
   #upload-form > div[style*="flex"] { flex-direction: column; align-items: stretch; }
+  .optional-upload-settings { flex-direction: column; gap: 24px; }
   .sortable-list, .uploadscreen input[type="file"], #meta-file-preview { width: 100% !important; max-width: 100%; }
 }

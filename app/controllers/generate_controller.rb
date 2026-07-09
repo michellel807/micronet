@@ -54,7 +54,8 @@ class GenerateController < ApplicationController
       session[:compare_finalsubset],
       session[:heatmap_value],
       session[:heatmap_x],
-      session[:heatmap_y]
+      session[:heatmap_y],
+      session[:gp_time_step_size] || Job::DEFAULT_TSS
     ))
     puts "beginning analysis"
     @job.update(status: "Job submitted")
