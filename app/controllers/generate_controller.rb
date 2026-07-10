@@ -9,20 +9,20 @@ class GenerateController < ApplicationController
     @pool_options_string = "'#{ @pool_options.join(",") }'"
   end
   session[:pool_options_string] = @pool_options_string
-  puts "@pool_replicates is #{@pool_replicates}"
-  puts "@pool_options_string is #{@pool_options_string}"
-  puts "session[:pool_options_string] is #{session[:pool_options_string]}"
-  puts"session[:chart_types] is #{session[:chart_types]}"
-  puts "test_finalsubset is #{session[:test_finalsubset]}"
-  puts "hypothesis is #{session[:hypothesis]}"
-  puts "compare_parameters_pool is #{session[:compare_parameters_pool]}"
-  puts "compare_finalsubset is #{session[:compare_finalsubset]}"
-  puts "gp_pool_by_column is #{session[:gp_pool_by_column]}"
-  puts "gp_subset_choice is #{session[:gp_subset_choice]}" 
-  puts "gp_finalsubset is #{session[:gp_finalsubset]}"
-  puts "heatmap_value is #{session[:heatmap_value]}"
-  puts "heatmap_x is #{session[:heatmap_x]}"
-  puts "heatmap_y is #{session[:heatmap_y]}"
+  logger.debug "@pool_replicates is #{@pool_replicates}"
+  logger.debug "@pool_options_string is #{@pool_options_string}"
+  logger.debug "session[:pool_options_string] is #{session[:pool_options_string]}"
+  logger.debug "session[:chart_types] is #{session[:chart_types]}"
+  logger.debug "test_finalsubset is #{session[:test_finalsubset]}"
+  logger.debug "hypothesis is #{session[:hypothesis]}"
+  logger.debug "compare_parameters_pool is #{session[:compare_parameters_pool]}"
+  logger.debug "compare_finalsubset is #{session[:compare_finalsubset]}"
+  logger.debug "gp_pool_by_column is #{session[:gp_pool_by_column]}"
+  logger.debug "gp_subset_choice is #{session[:gp_subset_choice]}"
+  logger.debug "gp_finalsubset is #{session[:gp_finalsubset]}"
+  logger.debug "heatmap_value is #{session[:heatmap_value]}"
+  logger.debug "heatmap_x is #{session[:heatmap_x]}"
+  logger.debug "heatmap_y is #{session[:heatmap_y]}"
   
   end
 
@@ -36,7 +36,7 @@ class GenerateController < ApplicationController
     end
 
     @job.deleteoldfiles
-    puts "old files deleted"
+    logger.debug "old files deleted"
     @job.sendconfirm
     @job.sendadmin
 
@@ -57,9 +57,9 @@ class GenerateController < ApplicationController
       session[:heatmap_y],
       session[:gp_time_step_size] || Job::DEFAULT_TSS
     ))
-    puts "beginning analysis"
+    logger.debug "beginning analysis"
     @job.update(status: "Job submitted")
-    puts "Job status is #{@job.status}"
+    logger.debug "Job status is #{@job.status}"
     
   respond_to do |format|
     format.html { redirect_to '/generate'}

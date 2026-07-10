@@ -6,7 +6,7 @@ def delete_files
   # Clear data
   @job = Job.find_by(id: session[:current_user_id])
   @job&.clear_uploads!
-  puts "files deleted"
+  logger.debug "files deleted"
   # Clear session variables
   session[:data_file_paths] = nil
   session[:mapping_file_paths] = nil
@@ -23,14 +23,14 @@ def delete_files
   @interval_file_path = session[:interval_file_path]
   @gp_time_step_size = session[:gp_time_step_size] || Job::DEFAULT_TSS
 
-  puts "Session[:data_file_paths] is #{session[:data_file_paths] }"
-  puts "Session[:mapping_file_paths] is #{session[:mapping_file_paths] }"
-  puts "Session[:meta_file_path] is #{session[:meta_file_path] }"
-  puts "Session[:interval_file_path] is #{session[:interval_file_path] }"
-  puts "@data_file_paths is #{@data_file_paths}"
-  puts "@mapping_file_paths is #{@mapping_file_paths}"
-  puts "@meta_file_path is #{@meta_file_path}"
-  puts "@interval_file_path is #{@interval_file_path}"
+  logger.debug "Session[:data_file_paths] is #{session[:data_file_paths] }"
+  logger.debug "Session[:mapping_file_paths] is #{session[:mapping_file_paths] }"
+  logger.debug "Session[:meta_file_path] is #{session[:meta_file_path] }"
+  logger.debug "Session[:interval_file_path] is #{session[:interval_file_path] }"
+  logger.debug "@data_file_paths is #{@data_file_paths}"
+  logger.debug "@mapping_file_paths is #{@mapping_file_paths}"
+  logger.debug "@meta_file_path is #{@meta_file_path}"
+  logger.debug "@interval_file_path is #{@interval_file_path}"
   redirect_to '/upload', notice: 'No files currently uploaded.'
 
 end
@@ -345,10 +345,6 @@ end
 
 
 require 'fileutils'
-
-#at_exit do
-#  UploadController.new.delete_files
-# end
 
 def normalize_gp_time_step_size(value)
     raw_value = value.to_s.strip
