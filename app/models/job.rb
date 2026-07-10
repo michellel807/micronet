@@ -413,6 +413,13 @@ class Job < ApplicationRecord
       file_names += @heatmap_plot_paths if @heatmap_plot_paths.present?
 
       if file_names.present?
+        # Don't overwrite with "Completed" if job was cancelled by admin
+        self.reload
+        if self.status == "Cancelled"
+          logger.info("Job #{id} was cancelled by admin during analysis; not marking Completed or emailing results.")
+          return
+        end
+
         self.status = @analysis_failures.present? ? "Completed with warnings" : "Completed"
         self.end_time = DateTime.now
         save

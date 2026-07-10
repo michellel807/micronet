@@ -1,6 +1,5 @@
 Rails.application.routes.draw do
   resources :feedbacks
-  resources :jobs
 
   # Other routes
 
@@ -21,10 +20,6 @@ Rails.application.routes.draw do
   get '/uploads/jobs/:job_id/figures/:filename', to: 'files#serve_image', as: 'serve_job_image', format: false
   get '/uploads/userexpt/figures/:filename', to: 'files#serve_image', as: 'serve_image', format: false
   get '/jobs/:job_id/downloads/figures/:filename', to: 'files#download', as: 'download_job_figure', format: false
-  get "/confirm", to: "confirm#index"
-  post "/confirm", to: "confirm#final"
-  post "/confirm/update", to: "confirm#update"
-  get "/jobs/:id", to: "jobs#show"
   get '/resources', to: 'resources#index'
   get "/help", to: "help#index"
   get "/admin", to: "admin#login"
@@ -43,8 +38,8 @@ Rails.application.routes.draw do
   scope '/admin' do
     get 'login', to: 'admin#login'
     post 'authenticate', to: 'admin#authenticate_admin', as: 'authenticate_admin'
+    # Dispatch target for admin_logout_path (namespace helper below); keep.
     delete 'logout', to: 'admin#logout'
-    resources :jobs, module: 'admin', only: [:index, :destroy]
   end
 
   namespace :admin do
