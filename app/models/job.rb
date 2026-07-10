@@ -1,29 +1,10 @@
-#!/usr/bin/env ruby
-# require 'logger'
-# LOGGER = Logger.new( 'log/log.txt', 'daily' )
-
-
 class Job < ApplicationRecord
   belongs_to :user
   attr_accessor :title
 
-  def upload_root
-    Rails.root.join("private", "uploads", "jobs", id.to_s)
-  end
-
-  def data_dir = upload_root.join("data")
-  def mapping_dir = upload_root.join("mapping")
-  def summary_dir = upload_root.join("summary")
-  def derived_dir = upload_root.join("derived")
-  def models_dir = upload_root.join("models")
-  def figures_dir = upload_root.join("figures")
-  def parameters_dir = upload_root.join("parameters")
-  def ensure_upload_directories!
-    [data_dir, mapping_dir, parameters_dir, figures_dir, summary_dir, derived_dir, models_dir].each { |d| FileUtils.mkdir_p(d) }
-  end
-  def clear_uploads!
-    FileUtils.rm_rf(upload_root)
-  end
+  # Reclaim the job's upload folder whenever the record is destroyed, so admin
+  # deletes (and user-cascade deletes) don't leave orphaned files on disk.
+  before_destroy :clear_uploads!
 
   # Configuration constants
   MAX_ACTIVE_JOBS_PER_USER = 3
@@ -175,6 +156,24 @@ class Job < ApplicationRecord
     "• Run the analysis on a system with additional computational memory."
   end
 
+  # Raise the friendly out-of-memory message if the last shelled-out command
+  # was killed for exceeding memory (exit 137/139) or terminated by a signal.
+  def raise_if_memory_failure(analysis_label)
+    return unless MEMORY_FAILURE_EXIT_CODES.include?($?.exitstatus) || $?.signaled?
+
+    raise memory_failure_message(analysis_label)
+  end
+
+  # A mid-run checkpoint save that must never abort the whole analysis. A blip
+  # here (DB connection, lock conflict) is logged and swallowed so that already
+  # completed analyses still reach the results-assembly and email step. The
+  # authoritative status saves at the end of analyze remain fatal on purpose.
+  def checkpoint_save
+    save
+  rescue => e
+    logger.warn("[checkpoint] intermediate save failed, continuing: #{e.message}")
+  end
+
   def run_analysis_step(analysis_name)
     yield
   rescue => e
@@ -266,16 +265,16 @@ class Job < ApplicationRecord
           pool_by_flag = pool_by_clean.present? && pool_by_clean != "None" ? "--pool-by '#{pool_by_clean}'" : ""
           if @gp_subset_choice == "yes"
             unless run_with_tss_retry("amiga fit -i #{upload_root} -s #{gp_finalsubset} #{pool_by_flag} --save-gp-data -o plot","Gaussian Process Plot", @requested_tss)
-              raise memory_failure_message("The Gaussian Process Plot analysis") if MEMORY_FAILURE_EXIT_CODES.include?($?.exitstatus) || $?.signaled?
+              raise_if_memory_failure("The Gaussian Process Plot analysis")
               raise "The Gaussian Process Plot analysis failed. Please check that your input data or selected conditions are correct."
             end
           else
             unless run_with_tss_retry("amiga fit -i #{upload_root} #{pool_by_flag} --save-gp-data -o plot","Gaussian Process Plot", @requested_tss)
-              raise memory_failure_message("The Gaussian Process Plot analysis") if MEMORY_FAILURE_EXIT_CODES.include?($?.exitstatus) || $?.signaled?
+              raise_if_memory_failure("The Gaussian Process Plot analysis")
               raise "The Gaussian Process Plot analysis failed. Please check that your input data or selected conditions are correct."
             end
           end
-          raise memory_failure_message("The Gaussian Process Plot analysis") if MEMORY_FAILURE_EXIT_CODES.include?($?.exitstatus) || $?.signaled?
+          raise_if_memory_failure("The Gaussian Process Plot analysis")
           Python.exec("lib/scripts/otherscripts/gpplot.py #{derived_dir} #{gp_finalsubset}")
           gp_plot_path = derived_dir.join('gp_plot.pdf')
           gp_plot_data = derived_dir.join('plot_gp_data.txt')
@@ -286,34 +285,23 @@ class Job < ApplicationRecord
         end
       end
 
-      if @selected_chart_types.include?('fit_stats') && @pool_replicates == "no"
+      if @selected_chart_types.include?('fit_stats') && %w[yes no].include?(@pool_replicates)
         run_analysis_step("Fit Statistics") do
-          unless run_with_tss_retry("amiga fit -i #{upload_root} -o fit", "Fit Statistics", @requested_tss)
-            raise memory_failure_message("The Fit Statistics analysis") if MEMORY_FAILURE_EXIT_CODES.include?($?.exitstatus) || $?.signaled?
-            raise "The Fit Statistics analysis failed."
-          end
-          fit_summary_path = summary_dir.join('fit_summary_modified.txt')
-          raise memory_failure_message("The Fit Statistics analysis") if MEMORY_FAILURE_EXIT_CODES.include?($?.exitstatus) || $?.signaled?
-          Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
-          raise "The fit statistics analysis failed" unless File.exist?(fit_summary_path)
-          @fit_stats_paths = Dir.glob(summary_dir.join('fit_summary_modified.txt'))
-          logger.debug("done with fit_stats yes ...")
-        end
-      end
+          pool_flag = @pool_replicates == "yes" ? "--pool-by '#{pool_options_string}'" : ""
 
-      if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes"
-        run_analysis_step("Fit Statistics") do
-          unless run_with_tss_retry("amiga fit -i #{upload_root} --pool-by '#{pool_options_string}' -o fit", "Fit Statistics", @requested_tss)
-            raise "Your dataset is too large for the fit statistics analysis. Please try uploading a smaller dataset." if MEMORY_FAILURE_EXIT_CODES.include?($?.exitstatus) || $?.signaled?
+          unless run_with_tss_retry("amiga fit -i #{upload_root} #{pool_flag} -o fit", "Fit Statistics", @requested_tss)
+            raise_if_memory_failure("The Fit Statistics analysis")
+            raise "The Fit Statistics analysis failed. Please check that your input data or selected conditions are correct."
           end
-          puts "AMIGA EXIT STATUS = #{$?.exitstatus}"
-          puts "fit_summary exists? #{File.exist?(summary_dir.join('fit_summary.txt'))}"
-          puts Dir.glob(summary_dir.join('*'))
+
           Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
-          fit_stats_path = summary_dir.join('fit_summary_modified.txt')
-          raise "The fit statistics (pooling requested) analysis failed" if not File.exist?(fit_stats_path)
-          @fit_stats_paths = Dir.glob(summary_dir.join('fit_summary_modified.txt'))
-          logger.debug("done with fit_stats no ...")
+
+          fit_summary_path = summary_dir.join('fit_summary_modified.txt')
+          raise "The Fit Statistics analysis failed. Please check that your input data or selected conditions are correct." unless File.exist?(fit_summary_path)
+
+          fit_stats_path   = fit_summary_path # preserved: heatmap reuses the pooled fit summary
+          @fit_stats_paths = Dir.glob(fit_summary_path)
+          logger.debug("done with fit_stats (pool_replicates=#{@pool_replicates}) ...")
         end
       end
 
@@ -323,9 +311,9 @@ class Job < ApplicationRecord
             if @selected_chart_types.include?('fit_stats') && @pool_replicates == "yes" && fit_stats_path.present?
               heatmap_x = @heatmap_x == "Well positions" ? "Well" : @heatmap_x
               heatmap_y = @heatmap_y == "Well positions" ? "Well" : @heatmap_y
-              puts "HEATMAP VALUE = #{@heatmap_value}"
-              puts "HEATMAP X = #{@heatmap_x}"
-              puts "HEATMAP Y = #{@heatmap_y}"
+              logger.debug "HEATMAP VALUE = #{@heatmap_value}"
+              logger.debug "HEATMAP X = #{@heatmap_x}"
+              logger.debug "HEATMAP Y = #{@heatmap_y}"
               system("amiga fit -i #{upload_root} -o heatmap_fit")
               raise "Your dataset is too large for the heatmap analysis. Please try uploading a smaller dataset or selecting a different variable." if $?.exitstatus == 137
               Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('heatmap_fit_summary.txt')}")
@@ -335,9 +323,9 @@ class Job < ApplicationRecord
             else
               heatmap_x = @heatmap_x == "Well positions" ? "Well" : @heatmap_x
               heatmap_y = @heatmap_y == "Well positions" ? "Well" : @heatmap_y
-              puts "HEATMAP VALUE = #{@heatmap_value.inspect}"
-              puts "HEATMAP X = #{@heatmap_x.inspect}"
-              puts "HEATMAP Y = #{@heatmap_y.inspect}"
+              logger.debug "HEATMAP VALUE = #{@heatmap_value.inspect}"
+              logger.debug "HEATMAP X = #{@heatmap_x.inspect}"
+              logger.debug "HEATMAP Y = #{@heatmap_y.inspect}"
               system("amiga fit -i #{upload_root} -o fit")
               raise "Your dataset is too large for the heatmap analysis. Please try a smaller dataset or selecting a different variable." if $?.exitstatus == 137
               Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
@@ -363,10 +351,10 @@ class Job < ApplicationRecord
           FileUtils.rm_rf(models_dir.join('compare-parameters.txt'))
           #ensures the previous job files are removed before calling amiga
           unless run_with_tss_retry("amiga fit -i #{upload_root} --sample-posterior --pool-by #{compare_parameters_pool} -o compare","Compare Parameters", @requested_tss)
-            raise memory_failure_message("The Compare Parameters analysis") if MEMORY_FAILURE_EXIT_CODES.include?($?.exitstatus) || $?.signaled?
+            raise_if_memory_failure("The Compare Parameters analysis")
             raise "The Compare Parameters analysis failed. Please check that your input data or selected conditions are correct."
           end
-          puts "AMIGA EXIT STATUS = #{$?.inspect}"
+          logger.debug "AMIGA EXIT STATUS = #{$?.inspect}"
           unless File.exist?(summary_dir.join('compare_summary.txt'))
             raise "Your dataset is too large for the compare parameters analysis. Please try uploading a smaller dataset or selecting a different variable." if $?.exitstatus == 137 || $?.signaled?
             raise "The compare parameters analysis failed. Please check that your input data or selected conditions are correct."
@@ -379,29 +367,26 @@ class Job < ApplicationRecord
           compare_params_txts = Dir.glob(models_dir.join('*.txt'))
           logger.debug("compare_params_txts: #{compare_params_txts}")
           if compare_params_txts.empty? && fit_stats_sample_paths.empty?
-            raise memory_failure_message("The Compare Parameters analysis") if MEMORY_FAILURE_EXIT_CODES.include?($?.exitstatus) || $?.signaled?
+            raise_if_memory_failure("The Compare Parameters analysis")
             raise "The compare parameters analysis failed. Please check that your input data or selected conditions are correct."
           end
           @compare_params_paths = compare_params_txts
           logger.debug("done with compare-parameters ...")
         end
       end
-      save # Save the instance of Job
+      checkpoint_save # non-fatal mid-run checkpoint (see checkpoint_save)
 
       if @selected_chart_types.include?('test-hypothesis')
         run_analysis_step("Test Hypothesis") do
           FileUtils.rm_rf(models_dir.join('test-hypothesis'))
           #ensures the previous job files are removed before calling amiga
           unless run_with_tss_retry("amiga test -i #{upload_root} -s #{test_finalsubset} -y #{hypothesis} -o 'test-hypothesis'","Test Hypothesis", @requested_tss)
-            if MEMORY_FAILURE_EXIT_CODES.include?($?.exitstatus) || $?.signaled?
-              raise memory_failure_message("The Test Hypothesis analysis")
-
-            end
+            raise_if_memory_failure("The Test Hypothesis analysis")
           end
           test_hypothesis_txts = Dir.glob(models_dir.join('test-hypothesis', '*report.txt'))
           test_hypothesis_pdfs = Dir.glob(models_dir.join('test-hypothesis', '*.pdf'))
           if test_hypothesis_txts.empty? && test_hypothesis_pdfs.empty?
-            raise memory_failure_message("The Test Hypothesis analysis") if MEMORY_FAILURE_EXIT_CODES.include?($?.exitstatus) || $?.signaled?
+            raise_if_memory_failure("The Test Hypothesis analysis")
             raise "The test hypothesis failed. Please check that your input data or selected conditions are correct."
           end
           unless @used_tss["Test Hypothesis"].present?
@@ -414,7 +399,7 @@ class Job < ApplicationRecord
           logger.debug("done with test-hypothesis ...")
         end
       end
-      save # Save the instance of Job
+      checkpoint_save # non-fatal mid-run checkpoint (see checkpoint_save)
 
       file_names = []
       file_names += @raw_data_pdf_paths if @raw_data_pdf_paths.present?
@@ -458,19 +443,6 @@ class Job < ApplicationRecord
         self.end_time = DateTime.now
         save
       end
-    end
-  end
-
-  def serve_image
-    job = Job.find(params[:job_id])
-    filename = params[:filename]
-
-    file_path = job.upload_root.join("figures", filename)
-
-    if File.exist?(file_path) && File.file?(file_path)
-      send_file file_path, disposition: "inline"
-    else
-      render plain: "File not found", status: :not_found
     end
   end
 
