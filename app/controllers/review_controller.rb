@@ -30,15 +30,23 @@ class ReviewController < ApplicationController
 
       data_paths = Array(@data_file_paths)
       mapping_paths = Array(@mapping_file_paths)
-
+      
       data_paths.each_with_index do |data_file_path, index|
         mapping_file_path = mapping_paths[index]
-        result = compare_file_counts(data_file_path, mapping_file_path)
+
+        result =
+          if mapping_file_path.present?
+            compare_file_counts(data_file_path, mapping_file_path)
+          else
+            count_data_wells(data_file_path)
+          end
+
         data_well_count = result&.dig("data_well_count")
         invalid_files << File.basename(data_file_path) unless data_well_count == 96
       end
+    
 
-      logger.debug "INVALID FILES: #{invalid_files.inspect}"
+      puts "INVALID FILES: #{invalid_files.inspect}"
       unless invalid_files.empty?
         flash[:error] = "Each uploaded file must include 96 wells for Raw Data Plot analysis."
         redirect_to selectanalyses_path and return
@@ -64,16 +72,16 @@ class ReviewController < ApplicationController
       session[:heatmap_value] = params[:heatmap_value] || 'None'
       session[:heatmap_x] = params[:heatmap_x] || 'None'
       session[:heatmap_y] = params[:heatmap_y] || 'None'
-      logger.debug "Pool_replicates is #{session[:pool_replicates]}"
-      logger.debug "Pool_options is #{session[:pool_options]}"
-      logger.debug "Compare parameters subset is #{session[:compare_parameters_pool]}"
-      logger.debug "GP pool by column: #{session[:gp_pool_by_column]}"
-      logger.debug "GP subset choice: #{session[:gp_subset_choice]}"
-      logger.debug "GP subset column: #{session[:gp_subset_column]}"
-      logger.debug "GP subset values: #{session[:gp_conditions].inspect}"
-      logger.debug "Heatmap value: #{session[:heatmap_value]}"
-      logger.debug "Heatmap x-axis: #{session[:heatmap_x]}"
-      logger.debug "Heatmap y-axis: #{session[:heatmap_y]}"
+      puts "Pool_replicates is #{session[:pool_replicates]}"
+      puts "Pool_options is #{session[:pool_options]}"
+      puts "Compare parameters subset is #{session[:compare_parameters_pool]}"
+      puts "GP pool by column: #{session[:gp_pool_by_column]}"
+      puts "GP subset choice: #{session[:gp_subset_choice]}"
+      puts "GP subset column: #{session[:gp_subset_column]}"
+      puts "GP subset values: #{session[:gp_conditions].inspect}"
+      puts "Heatmap value: #{session[:heatmap_value]}"
+      puts "Heatmap x-axis: #{session[:heatmap_x]}"
+      puts "Heatmap y-axis: #{session[:heatmap_y]}"
 
     permitted = params.permit!
 
@@ -105,9 +113,9 @@ class ReviewController < ApplicationController
     @hypothesis = "'#{@hypothesis}'"
     session[:hypothesis] = @hypothesis
     session[:column_test] = @column_test
-    logger.debug "test_finalsubset is #{session[:test_finalsubset]}"
-    logger.debug "compare_finalsubset is #{session[:compare_finalsubset]}"
-    logger.debug "hypothesis is #{session[:hypothesis]}"
+    puts "test_finalsubset is #{session[:test_finalsubset]}"
+    puts "compare_finalsubset is #{session[:compare_finalsubset]}"
+    puts "hypothesis is #{session[:hypothesis]}"
 
     @gp_pool_by_column = session[:gp_pool_by_column]
     @gp_pool_by_column = "'#{@gp_pool_by_column}'"
@@ -116,7 +124,7 @@ class ReviewController < ApplicationController
     @gp_subset_choice = session[:gp_subset_choice]
     gp_finalsubset = "'#{@gp_subset_column}:#{@gp_conditions.join(",")}'"
     session[:gp_finalsubset] = gp_finalsubset
-    logger.debug "GP final subset is #{session[:gp_finalsubset]}"
+    puts "GP final subset is #{session[:gp_finalsubset]}"
 
     @heatmap_value = session[:heatmap_value]
     @heatmap_x = session[:heatmap_x]
