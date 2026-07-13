@@ -1,7 +1,5 @@
 class RawDataGenerator
   def self.generate_raw_data(upload_root)
-    # FileUtils.rm_rf(upload_root.join("figures")) # clear out figures first
-
     system("amiga summarize -i #{upload_root}")
 
     figures_dir = upload_root.join("figures")

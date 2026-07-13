@@ -3,9 +3,10 @@ require 'csv'
 class MappingFile
   attr_reader :file_path, :plate_id, :error_message
 
-  def initialize(file, upload_root:)
+  def initialize(file, upload_root:, output_basename: nil)
     @file = file
     @upload_root = upload_root
+    @output_basename = output_basename
     valid_extensions = ['.txt', '.asc', '.tsv', '.csv']
     if valid_extensions.include?(File.extname(file.original_filename).downcase)
       print("Valid mapping file detected: #{file.original_filename}\n")
@@ -51,7 +52,8 @@ class MappingFile
       end
     end
 
-    new_filename = "#{File.basename(plate_id, '.*')}.txt"
+    basename = @output_basename.presence || plate_id.presence || File.basename(original_filename, '.*')
+    new_filename = "#{File.basename(basename.to_s, '.*')}.txt"
     txt_file = directory_path.join(new_filename)
 
     if file_extension == '.csv'

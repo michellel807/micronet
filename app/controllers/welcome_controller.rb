@@ -43,6 +43,7 @@ class WelcomeController < ApplicationController
     # back to resuming whichever draft won.
     begin
       @job = Job.create!(user_id: @user.id, status: Job::DRAFT_STATUS)
+      Rails.logger.info("WelcomeController#create created draft job_id=#{@job.id} user_id=#{@user.id}")
     rescue ActiveRecord::RecordNotUnique
       @job = Job.prune_drafts(@user.id)
     end
@@ -74,6 +75,7 @@ class WelcomeController < ApplicationController
     Job.where(user_id: @user.id, status: Job::DRAFT_STATUS).destroy_all
 
     @job = Job.create(user_id: @user.id, status: Job::DRAFT_STATUS)
+    Rails.logger.info("WelcomeController#create_job created new draft job_id=#{@job.id} user_id=#{@user.id}")
     session[:current_user_id] = @job.id
 
     redirect_to "/upload/delete_files"
