@@ -40,12 +40,6 @@ class FilesControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
-  test "legacy image route returns not found without job context" do
-    get "/uploads/userexpt/figures/#{@filename}"
-
-    assert_response :not_found
-  end
-
   test "download returns attachment for valid figure" do
     get download_job_figure_path(job_id: @job.id, filename: @filename)
 

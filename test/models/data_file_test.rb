@@ -84,4 +84,12 @@ class DataFileTest < ActiveSupport::TestCase
     expected_name = File.basename(@mapping_file.path, '.*') + '.txt'
     assert_match(/#{Regexp.escape(expected_name)}\z/, data_file.file_path)
   end
+
+  test "uses explicit output basename when provided" do
+    file = fake_uploaded_file('data.csv', "Col1,Col2\nA,B\n")
+    data_file = DataFile.new(file, '2020-06-22-R1', upload_root: @upload_root, output_basename: 'file7')
+
+    assert data_file.valid?
+    assert_match(/file7\.txt\z/, data_file.file_path)
+  end
 end
