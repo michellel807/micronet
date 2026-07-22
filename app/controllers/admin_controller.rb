@@ -18,7 +18,7 @@ class AdminController < ApplicationController
         redirect_to admin_jobs_path
       else
         flash.now[:error] = 'Invalid username or password. Please try again.'
-        logger.debug "Incorrect login"
+        puts "Incorrect login"
         render :login
       end
     else

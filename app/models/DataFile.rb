@@ -3,9 +3,10 @@ require 'csv'
 class DataFile
   attr_reader :file_path, :error_message
 
-  def initialize(file, mapping_plate_id, upload_root:)
+  def initialize(file, mapping_plate_id, upload_root:, output_basename: nil)
     @file = file
     @upload_root = upload_root
+    @output_basename = output_basename
     valid_extensions = ['.txt', '.asc', '.tsv', '.csv']
     if valid_extensions.include?(File.extname(file.original_filename).downcase)
       @file_path = save_file(file, mapping_plate_id)
@@ -26,8 +27,8 @@ class DataFile
   
     original_filename = file.original_filename
     file_extension = File.extname(original_filename).downcase
-    base = mapping_plate_id.present? ? mapping_plate_id.to_s : original_filename
-    new_filename = "#{File.basename(mapping_plate_id.to_s, '.*')}.txt"
+    basename = @output_basename.presence || mapping_plate_id.presence || File.basename(original_filename, '.*')
+    new_filename = "#{File.basename(basename.to_s, '.*')}.txt"
     txt_file = directory_path.join(new_filename)
   
     if file_extension == '.csv'

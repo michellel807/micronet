@@ -27,4 +27,6 @@ module HannahsGrowthModelWebApp
 end
 
 
+# DEAD? Nothing reads python_conda_location; runtime uses /opt/uvenv/bin/python
+# (see app/models/python.rb) and /miniconda3 exists in neither Docker nor the cluster.
 Rails.configuration.python_conda_location="/miniconda3/envs/amigacondaenv/"

@@ -21,9 +21,10 @@ class Job < ApplicationRecord
   def models_dir = upload_root.join("models")
   def figures_dir = upload_root.join("figures")
   def parameters_dir = upload_root.join("parameters")
+  def pair_metadata_path = upload_root.join("pair_metadata.json")
 
   def ensure_upload_directories!
-    [data_dir, mapping_dir, parameters_dir, figures_dir, summary_dir, derived_dir, models_dir].each { |d| FileUtils.mkdir_p(d) }
+    [upload_root, data_dir, mapping_dir, parameters_dir, figures_dir, summary_dir, derived_dir, models_dir].each { |d| FileUtils.mkdir_p(d) }
   end
 
   def clear_uploads!

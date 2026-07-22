@@ -57,6 +57,7 @@ class GenerateController < ApplicationController
       session[:heatmap_y],
       session[:gp_time_step_size] || Job::DEFAULT_TSS
     ))
+    Rails.logger.info("GenerateController#run enqueued JobAnalyzer job_id=#{@job.id}")
     logger.debug "beginning analysis"
     @job.update(status: "Job submitted")
     logger.debug "Job status is #{@job.status}"
