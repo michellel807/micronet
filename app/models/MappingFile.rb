@@ -67,7 +67,31 @@ class MappingFile
       FileUtils.cp(file.path, txt_file)
     end
 
+    normalize_plate_columns!(txt_file, @output_basename.to_s, plate_id.to_s) if @output_basename.present?
+
     @plate_id = plate_id
     txt_file.to_s
+  end
+
+  def normalize_plate_columns!(txt_file, pair_key, original_plate_id)
+    first_line = File.open(txt_file, 'r:ISO-8859-1', &:gets).to_s
+    col_sep = first_line.include?("\t") ? "\t" : ","
+    table = CSV.read(txt_file, headers: true, col_sep: col_sep, encoding: 'ISO-8859-1:UTF-8')
+    headers = table.headers.compact
+    return unless headers.include?("Plate_ID")
+
+    if original_plate_id.present? && !headers.include?("Original_Plate_ID")
+      headers << "Original_Plate_ID"
+    end
+
+    CSV.open(txt_file, 'w', col_sep: "\t") do |csv|
+      csv << headers
+      table.each do |row|
+        row_hash = row.to_h
+        row_hash["Plate_ID"] = pair_key
+        row_hash["Original_Plate_ID"] = original_plate_id if headers.include?("Original_Plate_ID")
+        csv << headers.map { |header| row_hash[header] }
+      end
+    end
   end
 end

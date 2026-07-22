@@ -18,7 +18,6 @@ Rails.application.routes.draw do
   post '/generate', to: 'generate#run'
   post '/upload', to: 'upload#upload'
   get '/uploads/jobs/:job_id/figures/:filename', to: 'files#serve_image', as: 'serve_job_image', format: false
-  get '/uploads/userexpt/figures/:filename', to: 'files#serve_image', as: 'serve_image', format: false
   get '/jobs/:job_id/downloads/figures/:filename', to: 'files#download', as: 'download_job_figure', format: false
   get '/resources', to: 'resources#index'
   get "/help", to: "help#index"

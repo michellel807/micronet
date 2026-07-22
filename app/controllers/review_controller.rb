@@ -147,6 +147,20 @@ class ReviewController < ApplicationController
     nil
   end
 
+  def count_data_wells(data_file_path)
+    script_path = Rails.root.join("lib/scripts/otherscripts/comparedataandmapping.py").to_s
+    command = [python_executable, script_path, "--json", "--count-only", data_file_path.to_s]
+    stdout, stderr, status = Open3.capture3(*command)
+    Rails.logger.debug("count_data_wells status=#{status.exitstatus} stdout=#{stdout.inspect} stderr=#{stderr.inspect}")
+    JSON.parse(stdout)
+  rescue JSON::ParserError => e
+    Rails.logger.error("Failed to parse count_data_wells JSON for #{data_file_path}: #{e.message}")
+    nil
+  rescue => e
+    Rails.logger.error("Failed count_data_wells for #{data_file_path}: #{e.message}")
+    nil
+  end
+
   def python_executable
     preferred = "/opt/uvenv/bin/python"
     File.executable?(preferred) ? preferred : "python3"

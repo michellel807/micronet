@@ -1,5 +1,6 @@
 class UploadController < ApplicationController
 skip_before_action :verify_authenticity_token
+require 'json'
 
 
 def delete_files
@@ -145,6 +146,7 @@ def upload
 
   # Keep compare-validation aligned only to pairs that include both files.
   compare_pairs = []
+  pair_metadata_entries = []
 
   pair_entries.each_with_index do |(data_file_input, mapping_file_input), pair_index|
     pair_basename = "file#{pair_index + 1}"
@@ -185,10 +187,20 @@ def upload
     @usr_data_file_paths << data_file_input.original_filename.to_s
     @data_file_paths << data_file.file_path.to_s
 
+    pair_metadata_entries << {
+      "pair_key" => pair_basename,
+      "pair_index" => pair_index + 1,
+      "original_data_filename" => data_file_input.original_filename.to_s,
+      "original_mapping_filename" => mapping_file_input&.original_filename.to_s,
+      "parsed_plate_id" => mapping_file&.plate_id.to_s.presence
+    }
+
     if mapping_file.present?
       compare_pairs << [data_file.file_path.to_s, mapping_file.file_path.to_s]
     end
   end
+
+  write_pair_metadata(current_job, pair_metadata_entries)
 
   if meta_file.present? && compare_pairs.blank?
     if meta_file.plate_id_values.length != pair_entries.length
@@ -221,7 +233,7 @@ def upload
 
   if @meta_file_path.present? && @data_file_paths.present?
     # Run the Python script to merge meta data with data files
-    Python.exec("lib/scripts/otherscripts/mergemeta.py #{current_job.data_dir} #{current_job.mapping_dir}")
+    Python.exec("lib/scripts/otherscripts/mergemeta.py #{current_job.data_dir} #{current_job.mapping_dir} #{current_job.pair_metadata_path}")
     @mapping_file_paths = Dir.glob(current_job.mapping_dir.join('*.txt'))
                          .reject { |path| File.basename(path) == 'meta.txt' }
                          .map(&:to_s)
@@ -295,6 +307,17 @@ end
 
 
 require 'fileutils'
+
+private
+
+def write_pair_metadata(job, pair_entries)
+  metadata = {
+    "job_id" => job.id,
+    "generated_at" => Time.current.iso8601,
+    "pairs" => pair_entries
+  }
+  File.write(job.pair_metadata_path, JSON.pretty_generate(metadata))
+end
 
 #at_exit do
 #  UploadController.new.delete_files
