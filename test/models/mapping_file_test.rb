@@ -61,4 +61,18 @@ class MappingFileTest < ActiveSupport::TestCase
       assert_includes content, "Well\tPlate_ID"
     end
   end
+
+  test "uses explicit output basename while still parsing plate_id" do
+    content = "Well\tPlate_ID\tSubstrate\nA1\t2020-06-22-R1\tGlucose\n"
+    file = fake_uploaded_file('mapping.tsv', content)
+    mapping_file = MappingFile.new(file, upload_root: @upload_root, output_basename: 'file2')
+
+    assert mapping_file.valid?
+    assert_match(/file2\.txt\z/, mapping_file.file_path)
+    assert_equal '2020-06-22-R1', mapping_file.plate_id
+
+    parsed = CSV.read(mapping_file.file_path, headers: true, col_sep: "\t")
+    assert_equal 'file2', parsed[0]['Plate_ID']
+    assert_equal '2020-06-22-R1', parsed[0]['Original_Plate_ID']
+  end
 end

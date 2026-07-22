@@ -57,7 +57,7 @@ generate.</p>
   <div class="chart">
     <h3 style="color: #fff;">Raw Data Plots (Per Well)</h3>
     <% @raw_data_png_paths.each do |png_path| %>
-  <%= image_tag serve_image_path(filename: File.basename(png_path)), class: 'chart-image' %>
+  <%= image_tag serve_job_image_path(job_id: session[:current_user_id], filename: File.basename(png_path)), class: 'chart-image' %>
       <br>
     <% end %>
   </div>

@@ -1,6 +1,6 @@
 class DirectoryInitializer
   def self.create_upload_directory(job)
-    raise ArgumentError, "job is required" if job.nil?
+    return unless job
 
     job.ensure_upload_directories!
   end
