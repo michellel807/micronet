@@ -234,7 +234,7 @@
           </section>
         </div>
 
-        <div class="analysis-actions">
+        <div class="analysis-actions <%= session[:returning_from_review] ? 'analysis-actions-paired' : '' %>">
           <% if session[:returning_from_review] %>
             <%= submit_tag 'Back to Review', class: 'analysis-button secondary-action', id: 'review-button' %>
             <%= link_to 'Start Over', upload_path, class: 'edit-button' %>
