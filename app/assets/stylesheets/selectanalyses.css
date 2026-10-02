@@ -393,11 +393,13 @@
 
 .analysis-actions {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   gap: 12px;
   margin-top: 28px;
 }
+
+.analysis-actions-paired { justify-content: space-between; }
 
 @media (max-width: 840px) {
   .selectanalyses-shell { width: min(100% - 24px, 620px); padding-top: 24px; }
