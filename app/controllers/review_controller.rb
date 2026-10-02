@@ -54,9 +54,7 @@ class ReviewController < ApplicationController
     end
 
     if @mapping_file_paths.present?
-      first_file_path = @mapping_file_paths.first
-      file_data = File.read(first_file_path, encoding: 'iso-8859-1:utf-8')
-      @columns = file_data.lines.first.chomp.split("\t")
+      @columns = mapping_columns(@mapping_file_paths)
       @pool_options = @columns.reject { |column| column.downcase.include?('well') }
     end
 
@@ -72,6 +70,16 @@ class ReviewController < ApplicationController
       session[:heatmap_value] = params[:heatmap_value] || 'None'
       session[:heatmap_x] = params[:heatmap_x] || 'None'
       session[:heatmap_y] = params[:heatmap_y] || 'None'
+      unless Job.heatmap_configuration_complete?(
+        chart_types: session[:chart_types],
+        value: session[:heatmap_value],
+        x: session[:heatmap_x],
+        y: session[:heatmap_y],
+        columns: Array(@columns)
+      )
+        flash[:error] = "Please select a heatmap value and two different axes before continuing."
+        redirect_to selectanalyses_path and return
+      end
       puts "Pool_replicates is #{session[:pool_replicates]}"
       puts "Pool_options is #{session[:pool_options]}"
       puts "Compare parameters subset is #{session[:compare_parameters_pool]}"

@@ -28,6 +28,24 @@ class GenerateController < ApplicationController
 
   def run
     @job = Job.find(session[:current_user_id])
+    heatmap_columns =
+      if session[:chart_types]&.include?("heatmap_plot")
+        mapping_columns(session[:mapping_file_paths])
+      else
+        []
+      end
+
+    unless Job.heatmap_configuration_complete?(
+      chart_types: session[:chart_types],
+      value: session[:heatmap_value],
+      x: session[:heatmap_x],
+      y: session[:heatmap_y],
+      columns: heatmap_columns
+    )
+      flash[:error] = "Please select a heatmap value and two different axes before continuing."
+      redirect_to selectanalyses_path and return
+    end
+
     @user = User.find_or_create_by(email: params[:email])
 
     if @job.nil?

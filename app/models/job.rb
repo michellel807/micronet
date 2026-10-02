@@ -9,6 +9,22 @@ class Job < ApplicationRecord
   # Configuration constants
   MAX_ACTIVE_JOBS_PER_USER = 3
   DRAFT_STATUS = "In Progress".freeze
+  HEATMAP_VALUES = [
+    "AUC in units of OD",
+    "Growth Rate",
+    "Linear Carrying Capacity in units of OD",
+    "Lag Time",
+    "Doubling Time"
+  ].freeze
+
+  def self.heatmap_configuration_complete?(chart_types:, value:, x:, y:, columns:)
+    return true unless Array(chart_types).include?("heatmap_plot")
+
+    HEATMAP_VALUES.include?(value) &&
+      columns.include?(x) &&
+      columns.include?(y) &&
+      x != y
+  end
 
   def upload_root
     Rails.root.join("private", "uploads", "jobs", id.to_s)
