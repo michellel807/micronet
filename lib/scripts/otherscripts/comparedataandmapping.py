@@ -30,24 +30,29 @@ def compare_files(data_file, mapping_file):
 
 if __name__ == "__main__":
     emit_json = "--json" in sys.argv
-    args = [arg for arg in sys.argv[1:] if arg != "--json"]
+    count_only = "--count-only" in sys.argv
+    args = [arg for arg in sys.argv[1:] if arg not in ("--json", "--count-only")]
 
-    if len(args) != 2:
-        print("Usage: python comparefiles.py [--json] fileA fileB")
+    expected_args = 1 if count_only else 2
+    if len(args) != expected_args:
+        print("Usage: python comparedataandmapping.py [--json] [--count-only] fileA [fileB]")
         sys.exit(1)
 
-    data_file = args[0]
-    mapping_file = args[1]
-
     try:
-        result = compare_files(data_file, mapping_file)
+        if count_only:
+            result = {"data_well_count": count_well_rows(args[0])}
+        else:
+            result = compare_files(args[0], args[1])
+
         if emit_json:
             print(json.dumps(result), flush=True)
+        elif count_only:
+            print(f"DATA WELL COUNT = {result['data_well_count']}", flush=True)
         else:
             print(f"DATA WELL COUNT = {result['data_well_count']}", flush=True)
             print(f"MAPPING WELL COUNT = {result['mapping_well_count']}", flush=True)
             print(f"COMPARE RESULT = {result['counts_match']}")
-        sys.exit(0 if result["counts_match"] else 1)
+        sys.exit(0 if count_only or result["counts_match"] else 1)
     except Exception as e:
         if emit_json:
             print(json.dumps({"error": str(e)}), flush=True)
