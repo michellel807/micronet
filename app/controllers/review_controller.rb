@@ -33,10 +33,18 @@ class ReviewController < ApplicationController
 
       data_paths.each_with_index do |data_file_path, index|
         mapping_file_path = mapping_paths[index]
-        result = compare_file_counts(data_file_path, mapping_file_path)
+
+        result =
+          if mapping_file_path.present?
+            compare_file_counts(data_file_path, mapping_file_path)
+          else
+            count_data_wells(data_file_path)
+          end
+
         data_well_count = result&.dig("data_well_count")
         invalid_files << File.basename(data_file_path) unless data_well_count == 96
       end
+
 
       puts "INVALID FILES: #{invalid_files.inspect}"
       unless invalid_files.empty?
@@ -46,9 +54,7 @@ class ReviewController < ApplicationController
     end
 
     if @mapping_file_paths.present?
-      first_file_path = @mapping_file_paths.first
-      file_data = File.read(first_file_path, encoding: 'iso-8859-1:utf-8')
-      @columns = file_data.lines.first.chomp.split("\t")
+      @columns = mapping_columns(@mapping_file_paths)
       @pool_options = @columns.reject { |column| column.downcase.include?('well') }
     end
 
@@ -64,6 +70,16 @@ class ReviewController < ApplicationController
       session[:heatmap_value] = params[:heatmap_value] || 'None'
       session[:heatmap_x] = params[:heatmap_x] || 'None'
       session[:heatmap_y] = params[:heatmap_y] || 'None'
+      unless Job.heatmap_configuration_complete?(
+        chart_types: session[:chart_types],
+        value: session[:heatmap_value],
+        x: session[:heatmap_x],
+        y: session[:heatmap_y],
+        columns: Array(@columns)
+      )
+        flash[:error] = "Please select a heatmap value and two different axes before continuing."
+        redirect_to selectanalyses_path and return
+      end
       puts "Pool_replicates is #{session[:pool_replicates]}"
       puts "Pool_options is #{session[:pool_options]}"
       puts "Compare parameters subset is #{session[:compare_parameters_pool]}"
@@ -136,6 +152,20 @@ class ReviewController < ApplicationController
     nil
   rescue => e
     Rails.logger.error("Failed comparedataandmapping for #{data_file_path}: #{e.message}")
+    nil
+  end
+
+  def count_data_wells(data_file_path)
+    script_path = Rails.root.join("lib/scripts/otherscripts/comparedataandmapping.py").to_s
+    command = [python_executable, script_path, "--json", "--count-only", data_file_path.to_s]
+    stdout, stderr, status = Open3.capture3(*command)
+    Rails.logger.debug("count_data_wells status=#{status.exitstatus} stdout=#{stdout.inspect} stderr=#{stderr.inspect}")
+    JSON.parse(stdout)
+  rescue JSON::ParserError => e
+    Rails.logger.error("Failed to parse count_data_wells JSON for #{data_file_path}: #{e.message}")
+    nil
+  rescue => e
+    Rails.logger.error("Failed count_data_wells for #{data_file_path}: #{e.message}")
     nil
   end
 

@@ -1,5 +1,6 @@
 class UploadController < ApplicationController
 skip_before_action :verify_authenticity_token
+require 'json'
 
 
 def delete_files
@@ -82,42 +83,75 @@ def upload
   current_job = Job.find(session[:current_user_id])
   current_job.ensure_upload_directories!
 
-  # Get uploaded files
-  data_files = Array(params[:data_files])
-  mapping_files = Array(params[:mapping_files])
+  # Get uploaded files from explicit pair rows.
+  data_pairs_param = params[:data_pair_files]
+  mapping_pairs_param = params[:mapping_pair_files]
+  data_files_by_key =
+    if data_pairs_param.respond_to?(:to_unsafe_h)
+      data_pairs_param.to_unsafe_h
+    elsif data_pairs_param.present?
+      data_pairs_param.to_h
+    else
+      {}
+    end
+  mapping_files_by_key =
+    if mapping_pairs_param.respond_to?(:to_unsafe_h)
+      mapping_pairs_param.to_unsafe_h
+    elsif mapping_pairs_param.present?
+      mapping_pairs_param.to_h
+    else
+      {}
+    end
+  data_files_by_key = data_files_by_key.compact
+  mapping_files_by_key = mapping_files_by_key.compact
   meta_files = params[:meta_files]
   interval_files = params[:interval_files]
   @gp_time_step_size = params[:gp_time_step_size].presence || Job::DEFAULT_TSS
 
-  if data_files.blank? && mapping_files.blank? && meta_files.blank? && interval_files.blank? && session[:data_file_paths].present?
-    normalized_tss = normalize_gp_time_step_size(params[:gp_time_step_size])
-    unless normalized_tss
+  if data_files_by_key.blank?
+    if mapping_files_by_key.present?
+      flash.alert = "Each pair row with a mapping file must also include a data file."
+      redirect_to upload_path and return
+    end
+
+    if session[:data_file_paths].present?
+      normalized_tss = normalize_gp_time_step_size(params[:gp_time_step_size])
+      unless normalized_tss
+        restore_upload_state_from_session
+        @gp_time_step_size = params[:gp_time_step_size].presence || Job::DEFAULT_TSS
+        flash.now[:alert] = "Please enter a whole number of 1 or greater for the Gaussian Process time step size."
+        return render :index
+      end
+
+      @gp_time_step_size = normalized_tss
       restore_upload_state_from_session
-      @gp_time_step_size = params[:gp_time_step_size].presence || Job::DEFAULT_TSS
-      flash.now[:alert] = "Please enter a whole number of 1 or greater for the Gaussian Process time step size."
-      return render :index
+
+      unless valid_gp_time_step_size_for_paths?(session[:data_file_paths], @gp_time_step_size)
+        return render :index
+      end
+
+      session[:gp_time_step_size] = @gp_time_step_size
+      flash.notice = "Time step size updated. Proceeding to analyses selection..."
+      redirect_to '/selectanalyses'
+      return
     end
 
-    @gp_time_step_size = normalized_tss
-    restore_upload_state_from_session
-
-    unless valid_gp_time_step_size_for_paths?(session[:data_file_paths], @gp_time_step_size)
-      return render :index
-    end
-
-    session[:gp_time_step_size] = @gp_time_step_size
-    flash.notice = "Time step size updated. Proceeding to analyses selection..."
-    redirect_to '/selectanalyses'
-    return
+    flash.alert = "Please upload at least one data file."
+    redirect_to upload_path and return
   end
 
-  reorder_files = lambda do |files, ordered_names|
-    ordered_files = ordered_names.map do |name|
-      files.find { |file| file.original_filename == name }
-    end.compact
-
-    ordered_files.length == files.length ? ordered_files : files
+  # Any mapping upload without a matching data row is invalid.
+  extra_mapping_keys = mapping_files_by_key.keys - data_files_by_key.keys
+  if extra_mapping_keys.present?
+    flash.alert = "Each pair row with a mapping file must also include a data file."
+    redirect_to upload_path and return
   end
+
+  pair_keys_in_order = data_files_by_key.keys.sort_by(&:to_i)
+  pair_entries = pair_keys_in_order.map do |pair_key|
+    [data_files_by_key[pair_key], mapping_files_by_key[pair_key]]
+  end
+  meta_file = nil
 
   # Initialize the interval file if it exists
   if interval_files.present?
@@ -131,26 +165,7 @@ def upload
     @interval_file_path = interval_file.file_path.to_s
   end
 
-  # If the user uploaded only data files (no mapping, no meta)
-  if data_files.present? && mapping_files.blank? && meta_files.blank?
-    ordered_data_names = JSON.parse(params[:ordered_data_files]) rescue []
-    ordered_data_files = reorder_files.call(data_files, ordered_data_names)
-
-    ordered_data_files.each do |data_file_input|
-      data_file = DataFile.new(data_file_input, nil, upload_root: current_job.upload_root)
-
-      unless data_file.valid?
-        flash.alert = data_file.error_message
-        return render :index
-      end
-
-      @usr_data_file_paths << data_file_input.original_filename.to_s
-      @data_file_paths << data_file.file_path.to_s
-    end
-  end
-
-  # If the user uploaded data files and one meta file
-  if meta_files.present? && mapping_files.blank?
+  if meta_files.present?
     meta_file = MetaFile.new(meta_files, upload_root: current_job.upload_root)
     unless meta_file.valid?
       flash[:alert] = meta_file.error_message
@@ -159,73 +174,22 @@ def upload
     end
     @usr_meta_file_path = meta_files.original_filename.to_s
     @meta_file_path = meta_file.file_path.to_s
-
-    ordered_data_names = JSON.parse(params[:ordered_data_files]) rescue []
-    ordered_data_files = reorder_files.call(data_files, ordered_data_names)
-
-    if meta_file.plate_id_values.length != data_files.length
-      flash.alert = "The number of data files does not match the number of plate IDs in the meta file."
-      redirect_to upload_path and return
-    end
-
-    ordered_data_files.zip(meta_file.plate_id_values).each do |data_file_input, plate_id|
-      data_file = DataFile.new(data_file_input, plate_id, upload_root: current_job.upload_root)
-
-      unless data_file.valid?
-        flash.alert = data_file.error_message
-        return render :index
-      end
-
-      @usr_data_file_paths << data_file_input.original_filename.to_s
-      @data_file_paths << data_file.file_path.to_s
-    end
   end
 
-  # If the user uploaded data files and mapping files
-  if mapping_files.present?
-    if data_files.size != mapping_files.size
-      flash.alert = "The number of data files and mapping files does not match."
-      redirect_to upload_path and return
-    end
+  # Keep compare-validation aligned only to pairs that include both files.
+  compare_pairs = []
+  pair_metadata_entries = []
 
-    if meta_files.present?
-      meta_file = MetaFile.new(meta_files, upload_root: current_job.upload_root)
-      unless meta_file.valid?
-        flash[:alert] = meta_file.error_message
-        @meta_file_path = nil
-        return render :index
-      end
-      @usr_meta_file_path = meta_files.original_filename.to_s
-      @meta_file_path = meta_file.file_path.to_s
-    end
+  pair_entries.each_with_index do |(data_file_input, mapping_file_input), pair_index|
+    pair_basename = "file#{pair_index + 1}"
+    mapping_file = nil
 
-    # Get the order arrays from the hidden input fields
-    ordered_data_names = JSON.parse(params[:ordered_data_files]) rescue []
-    ordered_mapping_names = JSON.parse(params[:ordered_mapping_files]) rescue []
-
-    # Reorder the uploaded files to match the submitted order when available.
-    ordered_data_files = reorder_files.call(data_files, ordered_data_names)
-    ordered_mapping_files = reorder_files.call(mapping_files, ordered_mapping_names)
-
-    # Use these for processing
-    data_files = ordered_data_files
-    mapping_files = ordered_mapping_files
-
-    data_files.zip(mapping_files).each do |data_file_input, mapping_file_input|
-      mapping_file = MappingFile.new(mapping_file_input, upload_root: current_job.upload_root)
-      data_file = DataFile.new(data_file_input, mapping_file.plate_id, upload_root: current_job.upload_root)
-
-      @usr_data_file_paths << data_file_input.original_filename.to_s
-      @usr_mapping_file_paths << mapping_file_input.original_filename.to_s
-      @data_file_paths << data_file.file_path.to_s
-      @mapping_file_paths << mapping_file.file_path.to_s
-
-      unless data_file.valid?
-        flash.alert = data_file.error_message
-        @mapping_file_paths = session[:mapping_file_paths] || []
-        @data_file_paths = [] # Clear invalid data file paths
-        return render :index
-      end
+    if mapping_file_input.present?
+      mapping_file = MappingFile.new(
+        mapping_file_input,
+        upload_root: current_job.upload_root,
+        output_basename: pair_basename
+      )
 
       unless mapping_file.valid?
         flash.alert = mapping_file.error_message
@@ -233,6 +197,47 @@ def upload
         @data_file_paths = session[:data_file_paths] || []
         return render :index
       end
+
+      @usr_mapping_file_paths << mapping_file_input.original_filename.to_s
+      @mapping_file_paths << mapping_file.file_path.to_s
+    end
+
+    data_file = DataFile.new(
+      data_file_input,
+      mapping_file&.plate_id,
+      upload_root: current_job.upload_root,
+      output_basename: pair_basename
+    )
+
+    unless data_file.valid?
+      flash.alert = data_file.error_message
+      @mapping_file_paths = session[:mapping_file_paths] || []
+      @data_file_paths = []
+      return render :index
+    end
+
+    @usr_data_file_paths << data_file_input.original_filename.to_s
+    @data_file_paths << data_file.file_path.to_s
+
+    pair_metadata_entries << {
+      "pair_key" => pair_basename,
+      "pair_index" => pair_index + 1,
+      "original_data_filename" => data_file_input.original_filename.to_s,
+      "original_mapping_filename" => mapping_file_input&.original_filename.to_s,
+      "parsed_plate_id" => mapping_file&.plate_id.to_s.presence
+    }
+
+    if mapping_file.present?
+      compare_pairs << [data_file.file_path.to_s, mapping_file.file_path.to_s]
+    end
+  end
+
+  write_pair_metadata(current_job, pair_metadata_entries)
+
+  if meta_file.present? && compare_pairs.blank?
+    if meta_file.plate_id_values.length != pair_entries.length
+      flash.alert = "The number of data files does not match the number of plate IDs in the meta file."
+      redirect_to upload_path and return
     end
   end
 
@@ -240,17 +245,15 @@ def upload
   success = false  # Start pessimistic by default
 
   # Case 1: data + mapping files
-  if @data_file_paths.present? && @mapping_file_paths.present?
+  if compare_pairs.present?
     success = true
-    @data_file_paths.zip(@mapping_file_paths).each do |data_file_path, mapping_file_path|
+    compare_pairs.each do |data_file_path, mapping_file_path|
       success &&= Python.exec("lib/scripts/otherscripts/comparedataandmapping.py '#{data_file_path}' '#{mapping_file_path}'")
     end
 
   # Case 2: data + meta file only (no mapping)
   elsif @data_file_paths.present? && @meta_file_path.present? && @mapping_file_paths.blank?
-    if meta_file.plate_id_values.sort == @data_file_paths.map { |fp| File.basename(fp, '.*') }.sort
-      success = true
-    end
+    success = true
 
   # Case 3: data files only (no mapping, no meta)
   elsif @data_file_paths.present? && @mapping_file_paths.blank? && @meta_file_path.nil?
@@ -262,7 +265,7 @@ def upload
 
   if @meta_file_path.present? && @data_file_paths.present?
     # Run the Python script to merge meta data with data files
-    Python.exec("lib/scripts/otherscripts/mergemeta.py #{current_job.data_dir} #{current_job.mapping_dir}")
+    Python.exec("lib/scripts/otherscripts/mergemeta.py #{current_job.data_dir} #{current_job.mapping_dir} #{current_job.pair_metadata_path}")
     @mapping_file_paths = Dir.glob(current_job.mapping_dir.join('*.txt'))
                          .reject { |path| File.basename(path) == 'meta.txt' }
                          .map(&:to_s)
@@ -346,17 +349,24 @@ end
 
 require 'fileutils'
 
-#at_exit do
-#  UploadController.new.delete_files
-# end
+private
+
+def write_pair_metadata(job, pair_entries)
+  metadata = {
+    "job_id" => job.id,
+    "generated_at" => Time.current.iso8601,
+    "pairs" => pair_entries
+  }
+  File.write(job.pair_metadata_path, JSON.pretty_generate(metadata))
+end
 
 def normalize_gp_time_step_size(value)
-    raw_value = value.to_s.strip
-    return Job::DEFAULT_TSS if raw_value.blank?
-    return nil unless raw_value.match?(/\A[1-9]\d*\z/)
+  raw_value = value.to_s.strip
+  return Job::DEFAULT_TSS if raw_value.blank?
+  return nil unless raw_value.match?(/\A[1-9]\d*\z/)
 
-    raw_value.to_i
-  end
+  raw_value.to_i
+end
 
 def valid_gp_time_step_size_for_paths?(data_file_paths, selected_tss, flash_now: true)
   counts = Array(data_file_paths).map do |path|
@@ -430,5 +440,8 @@ def restore_upload_state_from_session
   @usr_meta_file_name = File.basename(@usr_meta_file_path) if @usr_meta_file_path.present?
   @usr_interval_file_name = File.basename(@usr_interval_file_path) if @usr_interval_file_path.present?
 end
-	  
+
+#at_exit do
+#  UploadController.new.delete_files
+# end
 end

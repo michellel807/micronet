@@ -2,7 +2,7 @@
 
 **A web application for modeling and analyzing microbial population growth data.**
 
-MicroNet is a web-based tool that models microbial population dynamics using Gaussian Processes regression. It helps researchers analyze how microbes adapt to various environmental stressors, providing insights into microbial resilience. 
+MicroNet is a web-based tool that models microbial population dynamics using Gaussian Processes regression. It helps researchers analyze how microbes adapt to various environmental stressors, providing insights into microbial resilience.
 The platform is a user-friendly implementation of the AMiGA Python package developed by Firas: https://firasmidani.github.io/amiga/.
 
 ---
@@ -39,8 +39,8 @@ docker-compose run --rm web bash -c "bin/rails db:migrate RAILS_ENV=development"
 
 ### 5. Access the Application
 
-- **Web App**: http://localhost:3000  
-- **Email Interface**: http://localhost:9000  
+- **Web App**: http://localhost:3000
+- **Email Interface**: http://localhost:9000
 
 ---
 
@@ -124,4 +124,3 @@ Special thanks to:
 - The Schmid Lab for project guidance and resources.
 - The Duke OIT Research Computing team for infrastructure and support.
 - All contributors and testers who helped improve the tool.
-

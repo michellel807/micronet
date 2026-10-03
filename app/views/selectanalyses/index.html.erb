@@ -151,13 +151,7 @@
             <div class="heatmap-container analysis-settings" style="<%= @selected_chart_types.include?('heatmap_plot') ? '' : 'display: none;' %>">
               <% if @mapping_file_paths.present? %>
                 <label class="field-label" for="heatmap_value">Heatmap value</label>
-                <%= select_tag 'heatmap_value', options_for_select([
-                  'AUC in units of OD',
-                  'Growth Rate',
-                  'Linear Carrying Capacity in units of OD',
-                  'Lag Time',
-                  'Doubling Time'
-                ], @heatmap_value), prompt: 'Select a value', id: 'heatmap_value', class: 'analysis-dropdown' %>
+                <%= select_tag 'heatmap_value', options_for_select(Job::HEATMAP_VALUES, @heatmap_value), prompt: 'Select a value', id: 'heatmap_value', class: 'analysis-dropdown' %>
 
                 <div class="axis-grid">
                   <div>
@@ -234,7 +228,7 @@
           </section>
         </div>
 
-        <div class="analysis-actions">
+        <div class="analysis-actions <%= session[:returning_from_review] ? 'analysis-actions-paired' : '' %>">
           <% if session[:returning_from_review] %>
             <%= submit_tag 'Back to Review', class: 'analysis-button secondary-action', id: 'review-button' %>
             <%= link_to 'Start Over', upload_path, class: 'edit-button' %>
@@ -471,6 +465,19 @@
     $('#review-button').on('click', function(e) {
       var testHypothesisChecked = $("input[name='chart_types[]'][value='test-hypothesis']").is(":checked");
       var compareParametersChecked = $("input[name='chart_types[]'][value='compare-parameters']").is(":checked");
+      var heatmapChecked = $("input[name='chart_types[]'][value='heatmap_plot']").is(":checked");
+
+      if (heatmapChecked) {
+        var heatmapValue = $("#heatmap_value").val();
+        var heatmapX = $("#heatmap_x").val();
+        var heatmapY = $("#heatmap_y").val();
+
+        if (!heatmapValue || !heatmapX || !heatmapY || heatmapX === heatmapY) {
+          e.preventDefault();
+          alert("Please select a heatmap value and two different axes.");
+          return;
+        }
+      }
       
       // Test Hypothesis validation
       if (testHypothesisChecked) {
