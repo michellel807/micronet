@@ -17,8 +17,11 @@ class Admin::JobsController < ApplicationController
   def cancel
     @job = Job.find(params[:id])
     admin_name = session[:admin_username] || "Administrator"
-    @job.mark_cancelled(admin_name)
-    redirect_to admin_jobs_path, notice: 'Job cancelled successfully.'
+    if @job.mark_cancelled(admin_name)
+      redirect_to admin_jobs_path, notice: 'Job cancelled successfully.'
+    else
+      redirect_to admin_jobs_path, alert: 'Only queued or running jobs can be cancelled.'
+    end
   end
   private
 

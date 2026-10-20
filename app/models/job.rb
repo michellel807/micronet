@@ -2,12 +2,15 @@ class Job < ApplicationRecord
   belongs_to :user
   attr_accessor :title
 
+  class Cancelled < StandardError; end
+
   # Reclaim the job's upload folder whenever the record is destroyed, so admin
   # deletes (and user-cascade deletes) don't leave orphaned files on disk.
   before_destroy :clear_uploads!
 
   # Configuration constants
   MAX_ACTIVE_JOBS_PER_USER = 3
+  ACTIVE_STATUSES = ["Job submitted", "Analyzing..."].freeze
   DRAFT_STATUS = "In Progress".freeze
   HEATMAP_VALUES = [
     "AUC in units of OD",
@@ -67,6 +70,8 @@ class Job < ApplicationRecord
   MAX_TSS_ATTEMPTS = 4
   MIN_GP_TIME_POINTS = 8
   MEMORY_FAILURE_EXIT_CODES = [137, 139].freeze
+  CANCELLATION_POLL_INTERVAL = 0.5
+  PROCESS_TERMINATION_GRACE_PERIOD = 5
 
   def self.time_point_count_for_data_file(path)
     lines = []
@@ -151,7 +156,7 @@ class Job < ApplicationRecord
       @tss_attempts[analysis_name] << tss
 
       logger.info("[#{analysis_name}] Running: #{command}")
-      system(command)
+      run_cancellable_command(command)
 
       if $?.success?
         record_used_tss(analysis_name, starting_tss, tss)
@@ -162,6 +167,70 @@ class Job < ApplicationRecord
     end
 
     false
+  end
+
+  def run_cancellable_command(*command)
+    raise Cancelled, "Job #{id} was cancelled." if cancelled?
+
+    pid = Process.spawn(*command, pgroup: true)
+    process_reaped = false
+    loop do
+      result = Process.waitpid2(pid, Process::WNOHANG)
+      if result
+        process_reaped = true
+        return result.last.success?
+      end
+
+      raise Cancelled, "Job #{id} was cancelled." if cancelled?
+
+      sleep CANCELLATION_POLL_INTERVAL
+    end
+  ensure
+    terminate_process_group(pid) if pid && !process_reaped
+  end
+
+  def run_python_script(script)
+    Python.exec(script) { |*command| run_cancellable_command(*command) }
+  end
+
+  def cancelled?
+    self.class.where(id: id, status: "Cancelled").exists?
+  end
+
+  def terminate_process_group(pid)
+    if signal_process_group("TERM", pid)
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + PROCESS_TERMINATION_GRACE_PERIOD
+      process_reaped = false
+
+      while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+        unless process_reaped
+          process_reaped = !Process.waitpid2(pid, Process::WNOHANG).nil?
+          break if process_reaped
+        end
+
+        sleep CANCELLATION_POLL_INTERVAL
+      end
+
+      # The command leader may exit on TERM while a child in its process group
+      # ignores it, so clear the group after the grace period or leader exit.
+      signal_process_group("KILL", pid)
+      Process.waitpid(pid) unless process_reaped
+    else
+      Process.waitpid(pid)
+    end
+  rescue Errno::ECHILD
+    nil
+  end
+
+  def signal_process_group(signal, pid)
+    Process.kill(signal, -pid)
+  rescue Errno::ESRCH
+    nil
+  rescue Errno::EPERM
+    raise unless signal == "KILL"
+
+    logger.warn("Unable to send KILL to process group #{pid}; it may have exited or contain processes this worker cannot signal.")
+    nil
   end
 
   def memory_failure_message(analysis_name)
@@ -186,13 +255,17 @@ class Job < ApplicationRecord
   # completed analyses still reach the results-assembly and email step. The
   # authoritative status saves at the end of analyze remain fatal on purpose.
   def checkpoint_save
-    save
+    self.class.where(id: id, status: "Analyzing...").update_all(updated_at: Time.current)
   rescue => e
     logger.warn("[checkpoint] intermediate save failed, continuing: #{e.message}")
   end
 
   def run_analysis_step(analysis_name)
+    raise Cancelled, "Job #{id} was cancelled." if cancelled?
+
     yield
+  rescue Cancelled
+    raise
   rescue => e
     logger.error("[#{analysis_name}] failed: #{e.message}")
     @analysis_failures ||= []
@@ -215,6 +288,11 @@ class Job < ApplicationRecord
   end
 
   def analyze(chart_types, pool_replicates, pool_options_string, test_finalsubset, hypothesis, gp_pool_by_column, gp_subset_choice, gp_finalsubset, compare_parameters_pool, compare_finalsubset, heatmap_value, heatmap_x, heatmap_y, gp_time_step_size = DEFAULT_TSS)
+    if cancelled?
+      logger.info("Job #{id} is already cancelled; skipping analysis.")
+      return
+    end
+
     @used_tss = {}
     @last_tss_attempts = {}
     @tss_attempts = {}
@@ -226,7 +304,18 @@ class Job < ApplicationRecord
     end
 
     self.status = "Analyzing..."
-    self.start_time = DateTime.now
+    self.start_time = Time.current
+    started = self.class.where(id: id, status: ACTIVE_STATUSES).update_all(
+      status: self.status,
+      start_time: self.start_time,
+      updated_at: Time.current
+    )
+    unless started.positive?
+      reload
+      logger.info("Job #{id} is no longer active; skipping analysis.")
+      return
+    end
+    reload
 
     # ADD THESE 4 LINES HERE
     FileUtils.mkdir_p(summary_dir)
@@ -292,7 +381,7 @@ class Job < ApplicationRecord
             end
           end
           raise_if_memory_failure("The Gaussian Process Plot analysis")
-          Python.exec("lib/scripts/otherscripts/gpplot.py #{derived_dir} #{gp_finalsubset}")
+          run_python_script("lib/scripts/otherscripts/gpplot.py #{derived_dir} #{gp_finalsubset}")
           gp_plot_path = derived_dir.join('gp_plot.pdf')
           gp_plot_data = derived_dir.join('plot_gp_data.txt')
           raise "The GP plot analysis failed" unless File.exist?(gp_plot_path) && File.exist?(gp_plot_data)
@@ -311,7 +400,7 @@ class Job < ApplicationRecord
             raise "The Fit Statistics analysis failed. Please check that your input data or selected conditions are correct."
           end
 
-          Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
+          run_python_script("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
 
           fit_summary_path = summary_dir.join('fit_summary_modified.txt')
           raise "The Fit Statistics analysis failed. Please check that your input data or selected conditions are correct." unless File.exist?(fit_summary_path)
@@ -331,24 +420,24 @@ class Job < ApplicationRecord
               logger.debug "HEATMAP VALUE = #{@heatmap_value}"
               logger.debug "HEATMAP X = #{@heatmap_x}"
               logger.debug "HEATMAP Y = #{@heatmap_y}"
-              system("amiga fit -i #{upload_root} -o heatmap_fit")
+              run_cancellable_command("amiga fit -i #{upload_root} -o heatmap_fit")
               raise "Your dataset is too large for the heatmap analysis. Please try uploading a smaller dataset or selecting a different variable." if $?.exitstatus == 137
-              Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('heatmap_fit_summary.txt')}")
+              run_python_script("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('heatmap_fit_summary.txt')}")
               heatmap_fit_summary_path = summary_dir.join('heatmap_fit_summary_modified.txt')
               raise "The heatmap analysis failed. Please check your axis/value selections." unless File.exist?(heatmap_fit_summary_path)
-              system("amiga heatmap -i #{heatmap_fit_summary_path} -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
+              run_cancellable_command("amiga heatmap -i #{heatmap_fit_summary_path} -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
             else
               heatmap_x = @heatmap_x == "Well positions" ? "Well" : @heatmap_x
               heatmap_y = @heatmap_y == "Well positions" ? "Well" : @heatmap_y
               logger.debug "HEATMAP VALUE = #{@heatmap_value.inspect}"
               logger.debug "HEATMAP X = #{@heatmap_x.inspect}"
               logger.debug "HEATMAP Y = #{@heatmap_y.inspect}"
-              system("amiga fit -i #{upload_root} -o fit")
+              run_cancellable_command("amiga fit -i #{upload_root} -o fit")
               raise "Your dataset is too large for the heatmap analysis. Please try a smaller dataset or selecting a different variable." if $?.exitstatus == 137
-              Python.exec("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
+              run_python_script("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
               heatmap_fit_summary_path = summary_dir.join('fit_summary_modified.txt')
               raise "The heatmap analysis failed. Please check your axis/value selections." unless File.exist?(heatmap_fit_summary_path)
-              system("amiga heatmap -i #{summary_dir.join('fit_summary_modified.txt')} -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
+              run_cancellable_command("amiga heatmap -i #{summary_dir.join('fit_summary_modified.txt')} -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
             end
           else
             raise "Heatmap value, x-axis, or y-axis not selected"
@@ -376,7 +465,7 @@ class Job < ApplicationRecord
             raise "Your dataset is too large for the compare parameters analysis. Please try uploading a smaller dataset or selecting a different variable." if $?.exitstatus == 137 || $?.signaled?
             raise "The compare parameters analysis failed. Please check that your input data or selected conditions are correct."
           end
-          system("amiga compare -i #{summary_dir.join('compare_summary.txt')} -o compare-parameters -s #{compare_finalsubset} --verbose")
+          run_cancellable_command("amiga compare -i #{summary_dir.join('compare_summary.txt')} -o compare-parameters -s #{compare_finalsubset} --verbose")
           old_path = "compare-parameters.txt"
           new_path = models_dir.join("compare-parameters.txt")
           File.rename(old_path, new_path) if File.exist?(old_path)
@@ -430,16 +519,19 @@ class Job < ApplicationRecord
       file_names += @heatmap_plot_paths if @heatmap_plot_paths.present?
 
       if file_names.present?
-        # Don't overwrite with "Completed" if job was cancelled by admin
-        self.reload
-        if self.status == "Cancelled"
-          logger.info("Job #{id} was cancelled by admin during analysis; not marking Completed or emailing results.")
+        completed_status = @analysis_failures.present? ? "Completed with warnings" : "Completed"
+        completed = self.class.where(id: id, status: ACTIVE_STATUSES).update_all(
+          status: completed_status,
+          end_time: Time.current,
+          updated_at: Time.current
+        )
+        unless completed.positive?
+          reload
+          logger.info("Job #{id} is no longer active; not marking it completed or emailing results.")
           return
         end
 
-        self.status = @analysis_failures.present? ? "Completed with warnings" : "Completed"
-        self.end_time = DateTime.now
-        save
+        reload
         UserMailer.processedjob_email(file_names, self, @used_tss, @requested_tss, @analysis_failures).deliver_now
       elsif @analysis_failures.present?
         failure_message = @analysis_failures.map { |failure| "#{failure[:analysis]}: #{failure[:message]}" }.join("\n")
@@ -447,25 +539,32 @@ class Job < ApplicationRecord
       else
         raise "No result files were generated."
       end
+    rescue Cancelled
+      logger.info("Job #{id} cancelled; stopping analysis without failure notification.")
+      return
     rescue => e
       logger.error("Error processing job: #{e.message}")
       # Reload from DB to check if job was cancelled while this was running
       self.reload
       # Don't mark as failed if job was cancelled by admin
-      if self.status != "Cancelled"
-        self.status = "Failed"
-        self.end_time = DateTime.now
-        save
+      failed = self.class.where(id: id, status: ACTIVE_STATUSES).update_all(
+        status: "Failed",
+        end_time: Time.current,
+        updated_at: Time.current
+      )
+      if failed.positive?
+        reload
         UserMailer.failedjob_email(self, e.message).deliver_now
       else
-        logger.info("Job #{id} was cancelled by admin, skipping error email")
+        logger.info("Job #{id} is no longer active; skipping failure notification.")
       end
     ensure
-      self.reload
-      if self.status == "Analyzing..."
-        self.status = "Completed"
-        self.end_time = DateTime.now
-        save
+      if self.class.where(id: id, status: "Analyzing...").update_all(
+        status: "Completed",
+        end_time: Time.current,
+        updated_at: Time.current
+      ).positive?
+        reload
       end
     end
   end
@@ -491,7 +590,7 @@ class Job < ApplicationRecord
 
   # Count active submitted jobs (queued or running only)
   def self.count_active_for_user(user_id)
-    where(user_id: user_id, status: ["Job submitted", "Analyzing..."]).count
+    where(user_id: user_id, status: ACTIVE_STATUSES).count
   end
 
   # Check if user can submit another job
@@ -501,10 +600,35 @@ class Job < ApplicationRecord
 
   # Mark job as cancelled without destroying it
   def mark_cancelled(admin_name = nil)
-    self.status = "Cancelled"
-    self.end_time = DateTime.now
-    save
+    was_cancelled = self.class.transaction do
+      cancelled = self.class.where(id: id, status: ACTIVE_STATUSES).update_all(
+        status: "Cancelled",
+        end_time: Time.current,
+        updated_at: Time.current
+      )
+      if cancelled.positive?
+        reload
+        remove_pending_analysis
+        true
+      else
+        reload
+        false
+      end
+    end
+    return false unless was_cancelled
+
     UserMailer.job_cancelled_email(self, admin_name).deliver_now
+    true
+  end
+
+  def remove_pending_analysis
+    handler_pattern = "%\njob_id: #{id}\n%"
+    Delayed::Job.where(locked_at: nil)
+      .where("handler LIKE ? AND handler LIKE ?", "%JobAnalyzer%", handler_pattern)
+      .find_each do |queued_job|
+      payload = queued_job.payload_object
+      queued_job.destroy if payload.is_a?(JobAnalyzer) && payload.job_id.to_s == id.to_s
+    end
   end
 
   # Set end_time when job finishes
