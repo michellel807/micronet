@@ -75,6 +75,7 @@ Rails.application.configure do
   config.hosts << "micronet-01.oit.duke.edu"
   config.hosts << "micronet-test.oit.duke.edu"
   config.hosts << "micronet.biology.duke.edu"
+  config.hosts << "micronet-app-test.essweb-micronet-app-test.svc"
 
   config.host_authorization = {
     exclude: ->(request) { request.path == "/healthcheck" }
