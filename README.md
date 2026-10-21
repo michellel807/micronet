@@ -59,6 +59,10 @@ docker-compose up
 docker-compose down
 ```
 
+Local development runs at http://localhost:3000. The Nginx HTTPS proxy is
+optional and starts only with `docker compose --profile server up`. It requires
+the server's `micronet-01.oit.duke.edu` certificates under `/etc/letsencrypt`.
+
 ### Running Tests
 
 ```bash

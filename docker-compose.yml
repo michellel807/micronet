@@ -68,6 +68,8 @@ services:
       - local-email
 
   nginx-proxy:
+    # Server HTTPS proxy; local development uses http://localhost:3000.
+    profiles: ["server"]
     image: nginx:alpine
     container_name: nginx_reverse_proxy
     restart: always

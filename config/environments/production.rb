@@ -73,6 +73,12 @@ Rails.application.configure do
   config.i18n.fallbacks = true
 
   config.hosts << "micronet-01.oit.duke.edu"
+  config.hosts << "micronet-test.oit.duke.edu"
+  config.hosts << "micronet.biology.duke.edu"
+
+  config.host_authorization = {
+    exclude: ->(request) { request.path == "/healthcheck" }
+  } 
 
   # Don't log any deprecations.
   config.active_support.report_deprecations = false
