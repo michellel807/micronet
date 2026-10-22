@@ -22,14 +22,17 @@ class SelectanalysesController < ApplicationController
 
     # Restore analysis-specific parameters from session
     @gp_pool_by_column = session[:gp_pool_by_column]
-    @gp_subset_choice = session[:gp_subset_choice]
     @gp_subset_column = session[:gp_subset_column]
     @gp_conditions = session[:gp_conditions] || []
+    @gp_subset_filters = GpConfiguration.filters(session)
+    @gp_pool_columns = GpConfiguration.pool_columns(session)
+    @gp_pool_replicates = session[:gp_pool_replicates].presence || (@gp_pool_columns.any? ? "yes" : "no")
     @pool_replicates = session[:pool_replicates]
     @pool_options_selected = session[:pool_options] || []
     @heatmap_value = session[:heatmap_value]
     @heatmap_x = session[:heatmap_x]
     @heatmap_y = session[:heatmap_y]
+    @comparison_selections = session[:comparison_selections] || {}
     @column_test = session[:column_test]
     @column_pooled = session[:column_pooled]
   end

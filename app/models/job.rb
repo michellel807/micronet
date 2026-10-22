@@ -1,3 +1,5 @@
+require "shellwords"
+
 class Job < ApplicationRecord
   belongs_to :user
   attr_accessor :title
@@ -27,6 +29,20 @@ class Job < ApplicationRecord
       columns.include?(x) &&
       columns.include?(y) &&
       x != y
+  end
+
+  GP_CONFIGURATION_ERROR = "Choose a column and at least one value for each Gaussian Process subset filter. If pooling is enabled, choose at least one grouping column.".freeze
+
+  def self.gp_configuration_complete?(chart_types:, subset_column:, conditions:, pool_column:, columns:, filters: nil, pool_columns: nil, pooling: nil)
+    return true unless Array(chart_types).include?("gp_plot")
+
+    filters ||= [{ "column" => subset_column, "values" => Array(conditions) }]
+    pool_columns ||= pool_column.to_s.split(",").reject { |column| column.blank? || column == "None" }
+    filters.present? &&
+      filters.map { |filter| filter["column"] }.uniq.length == filters.length &&
+      filters.all? { |filter| columns.include?(filter["column"]) && Array(filter["values"]).any?(&:present?) } &&
+      (pooling != "yes" || pool_columns.any?) &&
+      pool_columns.all? { |column| columns.include?(column) && !column.downcase.include?("well") }
   end
 
   def upload_root
@@ -287,7 +303,7 @@ class Job < ApplicationRecord
     end
   end
 
-  def analyze(chart_types, pool_replicates, pool_options_string, test_finalsubset, hypothesis, gp_pool_by_column, gp_subset_choice, gp_finalsubset, compare_parameters_pool, compare_finalsubset, heatmap_value, heatmap_x, heatmap_y, gp_time_step_size = DEFAULT_TSS)
+  def analyze(chart_types, pool_replicates, pool_options_string, test_finalsubset, hypothesis, gp_pool_by_column, _gp_subset_choice, gp_finalsubset, compare_parameters_pool, compare_finalsubset, heatmap_value, heatmap_x, heatmap_y, gp_time_step_size = DEFAULT_TSS)
     if cancelled?
       logger.info("Job #{id} is already cancelled; skipping analysis.")
       return
@@ -330,9 +346,6 @@ class Job < ApplicationRecord
     @hypothesis = hypothesis
     @compare_parameters_pool = compare_parameters_pool
     @compare_finalsubset = compare_finalsubset
-    @gp_pool_by_column = gp_pool_by_column
-    @gp_subset_choice = gp_subset_choice
-    @gp_finalsubset = gp_finalsubset
     @heatmap_value = heatmap_value
     @heatmap_x = heatmap_x
     @heatmap_y = heatmap_y
@@ -368,20 +381,14 @@ class Job < ApplicationRecord
       if @selected_chart_types.include?('gp_plot')
         run_analysis_step("Gaussian Process Plot") do
           pool_by_clean = gp_pool_by_column.to_s.gsub(/\A'|'\z/, '').strip
-          pool_by_flag = pool_by_clean.present? && pool_by_clean != "None" ? "--pool-by '#{pool_by_clean}'" : ""
-          if @gp_subset_choice == "yes"
-            unless run_with_tss_retry("amiga fit -i #{upload_root} -s #{gp_finalsubset} #{pool_by_flag} --save-gp-data -o plot","Gaussian Process Plot", @requested_tss)
-              raise_if_memory_failure("The Gaussian Process Plot analysis")
-              raise "The Gaussian Process Plot analysis failed. Please check that your input data or selected conditions are correct."
-            end
-          else
-            unless run_with_tss_retry("amiga fit -i #{upload_root} #{pool_by_flag} --save-gp-data -o plot","Gaussian Process Plot", @requested_tss)
-              raise_if_memory_failure("The Gaussian Process Plot analysis")
-              raise "The Gaussian Process Plot analysis failed. Please check that your input data or selected conditions are correct."
-            end
+          pool_by_flag = pool_by_clean.present? && pool_by_clean != "None" ? "--pool-by #{Shellwords.escape(pool_by_clean)}" : ""
+          subset = gp_finalsubset.to_s.delete_prefix("'").delete_suffix("'")
+          unless run_with_tss_retry("amiga fit -i #{Shellwords.escape(upload_root.to_s)} -s #{Shellwords.escape(subset)} #{pool_by_flag} --save-gp-data -o plot","Gaussian Process Plot", @requested_tss)
+            raise_if_memory_failure("The Gaussian Process Plot analysis")
+            raise "The Gaussian Process Plot analysis failed. Please check that your input data or selected conditions are correct."
           end
           raise_if_memory_failure("The Gaussian Process Plot analysis")
-          run_python_script("lib/scripts/otherscripts/gpplot.py #{derived_dir} #{gp_finalsubset}")
+          run_python_script(Shellwords.join(["lib/scripts/otherscripts/gpplot.py", derived_dir.to_s, subset, pool_by_clean]))
           gp_plot_path = derived_dir.join('gp_plot.pdf')
           gp_plot_data = derived_dir.join('plot_gp_data.txt')
           raise "The GP plot analysis failed" unless File.exist?(gp_plot_path) && File.exist?(gp_plot_data)

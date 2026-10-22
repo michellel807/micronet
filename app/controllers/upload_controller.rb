@@ -283,7 +283,7 @@ def upload
     session[:gp_time_step_size] = @gp_time_step_size
     # Reset analysis selections so a new upload starts fresh
     %i[chart_types pool_replicates pool_options gp_pool_by_column
-       gp_subset_choice gp_subset_column gp_conditions
+       gp_subset_choice gp_subset_column gp_conditions gp_subset_filters gp_pool_columns gp_pool_replicates comparison_selections
        heatmap_value heatmap_x heatmap_y column_test column_pooled].each do |key|
       session.delete(key) if uploads_changed
     end

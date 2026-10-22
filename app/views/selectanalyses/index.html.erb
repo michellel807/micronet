@@ -19,7 +19,7 @@
         <p>Please select the analyses you would like to generate. For more details on each analysis, please see the "Resources" tab.</p>
       </div>
 
-      <%= form_with url: (session[:returning_from_review] ? '/review' : '/review'), method: :post do |form| %>
+      <%= form_with url: '/review', method: :post do |form| %>
         <% if @mapping_file_paths.present? %>
           <%= hidden_field_tag 'file_data', @file_data_json %>
         <% end %>
@@ -44,47 +44,43 @@
 
           <section class="analysis-section">
             <label class="analysis-card">
-              <%= check_box_tag 'chart_types[]', 'gp_plot', @selected_chart_types.include?('gp_plot'), class: 'analysis-toggle' %>
+              <%= check_box_tag 'chart_types[]', 'gp_plot', @selected_chart_types.include?('gp_plot'), class: 'analysis-toggle', disabled: @mapping_file_paths.blank? %>
               <span class="analysis-icon icon-curve"></span>
               <span class="analysis-copy">
                 <span class="analysis-title">Gaussian Process Plot</span>
-                <span class="analysis-description">Plot a specified experimental property with one chosen condition.</span>
-                <span class="analysis-meta">Includes optional subsetting<% if @mapping_file_paths.blank? %> with mapping file<% end %></span>
+                <span class="analysis-description">Plot growth curves for selected conditions, with optional replicate pooling.</span>
+                <span class="analysis-meta">Required subsetting, optional pooling</span>
+                <% if @mapping_file_paths.blank? %><span class="analysis-requires-mapping">Upload a mapping file to unlock</span><% end %>
               </span>
               <span class="analysis-check"></span>
             </label>
 
             <% if @mapping_file_paths.present? %>
-            <div class="gp-pool-by-container analysis-settings" style="<%= @selected_chart_types.include?('gp_plot') ? '' : 'display: none;' %>">
-              <label class="field-label" for="gp-pool-by-select">Pool by column</label>
-              <%= select_tag 'gp_pool_by_column', options_for_select(@columns, @gp_pool_by_column), prompt: 'Select a column', id: 'gp-pool-by-select', class: 'analysis-dropdown' %>
+            <div class="gp-subset-container analysis-settings" style="<%= @selected_chart_types.include?('gp_plot') ? '' : 'display: none;' %>">
+              <p class="field-label">Subset data (required)</p>
+              <p>Include any selected value within a filter. Wells must match every filter.</p>
+              <div id="gp-subset-filters"></div>
+              <button type="button" id="gp-add-filter" class="analysis-button">Add another filter</button>
             </div>
-            <% end %>
 
-            <% if @mapping_file_paths.present? %>
-            <div class="gp-subset-toggle analysis-settings" style="<%= @selected_chart_types.include?('gp_plot') ? '' : 'display: none;' %>">
-              <p class="field-label">Subset the data?</p>
+            <div class="gp-pooling-container analysis-settings" style="display: none;">
+              <p class="field-label">Pool replicates?</p>
               <div class="segmented-options">
-                <label>
-                  <%= radio_button_tag 'gp_subset_choice', 'yes', @gp_subset_choice == 'yes', id: 'gp_subset_yes' %>
-                  <span>Yes</span>
-                </label>
-                <label>
-                  <%= radio_button_tag 'gp_subset_choice', 'no', @gp_subset_choice == 'no' || @gp_subset_choice.blank?, id: 'gp_subset_no' %>
-                  <span>No</span>
-                </label>
+                <label><input type="radio" name="gp_pool_replicates" value="no" <%= @gp_pool_replicates == 'no' ? 'checked' : '' %>><span>No</span></label>
+                <label><input type="radio" name="gp_pool_replicates" value="yes" <%= @gp_pool_replicates == 'yes' ? 'checked' : '' %>><span>Yes</span></label>
+              </div>
+              <div id="gp-pool-columns" class="chip-options">
+                <p class="field-label">Group replicates by</p>
+                <p>Choose all columns that distinguish your experimental groups. Wells with the same combination are modeled together.</p>
+                <% @pool_options.each do |column| %>
+                  <label>
+                    <%= check_box_tag 'gp_pool_columns[]', column, @gp_pool_columns.include?(column) %>
+                    <span><%= column %></span>
+                  </label>
+                <% end %>
               </div>
             </div>
-
-            <div class="gp-subset-container analysis-settings compact-setting" style="<%= @gp_subset_choice == 'yes' ? '' : 'display: none;' %>">
-              <label class="field-label" for="gp-subset-select">Subset column</label>
-              <%= select_tag 'gp_subset_column', options_for_select(@columns, @gp_subset_column), prompt: 'Select a column', id: 'gp-subset-select', class: 'analysis-dropdown' %>
-            </div>
-            <% else %>
-            <%= hidden_field_tag 'gp_subset_choice', 'no' %>
             <% end %>
-
-            <div id="gp-condition-checkboxes" class="checkbox-container chip-options" style="display: none;"></div>
           </section>
 
           <section class="analysis-section">
@@ -183,17 +179,27 @@
             <div class="test-hypothesis-container analysis-settings" style="<%= @selected_chart_types.include?('test-hypothesis') ? '' : 'display: none;' %>">
               <% if @mapping_file_paths.present? %>
                 <label class="field-label" for="column-test">Variable to test</label>
-                <%= select_tag 'column_test', options_for_select(@columns, @column_test), prompt: 'Select a column', id: 'column-test', class: 'analysis-dropdown' %>
+                <%= select_tag 'column_test', options_for_select(@pool_options, @column_test), prompt: 'Select a column', id: 'column-test', class: 'analysis-dropdown' %>
               <% end %>
             </div>
 
-            <div class="test-hypothesis-options-container analysis-settings" style="display: none;">
+            <div class="test-hypothesis-options-container analysis-settings comparison-settings" style="display: none;">
               <p class="field-label">Choose two conditions</p>
-              <div class="axis-grid">
-                <%= select_tag 'condition1_test', '', prompt: 'Select a condition', id: 'condition1-test', class: 'analysis-dropdown' %>
-                <%= select_tag 'condition2_test', '', prompt: 'Select another condition', id: 'condition2-test', class: 'analysis-dropdown' %>
+              <div class="axis-grid condition-grid">
+                <div>
+                  <label class="field-label" for="condition1-test">Condition 1</label>
+                  <%= select_tag 'condition1_test', '', prompt: 'Select a condition', id: 'condition1-test', class: 'analysis-dropdown' %>
+                </div>
+                <div>
+                  <label class="field-label" for="condition2-test">Condition 2</label>
+                  <%= select_tag 'condition2_test', '', prompt: 'Select another condition', id: 'condition2-test', class: 'analysis-dropdown' %>
+                </div>
               </div>
-              <div id="subset-dropdowns-test" class="generated-subsets"></div>
+              <p id="condition-hint-test" class="condition-hint" role="status"></p>
+              <details id="subset-panel-test" class="subset-panel">
+                <summary>Subset data <span class="subset-count">Optional</span></summary>
+                <div id="subset-dropdowns-test" class="generated-subsets"></div>
+              </details>
             </div>
           </section>
 
@@ -213,17 +219,27 @@
             <div class="compare-parameters-container analysis-settings" style="<%= @selected_chart_types.include?('compare-parameters') ? '' : 'display: none;' %>">
               <% if @mapping_file_paths.present? %>
                 <label class="field-label" for="column-pooled">Variable to compare</label>
-                <%= select_tag 'column_pooled', options_for_select(@columns, @column_pooled), prompt: 'Select a column', id: 'column-pooled', class: 'analysis-dropdown' %>
+                <%= select_tag 'column_pooled', options_for_select(@pool_options, @column_pooled), prompt: 'Select a column', id: 'column-pooled', class: 'analysis-dropdown' %>
               <% end %>
             </div>
 
-            <div class="compare-options-pooled-container analysis-settings" style="display: none;">
+            <div class="compare-options-pooled-container analysis-settings comparison-settings" style="display: none;">
               <p class="field-label">Choose two conditions</p>
-              <div class="axis-grid">
-                <%= select_tag 'condition1_pooled', '', prompt: 'Select a condition', id: 'condition1-pooled', class: 'analysis-dropdown' %>
-                <%= select_tag 'condition2_pooled', '', prompt: 'Select another condition', id: 'condition2-pooled', class: 'analysis-dropdown' %>
+              <div class="axis-grid condition-grid">
+                <div>
+                  <label class="field-label" for="condition1-pooled">Condition 1</label>
+                  <%= select_tag 'condition1_pooled', '', prompt: 'Select a condition', id: 'condition1-pooled', class: 'analysis-dropdown' %>
+                </div>
+                <div>
+                  <label class="field-label" for="condition2-pooled">Condition 2</label>
+                  <%= select_tag 'condition2_pooled', '', prompt: 'Select another condition', id: 'condition2-pooled', class: 'analysis-dropdown' %>
+                </div>
               </div>
-              <div id="subset-dropdowns-pooled" class="generated-subsets"></div>
+              <p id="condition-hint-pooled" class="condition-hint" role="status"></p>
+              <details id="subset-panel-pooled" class="subset-panel">
+                <summary>Subset data <span class="subset-count">Optional</span></summary>
+                <div id="subset-dropdowns-pooled" class="generated-subsets"></div>
+              </details>
             </div>
           </section>
         </div>
@@ -244,70 +260,40 @@
 
   <script>
   $(document).ready(function() {
-    $('#review-button').on('click', function(e) {
-        var poolReplicates = $("input[name='pool_replicates']:checked").val();
-        var selectedOptions = $("input[name='pool_options[]']:checked").length;
-        
-        if (poolReplicates === 'yes' && selectedOptions === 0) {
-          e.preventDefault();
-          alert("Please select at least one parameter to pool on for the Fit Statistics analysis, or select 'No'.");
-        }
+    function updateGpVisibility() {
+      const selected = $("input[name='chart_types[]'][value='gp_plot']").is(":checked");
+      const pooled = $("input[name='gp_pool_replicates']:checked").val() === "yes";
+      $(".gp-subset-container, .gp-pooling-container").toggle(selected);
+      $("#gp-subset-filters :input, #gp-add-filter, input[name='gp_pool_replicates']").prop("disabled", !selected);
+      $(".gp-filter-column").prop("required", selected);
+      $("#gp-pool-columns").toggle(selected && pooled);
+      $("input[name='gp_pool_columns[]']").prop("disabled", !selected || !pooled);
+      const used = $(".gp-filter-column").map(function() { return $(this).val(); }).get();
+      $(".gp-filter-column").each(function() {
+        const current = $(this).val();
+        $(this).find("option").each(function() {
+          $(this).prop("disabled", !!this.value && this.value !== current && used.includes(this.value));
+        });
       });
+      $("#gp-add-filter").prop("disabled", !selected || $(".gp-filter-row").length >= mappingColumns.length);
+      $(".gp-remove-filter").toggle($(".gp-filter-row").length > 1);
+    }
 
-    $("input[name='chart_types[]'][value='gp_plot']").on("change", function () {
-      if ($(this).is(":checked")) {
-        $(".gp-pool-by-container").show();
-        $(".gp-subset-toggle").show(); // show Yes/No subset toggle
-        $(".gp-subset-container").hide(); // keep hidden until user clicks Yes
-        $("#gp-condition-checkboxes").hide().empty(); // clear any old values
-      } else {
-        $(".gp-pool-by-container").hide();
-        $(".gp-subset-toggle").hide();
-        $(".gp-subset-container").hide();
-        $("#gp-condition-checkboxes").hide().empty();
-      }
-    });
+    $("input[name='chart_types[]'][value='gp_plot'], input[name='gp_pool_replicates']").on("change", updateGpVisibility);
 
-    // When user selects "Yes" or "No" for Subset
-    $("input[name='gp_subset_choice']").on("change", function () {
-      if ($(this).val() === "yes") {
-        $(".gp-subset-container").show();
-      } else {
-        $(".gp-subset-container").hide();
-        $("#gp-condition-checkboxes").hide().empty();
-      }
-    });
+    function updateFitStatsVisibility() {
+      const selected = $("input[name='chart_types[]'][value='fit_stats']").is(":checked");
+      const pooled = $("input[name='pool_replicates']:checked").val() === 'yes';
+      $(".radio-container").toggle(selected);
+      $("#checkbox-content").parent().toggle(selected && pooled);
+    }
 
-    $("input[name='chart_types[]'][value='test-hypothesis']").on("change", function() {
-      if ($(this).is(":checked")) {
-        $(".test-hypothesis-container").show();
-      } else {
-        $(".test-hypothesis-container").hide();
-        $(".test-hypothesis-options-container").hide();
-        $("#subset-dropdowns-test").empty();
+    $("input[name='chart_types[]'][value='fit_stats']").on("change", updateFitStatsVisibility);
+    $("input[name='pool_replicates']").on("change", function() {
+      if ($(this).val() === "no") {
+        $("input[name='pool_options[]']").prop("checked", false);
       }
-    });
-
-    $("input[name='chart_types[]'][value='compare-parameters']").on("change", function() {
-      if ($(this).is(":checked")) {
-        $(".compare-parameters-container").show();
-      } else {
-        $(".compare-parameters-container").hide();
-        $(".compare-options-pooled-container").hide();
-        $("#subset-dropdowns-pooled").empty();
-      }
-    });
-
-    $("input[name='chart_types[]'][value='fit_stats']").on("change", function() {
-      if ($(this).is(":checked")) {
-        $(".radio-container").show();
-        $("input[name='pool_replicates'][value='no']").prop("checked", true);
-        $('#heatmap-section').show();
-      } else {
-        $(".radio-container").hide();
-        $('#heatmap-section').hide();
-        $('#heatmap-options').hide();
-      }
+      updateFitStatsVisibility();
     });
 
     $("input[name='chart_types[]'][value='heatmap_plot']").on("change", function () {
@@ -318,104 +304,118 @@
       }
     });
 
-    $("#gp-subset-select").on("change", function () {
-      const selectedColumn = $(this).val();
-      const fileData = JSON.parse($("#file_data").val());
-      const rows = fileData.trim().split("\n");
-      const header = rows.shift().split("\t");
-      const colIndex = header.indexOf(selectedColumn);
+    const savedGpFilters = <%= raw json_escape(@gp_subset_filters.to_json) %>;
+    const savedComparisons = <%= raw json_escape(@comparison_selections.to_json) %>;
+    const fileData = $("#file_data").length ? JSON.parse($("#file_data").val()) : "";
+    const mappingRows = fileData.split(/\r\n|\n|\r/).filter(row => row.trim())
+      .map(row => row.split("\t").map(value => value.trim()));
+    const mappingColumns = mappingRows.shift() || [];
 
-      const uniqueValues = new Set();
-      rows.forEach(row => {
-        const val = row.split("\t")[colIndex];
-        if (val && val.trim()) uniqueValues.add(val.trim());
-      });
-
-      const $checkboxContainer = $("#gp-condition-checkboxes");
-      $checkboxContainer.empty().show();
-
-      $checkboxContainer.append(`<p style="margin-bottom: 6px;">Choose the value(s) to include:</p>`);
-      [...uniqueValues].sort().forEach(val => {
-        const checkbox = $(`
-          <label style="display: inline-block; margin-right: 10px;">
-            <input type="checkbox" name="gp_conditions[]" value="${val}">
-            ${val}
-          </label>
-        `);
-        $checkboxContainer.append(checkbox);
-      });
-    });
-
-      function generateSubsetDropdowns(column, containerId, prefix) {
-      const fileData = JSON.parse($("#file_data").val());
-      const rows = fileData.trim().split("\n");
-      const header = rows.shift().split("\t");
-      const columnIndex = header.indexOf(column);
-
-      // Extract conditions for the main column
-      const conditions = [...new Set(rows.map(row => row.split("\t")[columnIndex])
-        .filter(val => val && !column.toLowerCase().includes("well")))];
-
-      // Update condition dropdowns (clear stale exclusion filter cache first)
-      $(`#condition1-${prefix}`).removeData('original-options').empty().append($('<option>', { text: 'Select a condition' }));
-      $(`#condition2-${prefix}`).removeData('original-options').empty().append($('<option>', { text: 'Select another condition' }));
-      conditions.forEach(condition => {
-        $(`#condition1-${prefix}`).append($('<option>', { text: condition, value: condition }));
-        $(`#condition2-${prefix}`).append($('<option>', { text: condition, value: condition }));
-      });
-
-      // Show section
-      if (prefix === "test") {
-        $(".test-hypothesis-options-container").show();
-      } else if (prefix === "pooled") {
-        $(".compare-options-pooled-container").show();
-      }
-
-      // Generate subset dropdowns
-      const remainingColumns = header.filter(col => col !== column && !col.toLowerCase().includes("well"));
-      const subsetDropdowns = $(`#subset-dropdowns-${prefix}`);
-      subsetDropdowns.empty();
-      $("<p />").text("Subset data so conditions can be directly compared (This is optional: choose as many subsettings as you wish):")
-        .appendTo(subsetDropdowns);
-
-      remainingColumns.forEach(col => {
-        const cleanCol = col.replace(/(\r\n|\n|\r)/gm, "");
-        const select = $("<select />")
-          .attr("name", `${prefix}_subset_${cleanCol}`) // name is now unique
-          .attr("id", `${prefix}_subset_${cleanCol}`)   // optional unique id
-          .addClass("analysis-dropdown");
-        $("<option />").text(`Select a value for ${cleanCol}`).appendTo(select);
-
-        rows.forEach(row => {
-          const values = row.split("\t");
-          const value = values[header.indexOf(col)];
-          if (value && select.find(`option[value="${value}"]`).length === 0) {
-            $("<option />").text(value).val(value).appendTo(select);
-          }
-        });
-
-        select.appendTo(subsetDropdowns);
-      });
+    function valuesForColumn(column) {
+      const index = mappingColumns.indexOf(column);
+      return [...new Set(mappingRows.map(row => row[index]).filter(Boolean))];
     }
 
-    $("#column-test").on("change", function () {
-      const column = $(this).val();
-      if (column) {
-        generateSubsetDropdowns(column, "test", "test");
-      } else {
-        $(".test-options-container").hide();
-        $("#subset-dropdowns-test").empty();
+    let gpFilterIndex = 0;
+    function addGpFilter(filter = { column: "", values: [] }) {
+      const index = gpFilterIndex++;
+      const row = $("<div />", { class: "gp-filter-row" }).appendTo("#gp-subset-filters");
+      const selectId = `gp-filter-${index}`;
+      $("<label />", { class: "field-label", for: selectId }).text("Subset column").appendTo(row);
+      const select = $("<select />", {
+        class: "gp-filter-column analysis-dropdown", id: selectId,
+        name: `gp_subset_filters[${index}][column]`
+      }).appendTo(row);
+      $("<option />", { value: "", text: "Select a column" }).appendTo(select);
+      mappingColumns.forEach(column => $("<option />", { value: column, text: column }).appendTo(select));
+      select.val(filter.column);
+      const choices = $("<div />", { class: "compact-choices chip-options" }).appendTo(row);
+      function populate(values) {
+        choices.empty();
+        if (select.val()) {
+          $("<p />").text("Choose the value(s) to include (required):").appendTo(choices);
+          valuesForColumn(select.val()).sort().forEach(value => {
+            const label = $("<label />").appendTo(choices);
+            $("<input />", { type: "checkbox", name: `gp_subset_filters[${index}][values][]`, value })
+              .prop("checked", values.includes(value)).appendTo(label);
+            $("<span />").text(value).appendTo(label);
+          });
+        }
+        updateGpVisibility();
       }
-    });
+      $("<button />", { type: "button", class: "gp-remove-filter" }).text("Remove filter")
+        .on("click", function() { row.remove(); updateGpVisibility(); }).appendTo(row);
+      select.on("change", function() { populate([]); });
+      populate(filter.values);
+    }
+    $("#gp-add-filter").on("click", function() { addGpFilter(); });
 
-    $("#column-pooled").on("change", function () {
-      const column = $(this).val();
-      if (column) {
-        generateSubsetDropdowns(column, "pooled", "pooled");
-      } else {
-        $(".pooled-options-container").hide();
-        $("#subset-dropdowns-pooled").empty();
-      }
+    const comparisons = [
+      { prefix: "test", chart: "test-hypothesis", variable: "#column-test", container: ".test-hypothesis" },
+      { prefix: "pooled", chart: "compare-parameters", variable: "#column-pooled", container: ".compare-parameters" }
+    ];
+
+    function updateComparisonVisibility(comparison) {
+      const { prefix, chart, variable, container } = comparison;
+      const selected = $(`input[name='chart_types[]'][value='${chart}']`).is(":checked");
+      const hasColumn = !!$(variable).val();
+      const options = prefix === "test" ? ".test-hypothesis-options-container" : ".compare-options-pooled-container";
+      $(`${container}-container`).toggle(selected);
+      $(variable).prop("required", selected).prop("disabled", !selected);
+      $(options).toggle(selected && hasColumn).find("select")
+        .prop("disabled", !selected || !hasColumn);
+      $(`#condition1-${prefix}, #condition2-${prefix}`).prop("required", selected && hasColumn);
+    }
+
+    function updateConditionOptions(prefix) {
+      const first = $(`#condition1-${prefix}`);
+      const second = $(`#condition2-${prefix}`);
+      first.find("option").each(function() { this.disabled = !!this.value && this.value === second.val(); });
+      second.find("option").each(function() { this.disabled = !!this.value && this.value === first.val(); });
+    }
+
+    function updateSubsetCount(prefix) {
+      const count = $(`#subset-dropdowns-${prefix} select`).filter(function() { return !!this.value; }).length;
+      $(`#subset-panel-${prefix} .subset-count`).text(count ? `${count} selected` : "Optional");
+    }
+
+    function populateComparison(comparison, savedValues = {}) {
+      const { prefix, variable } = comparison;
+      const column = $(variable).val();
+      const conditions = valuesForColumn(column);
+      [1, 2].forEach(number => {
+        const select = $(`#condition${number}-${prefix}`).empty();
+        $("<option />", { value: "", text: "Select a condition" }).appendTo(select);
+        conditions.forEach(value => $("<option />", { value, text: value }).appendTo(select));
+        select.val(savedValues[`condition${number}_${prefix}`] || "");
+      });
+      $(`#condition-hint-${prefix}`).text(column && conditions.length < 2 ?
+        "Choose a variable with at least two different conditions." : "").toggle(!!column && conditions.length < 2);
+
+      const subsets = $(`#subset-dropdowns-${prefix}`).empty();
+      const remainingColumns = mappingColumns.filter(value => value !== column && !value.toLowerCase().includes("well"));
+      $(`#subset-panel-${prefix}`).toggle(!!column && remainingColumns.length > 0).prop("open", false);
+      remainingColumns.forEach(value => {
+        const name = `${prefix}_subset_${value}`;
+        const label = $("<label />", { class: "subset-field" }).appendTo(subsets);
+        $("<span />", { class: "field-label", text: value }).appendTo(label);
+        const select = $("<select />", { name, class: "analysis-dropdown" }).appendTo(label);
+        $("<option />", { value: "", text: "All values" }).appendTo(select);
+        valuesForColumn(value).forEach(condition => $("<option />", { value: condition, text: condition }).appendTo(select));
+        select.val(savedValues[name] || "");
+      });
+      updateSubsetCount(prefix);
+      updateConditionOptions(prefix);
+      updateComparisonVisibility(comparison);
+    }
+
+    comparisons.forEach(comparison => {
+      const { prefix, variable, chart } = comparison;
+      $(variable).on("change", function() { populateComparison(comparison); });
+      $(`input[name='chart_types[]'][value='${chart}']`).on("change", function() { updateComparisonVisibility(comparison); });
+      $(`#condition1-${prefix}, #condition2-${prefix}`).on("change", function() { updateConditionOptions(prefix); });
+      $(`#subset-dropdowns-${prefix}`).on("change", "select", function() { updateSubsetCount(prefix); });
+      populateComparison(comparison, savedComparisons);
     });
 
     // Helper function to exclude selected value from another select's options
@@ -456,13 +456,22 @@
       });
     }
 
-    // Setup exclusion filters for all three pairs
+    // Keep heatmap axes distinct
     setupExclusionFilter('#heatmap_x', '#heatmap_y');
-    setupExclusionFilter('#condition1-test', '#condition2-test');
-    setupExclusionFilter('#condition1-pooled', '#condition2-pooled');
 
-    // Validation for both analyses
-    $('#review-button').on('click', function(e) {
+    // Validate selections for each requested analysis.
+    $('#review-button').closest('form').on('submit', function(e) {
+      if ($("input[name='chart_types[]'][value='gp_plot']").is(":checked")) {
+        const incomplete = $(".gp-filter-row").toArray().some(row =>
+          !$(row).find("select").val() || !$(row).find("input:checked").length);
+        const pooling = $("input[name='gp_pool_replicates']:checked").val() === "yes";
+        if (incomplete || (pooling && !$("input[name='gp_pool_columns[]']:checked").length)) {
+          e.preventDefault();
+          alert("Choose a column and at least one value for every subset filter. If pooling is enabled, choose at least one grouping column.");
+          return;
+        }
+      }
+
       var testHypothesisChecked = $("input[name='chart_types[]'][value='test-hypothesis']").is(":checked");
       var compareParametersChecked = $("input[name='chart_types[]'][value='compare-parameters']").is(":checked");
       var heatmapChecked = $("input[name='chart_types[]'][value='heatmap_plot']").is(":checked");
@@ -485,7 +494,7 @@
         var condition1TestSelected = $("#condition1-test").val();
         var condition2TestSelected = $("#condition2-test").val();
         
-        if (!columnTestSelected || !condition1TestSelected || !condition2TestSelected) {
+        if (!columnTestSelected || !condition1TestSelected || !condition2TestSelected || condition1TestSelected === condition2TestSelected) {
           e.preventDefault();
           alert("Please select a variable and conditions to compare on for the 'Test Hypothesis' analysis.");
           return;
@@ -498,7 +507,7 @@
         var condition1PooledSelected = $("#condition1-pooled").val();
         var condition2PooledSelected = $("#condition2-pooled").val();
         
-        if (!columnPooledSelected || !condition1PooledSelected || !condition2PooledSelected) {
+        if (!columnPooledSelected || !condition1PooledSelected || !condition2PooledSelected || condition1PooledSelected === condition2PooledSelected) {
           e.preventDefault();
           alert("Please select a variable and conditions to compare on for the 'Compare Growth' analysis.");
           return;
@@ -508,69 +517,23 @@
       // Fit Statistics validation
       var poolReplicates = $("input[name='pool_replicates']:checked").val();
       var selectedOptions = $("input[name='pool_options[]']:checked").length;
-      if (poolReplicates === 'yes' && selectedOptions === 0) {
+      if ($('input[name="chart_types[]"][value="fit_stats"]').is(':checked') &&
+          poolReplicates === 'yes' && selectedOptions === 0) {
         e.preventDefault();
         alert("Please select at least one parameter to pool on for the Fit Statistics analysis, or select 'No'.");
       }
     });
 
     // Initialize form visibility based on session data
-    // If GP plot is selected, show its containers
-    if ($("input[name='chart_types[]'][value='gp_plot']").is(":checked")) {
-      $(".gp-pool-by-container").show();
-      $(".gp-subset-toggle").show();
-      if ($("#gp_subset_yes").is(":checked")) {
-        $(".gp-subset-container").show();
-      }
-    }
+    (savedGpFilters.length ? savedGpFilters : [{ column: "", values: [] }]).forEach(filter => addGpFilter(filter));
 
-    // If Fit Stats is selected, show its containers
-    if ($("input[name='chart_types[]'][value='fit_stats']").is(":checked")) {
-      $(".radio-container").show();
-      if ($("input[name='pool_replicates']:checked").val() === 'yes') {
-        $(".checkbox-container").show();
-      }
-    }
+    updateFitStatsVisibility();
 
     // If Heatmap is selected, show its containers
     if ($("input[name='chart_types[]'][value='heatmap_plot']").is(":checked")) {
       $(".heatmap-container").show();
     }
 
-    // If Test Hypothesis is selected, show its containers and populate condition dropdowns
-    if ($("input[name='chart_types[]'][value='test-hypothesis']").is(":checked")) {
-      $(".test-hypothesis-container").show();
-      const columnTest = $("#column-test").val();
-      if (columnTest) {
-        generateSubsetDropdowns(columnTest, "test", "test");
-      }
-    }
-
-    // If Compare Parameters is selected, show its containers and populate condition dropdowns
-    if ($("input[name='chart_types[]'][value='compare-parameters']").is(":checked")) {
-      $(".compare-parameters-container").show();
-      const columnPooled = $("#column-pooled").val();
-      if (columnPooled) {
-        generateSubsetDropdowns(columnPooled, "pooled", "pooled");
-      }
-    }
-
-    // Hide Fit Stats options initially
-    $(".checkbox-container").hide();
-
-    // Handle "No" and "Yes" radio button change events
-    $("input[name='pool_replicates']").on("change", function() {
-      if ($(this).val() === "yes") {
-        $(".checkbox-container").show();
-      } else {
-        $(".checkbox-container").hide();
-        clearCheckedOptions();
-      }
-    });
-
-    function clearCheckedOptions() {
-      $("input[name='pool_options[]']").prop("checked", false);
-    }
   });
 </script>
 

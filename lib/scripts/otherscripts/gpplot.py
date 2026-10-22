@@ -11,7 +11,7 @@ plt.rcParams.update({
     'legend.fontsize': 12
 })
 
-def plot_gp_data(derived_path, subset_name=None):
+def plot_gp_data(derived_path, subset_name=None, pool_columns=None):
     data = pd.read_csv(os.path.join(derived_path, "plot_gp_data.txt"), sep='\t', encoding='utf-8')
     print("COLUMNS:")
     print(data.columns.tolist())
@@ -20,11 +20,14 @@ def plot_gp_data(derived_path, subset_name=None):
     plt.figure(figsize=(10, 6))
     if 'mu' in data.columns and 'Sigma' in data.columns:
         #pooled option
-        col = data.columns[1]
-        data = data[[col, 'Time', 'mu', 'Sigma']]
-        conditions = data[col].unique()
-        for condition in conditions:
-            cond_data = data[data[col] == condition].sort_values(by='Time')
+        columns = pool_columns or [data.columns[1]]
+        missing = [column for column in columns if column not in data.columns]
+        if missing:
+            raise ValueError(f"Grouping columns missing from GP output: {', '.join(missing)}")
+        for group, cond_data in data.groupby(columns, sort=False, dropna=False):
+            group = group if isinstance(group, tuple) else (group,)
+            condition = ", ".join(f"{column}: {value}" for column, value in zip(columns, group))
+            cond_data = cond_data.sort_values(by='Time')
             # Extract values
             time = cond_data['Time'].values
             mean = cond_data['mu'].values
@@ -46,7 +49,7 @@ def plot_gp_data(derived_path, subset_name=None):
     # Final touches
     plt.xlabel('Time')
     plt.ylabel('Predicted OD')
-    if subset_name != ':':
+    if subset_name and subset_name != ':':
         title = f'Gaussian Process Plot with Subset {subset_name}'
     else:
         title = 'Gaussian Process Plot'
@@ -69,4 +72,5 @@ if __name__ == "__main__":
     subset_name = sys.argv[2] if len(sys.argv) > 2 else None
 
     # Call the function and get the result
-    plot_gp_data(derived_path, subset_name)
+    pool_columns = sys.argv[3].split(',') if len(sys.argv) > 3 and sys.argv[3] not in ('', 'None') else None
+    plot_gp_data(derived_path, subset_name, pool_columns)

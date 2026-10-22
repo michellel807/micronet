@@ -74,17 +74,8 @@
           <% end %>
 
           <% if session[:chart_types].include?('gp_plot') %>
-            <% if session[:gp_pool_by_column].present? %>
-              <% if session[:gp_subset_choice] == "yes" && session[:gp_subset_column].present? %>
-                <p>Gaussian Process Plot (Pooled by <%= session[:gp_pool_by_column] %> and Subset on <%= session[:gp_subset_column] %>)</p>
-              <% elsif session[:gp_subset_choice] == "no" %>
-                <p>Gaussian Process Plot (Pooled by <%= session[:gp_pool_by_column] %>)</p>
-              <% else %>
-                <p>Gaussian Process Plot (Pooled by <%= session[:gp_pool_by_column] %> but no subset specified)</p>
-              <% end %>
-            <% else %>
-              <p>Gaussian Process Plot (No pooling specified)</p>
-            <% end %>
+            <p>Gaussian Process Plot (Subset on <%= GpConfiguration.subset_description(session) %>;
+              <%= GpConfiguration.pool_columns(session).any? ? "Pooled by #{GpConfiguration.pool_columns(session).join(', ')}" : "No pooling" %>)</p>
           <% end %>
 
           <% if session[:chart_types].include?('fit_stats') %>

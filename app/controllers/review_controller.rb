@@ -63,13 +63,30 @@ class ReviewController < ApplicationController
       session[:compare_parameters_pool] = params[:column_pooled] || 'None'
       session[:email] = params[:email] || ""
       session[:data_files] = params[:data_files] || []
-      session[:gp_pool_by_column] = params[:gp_pool_by_column] || "None"
-      session[:gp_subset_choice] = params[:gp_subset_choice] || []
+      session[:gp_pool_by_column] = params[:gp_pool_by_column].presence || "None"
       session[:gp_subset_column] = params[:gp_subset_column] || "None"
       session[:gp_conditions] = params[:gp_conditions] || []
+      # Preserve the legacy scalar fields for already queued jobs and sessions.
+      session[:gp_subset_filters] = GpConfiguration.filters(params)
+      session[:gp_pool_columns] = GpConfiguration.pool_columns(params)
+      session[:gp_pool_replicates] = params[:gp_pool_replicates].presence || (session[:gp_pool_columns].any? ? "yes" : "no")
+      session[:gp_pool_by_column] = session[:gp_pool_columns].presence&.join(",") || "None"
       session[:heatmap_value] = params[:heatmap_value] || 'None'
       session[:heatmap_x] = params[:heatmap_x] || 'None'
       session[:heatmap_y] = params[:heatmap_y] || 'None'
+      unless Job.gp_configuration_complete?(
+        chart_types: session[:chart_types],
+        subset_column: session[:gp_subset_column],
+        conditions: session[:gp_conditions],
+        pool_column: session[:gp_pool_by_column],
+        filters: session[:gp_subset_filters],
+        pool_columns: session[:gp_pool_columns],
+        pooling: session[:gp_pool_replicates],
+        columns: Array(@columns)
+      )
+        flash[:error] = Job::GP_CONFIGURATION_ERROR
+        redirect_to selectanalyses_path and return
+      end
       unless Job.heatmap_configuration_complete?(
         chart_types: session[:chart_types],
         value: session[:heatmap_value],
@@ -84,7 +101,6 @@ class ReviewController < ApplicationController
       puts "Pool_options is #{session[:pool_options]}"
       puts "Compare parameters subset is #{session[:compare_parameters_pool]}"
       puts "GP pool by column: #{session[:gp_pool_by_column]}"
-      puts "GP subset choice: #{session[:gp_subset_choice]}"
       puts "GP subset column: #{session[:gp_subset_column]}"
       puts "GP subset values: #{session[:gp_conditions].inspect}"
       puts "Heatmap value: #{session[:heatmap_value]}"
@@ -92,6 +108,9 @@ class ReviewController < ApplicationController
       puts "Heatmap y-axis: #{session[:heatmap_y]}"
 
     permitted = params.permit!
+    session[:comparison_selections] = permitted.to_h.select do |key, _|
+      key.match?(/\A(condition[12]_(test|pooled)|(test|pooled)_subset_.+)\z/)
+    end
 
     test_subset_params = permitted.to_h.select { |k, v| k.start_with?("test_subset_") && v.present? && !v.start_with?("Select a value") }
     compare_subset_params = permitted.to_h.select { |k, v| k.start_with?("pooled_subset_") && v.present? && !v.start_with?("Select a value") }
@@ -125,13 +144,7 @@ class ReviewController < ApplicationController
     puts "compare_finalsubset is #{session[:compare_finalsubset]}"
     puts "hypothesis is #{session[:hypothesis]}"
 
-    @gp_pool_by_column = session[:gp_pool_by_column]
-    @gp_pool_by_column = "'#{@gp_pool_by_column}'"
-    @gp_subset_column = session[:gp_subset_column]
-    @gp_conditions = session[:gp_conditions]
-    @gp_subset_choice = session[:gp_subset_choice]
-    gp_finalsubset = "'#{@gp_subset_column}:#{@gp_conditions.join(",")}'"
-    session[:gp_finalsubset] = gp_finalsubset
+    session[:gp_finalsubset] = "'#{GpConfiguration.subset_argument(session)}'"
     puts "GP final subset is #{session[:gp_finalsubset]}"
 
     @heatmap_value = session[:heatmap_value]

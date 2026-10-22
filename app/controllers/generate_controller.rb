@@ -28,19 +28,33 @@ class GenerateController < ApplicationController
 
   def run
     @job = Job.find(session[:current_user_id])
-    heatmap_columns =
-      if session[:chart_types]&.include?("heatmap_plot")
+    analysis_columns =
+      if (Array(session[:chart_types]) & %w[heatmap_plot gp_plot]).any?
         mapping_columns(session[:mapping_file_paths])
       else
         []
       end
+
+    unless Job.gp_configuration_complete?(
+      chart_types: session[:chart_types],
+      subset_column: session[:gp_subset_column],
+      conditions: session[:gp_conditions],
+      pool_column: session[:gp_pool_by_column],
+      filters: GpConfiguration.filters(session),
+      pool_columns: GpConfiguration.pool_columns(session),
+      pooling: session[:gp_pool_replicates],
+      columns: analysis_columns
+    )
+      flash[:error] = Job::GP_CONFIGURATION_ERROR
+      redirect_to selectanalyses_path and return
+    end
 
     unless Job.heatmap_configuration_complete?(
       chart_types: session[:chart_types],
       value: session[:heatmap_value],
       x: session[:heatmap_x],
       y: session[:heatmap_y],
-      columns: heatmap_columns
+      columns: analysis_columns
     )
       flash[:error] = "Please select a heatmap value and two different axes before continuing."
       redirect_to selectanalyses_path and return
@@ -66,7 +80,7 @@ class GenerateController < ApplicationController
       session[:test_finalsubset],
       session[:hypothesis],
       session[:gp_pool_by_column],
-      session[:gp_subset_choice],
+      nil, # Legacy gp_subset_choice slot in serialized JobAnalyzer jobs.
       session[:gp_finalsubset],
       session[:compare_parameters_pool],
       session[:compare_finalsubset],
