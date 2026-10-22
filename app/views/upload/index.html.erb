@@ -11,29 +11,8 @@
 </p>
 
 <p style="text-align: left;">
-  If you are uploading data files with mapping files, upload them as explicit pairs below. Add another pair for each additional plate.
+  Upload each data file with its matching mapping file below. Add another pair for each additional plate.
 </p>
-
-<% if @usr_data_file_names.present? || @usr_mapping_file_names.present? || @usr_meta_file_name.present? || @usr_interval_file_name.present? %>
-  <div class="current-uploads" style="text-align: left; background: #f4f4f4; color: #333; padding: 12px 16px; border-radius: 6px; margin: 20px 0;">
-    <strong>Currently uploaded.</strong> Submitting replaces <em>all</em> of these &mdash; re-select every file you want to keep, not just the ones you're changing:
-    <ul style="margin: 8px 0 0; padding-left: 20px;">
-      <% if @usr_data_file_names.present? %>
-        <li>Data Files: <%= @usr_data_file_names.join(", ") %></li>
-      <% end %>
-      <% if @usr_mapping_file_names.present? %>
-        <li>Mapping Files: <%= @usr_mapping_file_names.join(", ") %></li>
-      <% end %>
-      <% if @usr_meta_file_name.present? %>
-        <li>Meta File: <%= @usr_meta_file_name %></li>
-      <% end %>
-      <% if @usr_interval_file_name.present? %>
-        <li>Interval File: <%= @usr_interval_file_name %></li>
-      <% end %>
-      <li>GP Time Step Size: <%= @gp_time_step_size.presence || Job::DEFAULT_TSS %></li>
-    </ul>
-  </div>
-<% end %>
 
 <form id="upload-form" method="post" enctype="multipart/form-data" action="<%= upload_path %>">
   <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
@@ -41,29 +20,31 @@
   <div style="margin-top: 20px; text-align: left;">
     <h2>Data + Mapping Pairs</h2>
     <p style="text-align: left;">
-      Each pair must include a data file. Mapping is optional per pair.
+      Each pair must include both a data file and a mapping file.
     </p>
     <div id="pair-rows"></div>
     <button type="button" id="add-pair-button" style="margin-top: 12px; padding: 10px 20px; background-color: #1a2456; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 14px;">Add another pair</button>
   </div>
 
-<p style="margin-top: 50px; text-align: left;">
-  You can upload a meta file to provide plate-level information or to add additional details that complement your existing mapping files. <br>
-  If you are only uploading a meta file, make sure your data file names correspond to the <strong style="font-weight: bold;">Plate_IDs</strong> shown in the preview window below, and leave the mapping file upload blank.
-</p>
-
   <!-- Meta Files Upload -->
-  <div style="margin-top: 10px;">
-    <h2>Meta File</h2>
+  <div style="margin-top: 40px;">
+    <h2>Meta File (Optional)</h2>
+    <p>
+      Upload a meta file alongside your data files to add information that applies
+      to an entire plate, such as its strain or growth medium.
+    </p>
+    <ul>
+      <li>Use the same <code>Plate_ID</code> values as in those files.</li>
+    </ul>
+    <p>After you select a meta file, the preview below shows its <code>Plate_ID</code> values.</p>
     <input type="file" id="meta-file-input" name="meta_files" accept=".txt,.tsv,.csv,.asc">
     <div id="meta-file-preview" hidden></div>
   </div>
 
   <% selected_tss_value = @gp_time_step_size.presence || Job::DEFAULT_TSS %>
-  <% show_tss_options = selected_tss_value.to_s != Job::DEFAULT_TSS.to_s %>
 
   <div class="optional-upload-settings">
-    <div>
+    <div class="optional-upload-setting">
       <h2>Interval File (Optional)</h2>
       <p>
         The default measurement interval is 600s. Upload an interval file only
@@ -72,61 +53,41 @@
       <input type="file" id="interval-file-input" name="interval_files" accept=".txt,.tsv,.csv,.asc">
     </div>
 
-    <div>
-      <h2>Data Thinning (Optional)</h2>
-      <p>
-        MicroNet uses a Gaussian Process time step size of
-        <strong><span id="gp-time-step-size-current"><%= selected_tss_value %></span></strong>.
-        The default value is <%= Job::DEFAULT_TSS %>, which keeps the full
-        time-point resolution.
+    <div class="optional-upload-setting">
+      <h2><label for="gp-time-step-size">Time step size (Optional)</label></h2>
+      <p id="gp-time-step-size-description">
+        Use every nth time point for Gaussian Process fitting.
+        The default, <%= Job::DEFAULT_TSS %>, keeps every measurement.
       </p>
-
-      <div
-        class="tss-control-shell"
-        id="tss-control-shell"
-        style="<%= show_tss_options ? 'display: none;' : '' %>"
+      <input
+        type="text"
+        id="gp-time-step-size"
+        name="gp_time_step_size"
+        value="<%= selected_tss_value %>"
+        inputmode="numeric"
+        pattern="[1-9][0-9]*"
+        autocomplete="off"
+        required
+        aria-describedby="gp-time-step-size-description gp-time-step-size-help"
+        class="tss-number-input"
       >
-        <button
-          type="button"
-          id="show-tss-options"
-          class="tss-toggle-button"
-        >
-          Change
-        </button>
-        <span class="tss-control-status">Default thinning setting</span>
-      </div>
-
-      <div id="gp-time-step-size-options" class="tss-options-panel" style="<%= show_tss_options ? '' : 'display: none;' %>">
-        <label for="gp-time-step-size" class="field-label">
-          Time step size
-        </label>
-
-        <input
-          type="text"
-          id="gp-time-step-size"
-          name="gp_time_step_size"
-          value="<%= selected_tss_value %>"
-          inputmode="numeric"
-          pattern="[1-9][0-9]*"
-          autocomplete="off"
-          required
-          class="tss-number-input"
-        >
-
-        <p style="margin-top: 10px;">
-          Larger values use fewer time points, which can reduce memory use but
-          may affect interpretation of rapid growth dynamics. MicroNet will ask
-          you to choose a lower value if it leaves fewer than
-          <%= Job::MIN_GP_TIME_POINTS %> time points for fitting.
+    </div>
+    <div class="tss-help">
+      <p id="gp-time-step-size-help">
+        Larger time step sizes reduce memory use but may miss rapid changes.
+        Keep at least <%= Job::MIN_GP_TIME_POINTS %> time points for fitting.
+      </p>
+      <details>
+        <summary>Minimum data and automatic retries</summary>
+        <p>
+          MicroNet will ask you to choose a lower value if your selection leaves
+          fewer than <%= Job::MIN_GP_TIME_POINTS %> time points for fitting.
+          If fitting runs out of memory, MicroNet retries up to
+          <%= Job::MAX_TSS_ATTEMPTS - 1 %> more times, increasing the time step
+          size by <%= Job::TSS_RETRY_INCREMENT %> each time while keeping at least
+          <%= Job::MIN_GP_TIME_POINTS %> time points.
         </p>
-
-        <p style="margin-top: 10px;">
-          If the selected value still runs out of memory, MicroNet will retry up
-          to three more times, increasing the time step size by 2 each time
-          while keeping at least <%= Job::MIN_GP_TIME_POINTS %> time points for
-          fitting.
-        </p>
-      </div>
+      </details>
     </div>
   </div>
 
@@ -192,15 +153,11 @@ document.getElementById('meta-file-input').addEventListener('change', function(e
     const pairRows = document.getElementById('pair-rows');
     const addPairButton = document.getElementById('add-pair-button');
     const form = document.getElementById('upload-form');
-    const hasExistingUploads = <%= @usr_data_file_names.present? ? 'true' : 'false' %>;
+    const savedPairs = <%= raw(json_escape(saved_upload_pairs(@job).map { |pair| pair.slice(:id, :data_name, :mapping_name) }.to_json)) %>;
     const gpTimeStepInput = document.getElementById('gp-time-step-size');
-    const gpTimeStepPanel = document.getElementById('gp-time-step-size-options');
-    const gpTimeStepButton = document.getElementById('show-tss-options');
-    const gpTimeStepShell = document.getElementById('tss-control-shell');
-    const gpTimeStepCurrent = document.getElementById('gp-time-step-size-current');
     let nextPairId = 1;
 
-    function addFileRemoval(input, description) {
+    function addFileRemoval(input, description, savedName = null, removalName = null) {
       const control = document.createElement('div');
       control.className = 'upload-file-control';
       input.parentNode.insertBefore(control, input);
@@ -208,6 +165,14 @@ document.getElementById('meta-file-input').addEventListener('change', function(e
       input.setAttribute('aria-label', description);
 
       if (!input.id) input.id = `upload-${input.name.replace(/[^a-z0-9]/gi, '-')}`;
+
+      const removed = document.createElement('input');
+      removed.type = 'hidden';
+      removed.name = removalName || 'unused_removal';
+      removed.value = '1';
+      removed.disabled = true;
+      control.appendChild(removed);
+      input.dataset.savedName = savedName || '';
 
       const heading = document.createElement('span');
       heading.className = 'upload-file-label';
@@ -227,15 +192,18 @@ document.getElementById('meta-file-input').addEventListener('change', function(e
       button.textContent = '×';
       function updateSelection() {
         const file = input.files[0];
-        control.classList.toggle('has-file', !!file);
-        filename.textContent = file ? file.name : 'Choose file';
-        filename.title = file ? file.name : `Choose ${description.toLowerCase()}`;
-        button.hidden = !file;
-        button.setAttribute('aria-label', file ? `Remove ${description.toLowerCase()}: ${file.name}` : `Remove ${description.toLowerCase()}`);
+        const name = file ? file.name : input.dataset.savedName;
+        control.classList.toggle('has-file', !!name);
+        filename.textContent = name || 'Choose file';
+        filename.title = name || `Choose ${description.toLowerCase()}`;
+        button.hidden = !name;
+        button.setAttribute('aria-label', `Remove ${description.toLowerCase()}${name ? ': ' + name : ''}`);
       }
       input.addEventListener('change', updateSelection);
       button.addEventListener('click', () => {
         input.value = '';
+        input.dataset.savedName = '';
+        removed.disabled = false;
         input.dispatchEvent(new Event('change', { bubbles: true }));
         input.focus();
       });
@@ -244,10 +212,10 @@ document.getElementById('meta-file-input').addEventListener('change', function(e
       updateSelection();
     }
 
-    addFileRemoval(document.getElementById('meta-file-input'), 'Meta file');
-    addFileRemoval(document.getElementById('interval-file-input'), 'Interval file');
+    addFileRemoval(document.getElementById('meta-file-input'), 'Meta file', <%= raw(json_escape(session[:usr_meta_file_path].to_json)) %>, 'remove_meta_file');
+    addFileRemoval(document.getElementById('interval-file-input'), 'Interval file', <%= raw(json_escape(session[:usr_interval_file_path].to_json)) %>, 'remove_interval_file');
 
-    function buildPairRow(index, pairId) {
+    function buildPairRow(index, pairId, savedPair = null) {
       const wrapper = document.createElement('div');
       wrapper.className = 'pair-row';
       wrapper.dataset.pairId = String(pairId);
@@ -285,50 +253,42 @@ document.getElementById('meta-file-input').addEventListener('change', function(e
       mappingInput.name = `mapping_pair_files[${pairId}]`;
       mappingInput.accept = '.asc,.tsv,.txt,.csv';
 
+      if (savedPair) {
+        const retained = document.createElement('input');
+        retained.type = 'hidden';
+        retained.name = `retained_pairs[${pairId}]`;
+        retained.value = savedPair.id;
+        wrapper.appendChild(retained);
+      }
       wrapper.appendChild(header);
       wrapper.appendChild(dataInput);
       wrapper.appendChild(mappingInput);
-      addFileRemoval(dataInput, 'Data file');
-      addFileRemoval(mappingInput, 'Mapping file');
+      addFileRemoval(dataInput, 'Data file', savedPair?.data_name, 'remove_data_pairs[]');
+      dataInput.parentNode.querySelector('input[type=hidden]').value = pairId;
+      addFileRemoval(mappingInput, 'Mapping file', savedPair?.mapping_name, 'remove_mapping_pairs[]');
+      mappingInput.parentNode.querySelector('input[type=hidden]').value = pairId;
       return wrapper;
     }
 
-    function addPairRow() {
+    function addPairRow(savedPair = null) {
       const index = pairRows.querySelectorAll('.pair-row').length + 1;
       const pairId = nextPairId;
       nextPairId += 1;
-      pairRows.appendChild(buildPairRow(index, pairId));
+      pairRows.appendChild(buildPairRow(index, pairId, savedPair));
     }
 
-    addPairButton.addEventListener('click', addPairRow);
-    addPairRow();
-
-    if (gpTimeStepButton && gpTimeStepPanel) {
-      gpTimeStepButton.addEventListener('click', () => {
-        gpTimeStepPanel.style.display = 'block';
-        if (gpTimeStepShell) {
-          gpTimeStepShell.style.display = 'none';
-        }
-        if (gpTimeStepInput) {
-          gpTimeStepInput.focus();
-        }
-      });
-    }
+    addPairButton.addEventListener('click', () => addPairRow());
+    if (savedPairs.length) savedPairs.forEach(pair => addPairRow(pair));
+    else addPairRow();
 
     if (gpTimeStepInput) {
       gpTimeStepInput.addEventListener('input', () => {
         gpTimeStepInput.value = gpTimeStepInput.value.replace(/\D/g, '').replace(/^0+/, '');
-        if (gpTimeStepCurrent) {
-          gpTimeStepCurrent.textContent = gpTimeStepInput.value || '<%= Job::DEFAULT_TSS %>';
-        }
       });
 
       gpTimeStepInput.addEventListener('blur', () => {
         if (gpTimeStepInput.value === '') {
           gpTimeStepInput.value = '<%= Job::DEFAULT_TSS %>';
-        }
-        if (gpTimeStepCurrent) {
-          gpTimeStepCurrent.textContent = gpTimeStepInput.value;
         }
       });
     }
@@ -338,22 +298,22 @@ document.getElementById('meta-file-input').addEventListener('change', function(e
       for (const row of rows) {
         const dataInput = row.querySelector('input[type="file"][name^="data_pair_files["]');
         const mappingInput = row.querySelector('input[type="file"][name^="mapping_pair_files["]');
-        const hasData = dataInput && dataInput.files.length > 0;
-        const hasMapping = mappingInput && mappingInput.files.length > 0;
+        const hasData = dataInput && (dataInput.files.length > 0 || !!dataInput.dataset.savedName);
+        const hasMapping = mappingInput && (mappingInput.files.length > 0 || !!mappingInput.dataset.savedName);
 
-        if (!hasData && hasMapping) {
+        if (hasData !== hasMapping) {
           event.preventDefault();
-          alert('Each pair row with a mapping file must also include a data file.');
+          alert('Each pair must include both a data file and a mapping file.');
           return;
         }
       }
 
       const hasDataUpload = Array.from(rows).some(row => {
         const dataInput = row.querySelector('input[type="file"][name^="data_pair_files["]');
-        return dataInput && dataInput.files.length > 0;
+        return dataInput && (dataInput.files.length > 0 || !!dataInput.dataset.savedName);
       });
 
-      if (!hasDataUpload && !hasExistingUploads) {
+      if (!hasDataUpload) {
         event.preventDefault();
         alert('Please upload at least one data file.');
       }

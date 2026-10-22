@@ -1,6 +1,10 @@
 class UploadController < ApplicationController
 skip_before_action :verify_authenticity_token
 require 'json'
+require 'tmpdir'
+require 'tempfile'
+
+SavedUpload = Struct.new(:path, :original_filename)
 
 
 def delete_files
@@ -80,9 +84,6 @@ def upload
   current_job = Job.find(session[:current_user_id])
   current_job.ensure_upload_directories!
 
-  current_job = Job.find(session[:current_user_id])
-  current_job.ensure_upload_directories!
-
   # Get uploaded files from explicit pair rows.
   data_pairs_param = params[:data_pair_files]
   mapping_pairs_param = params[:mapping_pair_files]
@@ -108,43 +109,53 @@ def upload
   interval_files = params[:interval_files]
   @gp_time_step_size = params[:gp_time_step_size].presence || Job::DEFAULT_TSS
 
+  # Saved selections are indices into this session, never client-provided paths.
+  saved_pairs = saved_upload_pairs(current_job)
+  retained_pairs = params[:retained_pairs]
+  uploads_changed = data_files_by_key.present? || mapping_files_by_key.present? ||
+    meta_files.present? || interval_files.present? ||
+    Array(params[:remove_data_pairs]).present? || Array(params[:remove_mapping_pairs]).present? ||
+    params[:remove_meta_file] == "1" || params[:remove_interval_file] == "1" ||
+    (retained_pairs.respond_to?(:values) ? retained_pairs.values.sort : []) != saved_pairs.map { |pair| pair[:id].to_s }.sort
+  if retained_pairs.respond_to?(:each_pair)
+    retained_pairs.each_pair do |key, saved_index|
+      pair = saved_pairs.find { |entry| entry[:id].to_s == saved_index.to_s }
+      next unless pair
+
+      data_files_by_key[key] ||= saved_upload(current_job, pair[:data_path], pair[:data_name], "data") unless Array(params[:remove_data_pairs]).include?(key)
+      mapping_files_by_key[key] ||= saved_upload(current_job, pair[:mapping_path], pair[:mapping_name], "mapping", pair[:plate_id]) unless Array(params[:remove_mapping_pairs]).include?(key)
+    end
+  end
+  meta_files ||= saved_upload(current_job, session[:meta_file_path], session[:usr_meta_file_path], "meta") unless params[:remove_meta_file] == "1"
+  interval_files ||= saved_upload(current_job, session[:interval_file_path], session[:usr_interval_file_path], "interval") unless params[:remove_interval_file] == "1"
+  data_files_by_key.compact!
+  mapping_files_by_key.compact!
+
   if data_files_by_key.blank?
-    if mapping_files_by_key.present?
-      flash.alert = "Each pair row with a mapping file must also include a data file."
-      redirect_to upload_path and return
-    end
-
-    if session[:data_file_paths].present?
-      normalized_tss = normalize_gp_time_step_size(params[:gp_time_step_size])
-      unless normalized_tss
-        restore_upload_state_from_session
-        @gp_time_step_size = params[:gp_time_step_size].presence || Job::DEFAULT_TSS
-        flash.now[:alert] = "Please enter a whole number of 1 or greater for the Gaussian Process time step size."
-        return render :index
-      end
-
-      @gp_time_step_size = normalized_tss
-      restore_upload_state_from_session
-
-      unless valid_gp_time_step_size_for_paths?(session[:data_file_paths], @gp_time_step_size)
-        return render :index
-      end
-
-      session[:gp_time_step_size] = @gp_time_step_size
-      flash.notice = "Time step size updated. Proceeding to analyses selection..."
-      redirect_to '/selectanalyses'
-      return
-    end
-
     flash.alert = "Please upload at least one data file."
     redirect_to upload_path and return
   end
 
-  # Any mapping upload without a matching data row is invalid.
-  extra_mapping_keys = mapping_files_by_key.keys - data_files_by_key.keys
-  if extra_mapping_keys.present?
-    flash.alert = "Each pair row with a mapping file must also include a data file."
+  @gp_time_step_size = normalize_gp_time_step_size(params[:gp_time_step_size])
+  unless @gp_time_step_size
+    restore_upload_state_from_session
+    @gp_time_step_size = params[:gp_time_step_size].presence || Job::DEFAULT_TSS
+    flash.now[:alert] = "Please enter a whole number of 1 or greater for the Gaussian Process time step size."
+    return render :index
+  end
+
+  # Every submitted or retained data row needs its matching mapping file.
+  if data_files_by_key.keys.sort != mapping_files_by_key.keys.sort
+    flash.alert = "Each pair must include both a data file and a mapping file."
     redirect_to upload_path and return
+  end
+
+  unless uploads_changed
+    restore_upload_state_from_session
+    return render :index unless valid_gp_time_step_size_for_paths?(@data_file_paths, @gp_time_step_size)
+
+    session[:gp_time_step_size] = @gp_time_step_size
+    redirect_to selectanalyses_path and return
   end
 
   pair_keys_in_order = data_files_by_key.keys.sort_by(&:to_i)
@@ -152,10 +163,13 @@ def upload
     [data_files_by_key[pair_key], mapping_files_by_key[pair_key]]
   end
   meta_file = nil
+  # Validate a separate copy so a failed edit cannot overwrite saved uploads.
+  staging_root = Pathname.new(Dir.mktmpdir("micronet-upload-"))
+  archive_uploads(staging_root, pair_entries, meta_files, interval_files)
 
   # Initialize the interval file if it exists
   if interval_files.present?
-    interval_file = IntervalFile.new(interval_files, upload_root: current_job.upload_root)
+    interval_file = IntervalFile.new(interval_files, upload_root: staging_root)
     unless interval_file.valid?
       flash[:alert] = interval_file.error_message
       @interval_file_path = nil
@@ -166,7 +180,7 @@ def upload
   end
 
   if meta_files.present?
-    meta_file = MetaFile.new(meta_files, upload_root: current_job.upload_root)
+    meta_file = MetaFile.new(meta_files, upload_root: staging_root)
     unless meta_file.valid?
       flash[:alert] = meta_file.error_message
       @meta_file_path = nil
@@ -187,7 +201,7 @@ def upload
     if mapping_file_input.present?
       mapping_file = MappingFile.new(
         mapping_file_input,
-        upload_root: current_job.upload_root,
+        upload_root: staging_root,
         output_basename: pair_basename
       )
 
@@ -205,7 +219,7 @@ def upload
     data_file = DataFile.new(
       data_file_input,
       mapping_file&.plate_id,
-      upload_root: current_job.upload_root,
+      upload_root: staging_root,
       output_basename: pair_basename
     )
 
@@ -232,88 +246,58 @@ def upload
     end
   end
 
-  write_pair_metadata(current_job, pair_metadata_entries)
+  write_pair_metadata(current_job, pair_metadata_entries, root: staging_root)
 
-  if meta_file.present? && compare_pairs.blank?
-    if meta_file.plate_id_values.length != pair_entries.length
-      flash.alert = "The number of data files does not match the number of plate IDs in the meta file."
-      redirect_to upload_path and return
-    end
-  end
-
-  # Validate the data and mapping files and the meta file
-  success = false  # Start pessimistic by default
-
-  # Case 1: data + mapping files
-  if compare_pairs.present?
-    success = true
-    compare_pairs.each do |data_file_path, mapping_file_path|
-      success &&= Python.exec("lib/scripts/otherscripts/comparedataandmapping.py '#{data_file_path}' '#{mapping_file_path}'")
-    end
-
-  # Case 2: data + meta file only (no mapping)
-  elsif @data_file_paths.present? && @meta_file_path.present? && @mapping_file_paths.blank?
-    success = true
-
-  # Case 3: data files only (no mapping, no meta)
-  elsif @data_file_paths.present? && @mapping_file_paths.blank? && @meta_file_path.nil?
-    success = true
-
-  else
-    success = false
+  success = compare_pairs.all? do |data_file_path, mapping_file_path|
+    Python.exec("lib/scripts/otherscripts/comparedataandmapping.py '#{data_file_path}' '#{mapping_file_path}'")
   end
 
   if @meta_file_path.present? && @data_file_paths.present?
     # Run the Python script to merge meta data with data files
-    Python.exec("lib/scripts/otherscripts/mergemeta.py #{current_job.data_dir} #{current_job.mapping_dir} #{current_job.pair_metadata_path}")
-    @mapping_file_paths = Dir.glob(current_job.mapping_dir.join('*.txt'))
+    success &&= Python.exec("lib/scripts/otherscripts/mergemeta.py #{staging_root.join('data')} #{staging_root.join('mapping')} #{staging_root.join('pair_metadata.json')}")
+    @mapping_file_paths = Dir.glob(staging_root.join('mapping', '*.txt'))
                          .reject { |path| File.basename(path) == 'meta.txt' }
                          .map(&:to_s)
 
   end
 
   if success
-    persist_upload_session!
-    @gp_time_step_size = normalize_gp_time_step_size(params[:gp_time_step_size])
-
-    unless @gp_time_step_size
-      session[:gp_time_step_size] = Job::DEFAULT_TSS
-      flash[:alert] = "Please enter a whole number of 1 or greater for the Gaussian Process time step size."
-      redirect_to upload_path
-      return
-    end
-
     unless valid_gp_time_step_size_for_paths?(@data_file_paths, @gp_time_step_size, flash_now: false)
-      session[:gp_time_step_size] = Job::DEFAULT_TSS
-      redirect_to upload_path
-      return
+      redirect_to upload_path and return
     end
 
+    # Replace only upload inputs; leave generated result directories alone.
+    %w[data mapping parameters originals].each do |directory|
+      destination = current_job.upload_root.join(directory)
+      FileUtils.rm_rf(destination)
+      source = staging_root.join(directory)
+      FileUtils.mv(source, destination) if source.exist?
+    end
+    current_job.ensure_upload_directories!
+    FileUtils.cp(staging_root.join("pair_metadata.json"), current_job.pair_metadata_path)
+    @data_file_paths.map! { |path| path.sub(staging_root.to_s, current_job.upload_root.to_s) }
+    @mapping_file_paths.map! { |path| path.sub(staging_root.to_s, current_job.upload_root.to_s) }
+    @meta_file_path = @meta_file_path&.sub(staging_root.to_s, current_job.upload_root.to_s)
+    @interval_file_path = @interval_file_path&.sub(staging_root.to_s, current_job.upload_root.to_s)
+    persist_upload_session!
     session[:gp_time_step_size] = @gp_time_step_size
     # Reset analysis selections so a new upload starts fresh
     %i[chart_types pool_replicates pool_options gp_pool_by_column
        gp_subset_choice gp_subset_column gp_conditions
        heatmap_value heatmap_x heatmap_y column_test column_pooled].each do |key|
-      session.delete(key)
+      session.delete(key) if uploads_changed
     end
     flash.notice = "Files uploaded successfully! Proceeding to analyses selection..."
     # Redirect directly to next step (SelectAnalyses) on successful upload
     redirect_to '/selectanalyses'
   else
-    # If the Python script failed, clear the session variables
-    session[:data_file_paths] = nil
-    session[:mapping_file_paths] = nil
-    session[:usr_data_file_paths] = nil
-    session[:usr_mapping_file_paths] = nil
-    session[:meta_file_path] = nil
-    session[:usr_meta_file_path] = nil
-    session[:interval_file_path] = nil
-    session[:usr_interval_file_path] = nil
-    session[:gp_time_step_size] = nil
-    flash.alert = "Files do not match. Please check your files and try again." # Use flash instead of flash.now
-    delete_files # Clear the uploaded files
-    return
+    flash.alert = "Files do not match. Please check your files and try again."
+    redirect_to upload_path
   end
+ensure
+  FileUtils.remove_entry(staging_root) if staging_root && staging_root.exist?
+  Array(@saved_upload_tempfiles).each(&:close!)
+
 end
 
 
@@ -351,13 +335,69 @@ require 'fileutils'
 
 private
 
-def write_pair_metadata(job, pair_entries)
+def saved_upload_pairs(job)
+  metadata = job && job.pair_metadata_path.exist? ? JSON.parse(File.read(job.pair_metadata_path)).fetch("pairs", []) : []
+  Array(session[:data_file_paths]).each_with_index.map do |path, index|
+    entry = metadata.find { |pair| pair["pair_key"] == File.basename(path, ".txt") } || {}
+    mapping_index = Array(session[:mapping_file_paths]).index { |mapping| File.basename(mapping) == File.basename(path) }
+    mapping_index ||= index if metadata.empty? && Array(session[:mapping_file_paths]).length == Array(session[:data_file_paths]).length
+    {
+      id: index, data_path: path, data_name: Array(session[:usr_data_file_paths])[index],
+      mapping_path: mapping_index && session[:mapping_file_paths][mapping_index],
+      mapping_name: entry["original_mapping_filename"].presence || (metadata.empty? && mapping_index && Array(session[:usr_mapping_file_paths])[mapping_index]),
+      plate_id: entry["parsed_plate_id"]
+    }
+  end
+end
+
+helper_method :saved_upload_pairs
+
+def saved_upload(job, path, filename, kind, plate_id = nil)
+  return unless path.present? && filename.present? && File.file?(path)
+
+  basename = %w[data mapping].include?(kind) ? File.basename(path, ".txt") : kind
+  original = job.upload_root.join("originals", kind, "#{basename}#{File.extname(filename)}")
+  return SavedUpload.new(original.to_s, filename) if original.file?
+
+  # Adapt normalized files if originals are unavailable during an edit.
+  tempfile = Tempfile.new(["saved-upload", File.extname(filename)])
+  (@saved_upload_tempfiles ||= []) << tempfile
+  if kind == "mapping" && plate_id.present?
+    table = CSV.read(path, headers: true, col_sep: "\t")
+    table.each { |row| row["Plate_ID"] = plate_id } if table.headers.include?("Plate_ID")
+    CSV.open(tempfile.path, "w", col_sep: File.extname(filename).downcase == ".csv" ? "," : "\t") do |csv|
+      csv << table.headers
+      table.each { |row| csv << row.fields }
+    end
+  elsif File.extname(filename).downcase == ".csv"
+    CSV.open(tempfile.path, "w") { |csv| CSV.foreach(path, col_sep: "\t") { |row| csv << row } }
+  else
+    FileUtils.cp(path, tempfile.path)
+  end
+  SavedUpload.new(tempfile.path, filename)
+end
+
+def archive_uploads(root, pairs, meta, interval)
+  entries = pairs.each_with_index.flat_map do |(data, mapping), index|
+    [[data, "data", "file#{index + 1}"], [mapping, "mapping", "file#{index + 1}"]]
+  end
+  entries += [[meta, "meta", "meta"], [interval, "interval", "interval"]]
+  entries.each do |file, kind, basename|
+    next unless file
+
+    directory = root.join("originals", kind)
+    FileUtils.mkdir_p(directory)
+    FileUtils.cp(file.path, directory.join("#{basename}#{File.extname(file.original_filename)}"))
+  end
+end
+
+def write_pair_metadata(job, pair_entries, root: job.upload_root)
   metadata = {
     "job_id" => job.id,
     "generated_at" => Time.current.iso8601,
     "pairs" => pair_entries
   }
-  File.write(job.pair_metadata_path, JSON.pretty_generate(metadata))
+  File.write(root.join("pair_metadata.json"), JSON.pretty_generate(metadata))
 end
 
 def normalize_gp_time_step_size(value)
