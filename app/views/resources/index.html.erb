@@ -1,143 +1,183 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Resources page</title>
-    <%= stylesheet_link_tag 'resources' %>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <% content_for :title, "Resources page" %>
-  </head>
+<% content_for :title, "Resources" %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "analysis-icons", "resources", "data-turbo-track": "reload" %>
+<% end %>
 
-  <body>
+<div class="resources">
   <%= render "layouts/header" %>
+  <main class="resources-main">
+    <section class="resources-intro" aria-labelledby="resources-heading">
+      <h1 id="resources-heading">MicroNet: Background</h1>
+      <p>
+        MicroNet builds on the work of Peter Tonner and Firas Midani. It uses AMIGA, the Python
+        microbial growth analysis pipeline developed by Firas and based in part on Peter’s work.
+        For an in-depth explanation of the pipeline, see Firas’s
+        <a href="https://firasmidani.github.io/amiga/">AMIGA vignette</a>.
+      </p>
+      <p>
+        MicroNet makes these methods available through a web interface for researchers who want
+        to visualize growth curves and perform growth analyses without command-line tools.
+      </p>
+    </section>
 
-  <div class="resources">
-    <div class="column skinny">
-    <br>
-
-        <h1>MicroNet: Background</h1>
-<br>
-        <p>
-          MicroNet is built on the work of Peter Tonner and Firas Midani. In particular, it uses the
-          AMIGA pipeline developed by Firas, and partially based on work by Peter, that provides several frameworks for microbial
-          growth analysis in Python. Please check out the in-depth vignette Firas has developed for AMIGA here:
-          <a href="https://firasmidani.github.io/amiga/">https://firasmidani.github.io/amiga/</a>.
-
-          MicroNet simplifies the AMIGA pipeline into a user-friendly webapp that doesn't require
-          command-line knowledge. It is intended for researchers who would like to visualize their growth curves and/or perform basic analyses without resorting to command-line tools.
-        </p>
-
-        <h2>Demo Video</h2>
-
-        <div class="resources-video-container">
-          <video width="100%" controls>
-            <source src="/docs/MicroNet Demo.mp4" type="video/mp4">
-            Your browser does not support the video tag.
-          </video>
-        </div>
-
-        <h1>Specific Analyses</h1>
-
-        <h2>Raw Data (Per Well)</h2>
-
-        <p>
-          This analysis will generate a simple growth curve for each well in the user's dataset.
-          According to the
-          <a href="https://firasmidani.github.io/amiga/doc/plotting.html">AMIGA vignette</a>,
-          this analysis computes 'the fold-change for all wells relative to the negative control well.
-          Fold-change is computed as maximum change in OD in each well relative to the first time point divided by the maximum change in OD in the control well relative to the first time point.
-          The numbers on the top right of each plot is the raw maximum OD in each curve [...] wells where the fold-change is higher than 1.5 [are highlighted] in blue [while wells where the fold change is] lower than 0.5 [are highlighted] in red.'
-        </p>
-
-        <p>
-          In MicroNet, the Raw Data Plot requires each uploaded data file to contain exactly 96 wells
-          (a standard microplate). Files with a different number of wells will be rejected for this analysis.
-        </p>
-
-        <h2 id="test-differential-growth">Comparing Growth in Different Conditions</h2>
-
-        <p>
-          This analysis uses a Gaussian Process regression to test for differential growth between conditions.
-          To do so, it uses the "test" function of the AMIGA pipeline. See
-          <a href="https://firasmidani.github.io/amiga/doc/hypothesistesting.html">
-            https://firasmidani.github.io/amiga/doc/hypothesistesting.html
-          </a>
-          for more about the command-line usage of this function.
-
-          This analysis uses AMIGA's default number of permutations (99). The Gaussian Process
-          time step size is now adjustable directly in MicroNet: when you set up your analyses you can
-          choose a value from 1 (the default) up to 15. A larger time step size fits the model on fewer
-          time points, which lowers memory usage on large datasets at the cost of some temporal
-          resolution; MicroNet automatically caps your choice so the model always keeps at least 8 time
-          points, and it will retry an analysis with progressively larger time step sizes if it runs out
-          of memory (see <a href="#time-step-size">Time Step Size and Memory</a> below).
-
-          The analysis will generate a normalized OD plot modelling the growth of the two conditions you selected.
-          The thin lines surrounding the model curve indicate 95% confidence intervals.
-          The output report will provide the log Bayes Factor value,
-          as well as the confidence interval outside which this value must fall in order to indicate differential growth at an FDR of 10%.
-          If you require additional help understanding the output of this analysis, please
-          <a href="/contact">contact us</a>
-          and someone on our team will be happy to assist you with interpretation via email.
-        </p>
-
-        <h2 id="gaussian-process-plot">Gaussian Process Plot</h2>
-
-        <p>
-          This analysis fits a Gaussian Process regression to your growth curves and plots the resulting
-          model of normalized OD over time. The thin lines surrounding each curve indicate 95% confidence
-          intervals. It is a good way to visualize the underlying growth trend after smoothing out
-          measurement noise. You can optionally pool replicates by a metadata column (so that replicates of
-          the same condition are modelled together) and/or restrict the plot to a subset of conditions.
-        </p>
-
-        <h2 id="fit-statistics">Fit Statistics</h2>
-
-        <p>
-          This analysis uses the "fit" function of the AMIGA pipeline to extract quantitative growth
-          parameters from the Gaussian Process fit of each sample. MicroNet reports the parameters most
-          commonly used to summarize growth: the area under the curve (AUC, in units of OD), the growth
-          rate, the linear carrying capacity (in units of OD), the lag time, and the doubling time. If you
-          choose to pool replicates by a metadata column, the statistics are reported per pooled condition
-          rather than per individual well.
-        </p>
-
-        <h2 id="heatmap">Heatmap</h2>
-
-        <p>
-          This analysis visualizes a single growth parameter across two metadata dimensions as a
-          color-coded grid. You choose the value to display (for example, growth rate) and the columns to
-          use for the x- and y-axes; MicroNet runs an AMIGA fit and then renders the heatmap. It is
-          especially useful for spotting patterns across a plate layout or across combinations of
-          conditions. A mapping file is required for this analysis.
-        </p>
-
-        <h2 id="compare-parameters">Compare Parameters</h2>
-
-        <p>
-          This analysis uses the "compare" function of the AMIGA pipeline to statistically compare growth
-          parameters between pooled conditions. It fits the data while sampling from the posterior
-          distribution, which lets it report not just point estimates of each growth parameter but also a
-          measure of the uncertainty around the difference between conditions. Use this when you want a
-          quantitative comparison of parameters (rather than the visual comparison provided by the
-          Gaussian Process Plot).
-        </p>
-
-        <h2 id="time-step-size">Time Step Size and Memory</h2>
-
-        <p>
-          Every analysis that fits a Gaussian Process model (the Gaussian Process Plot, Fit Statistics,
-          Heatmap, Compare Parameters, and the differential-growth test above) uses a <em>time step
-          size</em> that you can set when configuring your analyses. The default is 1, and you may choose
-          any value up to 15. A larger time step size fits the model on fewer time points, which reduces
-          the amount of memory the analysis needs on large datasets, at the cost of some temporal
-          resolution. MicroNet automatically limits your selection so the model always retains at least 8
-          time points for fitting. If an analysis still runs out of memory, MicroNet automatically retries
-          it with progressively larger time step sizes before reporting a failure, so large datasets have
-          the best chance of completing without manual intervention.
-        </p>
+    <section class="resources-demo" aria-labelledby="demo-heading">
+      <h2 id="demo-heading">Demo Video</h2>
+      <div class="resources-video-container">
+        <video controls preload="metadata" aria-label="MicroNet demonstration">
+          <source src="/docs/MicroNet Demo.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
       </div>
-    </div>
+    </section>
 
-    <%= render "layouts/footer" %>
-  </body>
-</html>
+    <section class="resources-analyses" aria-labelledby="analyses-heading">
+      <h2 id="analyses-heading" class="section-heading">Specific Analyses</h2>
+      <div class="resources-analysis-grid">
+        <article id="raw-data" class="resource-analysis" aria-labelledby="raw-data-heading">
+          <div class="resource-analysis-heading">
+            <span class="analysis-icon icon-bars" aria-hidden="true"></span>
+            <h3 id="raw-data-heading">Raw Data Plot</h3>
+          </div>
+          <p>
+            This analysis generates a growth curve for each well in your dataset and reports fold change
+            relative to the negative-control well, as described in the
+            <a href="https://firasmidani.github.io/amiga/doc/plotting.html">AMIGA vignette</a>.
+          </p>
+          <p>
+            Fold change is the maximum change in optical density (OD) from the first time point in a well,
+            divided by the corresponding maximum change in the negative-control well. The numbers in the
+            upper-right corner of each plot show the raw maximum OD for that curve. Wells with a fold change
+            above 1.5 are highlighted in blue; those below 0.5 are highlighted in red.
+          </p>
+          <p class="resource-requirement">
+            Each uploaded data file must contain exactly 96 wells (a standard microplate).
+            Files with a different number of wells are rejected for this analysis.
+          </p>
+        </article>
+
+        <article id="gaussian-process-plot" class="resource-analysis" aria-labelledby="gp-heading">
+          <div class="resource-analysis-heading">
+            <span class="analysis-icon icon-curve" aria-hidden="true"></span>
+            <h3 id="gp-heading">Gaussian Process Plot</h3>
+          </div>
+          <p>
+            This analysis fits a Gaussian Process regression to your growth curves and plots the resulting
+            model of normalized OD over time. Smoothing measurement noise helps reveal the underlying growth
+            trend. The thin lines surrounding each curve show 95% confidence intervals.
+          </p>
+          <p>
+            Subset filters select the conditions included in the plot. You can filter on multiple metadata
+            columns: a well can match any selected value within a filter, but must match every filter to be
+            included.
+          </p>
+          <p>
+            You can also pool replicates by one or more metadata columns. Wells with the same combination of
+            values in those columns are modeled together, so each curve represents a pooled condition.
+          </p>
+        </article>
+
+        <article id="fit-statistics" class="resource-analysis" aria-labelledby="fit-heading">
+          <div class="resource-analysis-heading">
+            <span class="analysis-icon icon-stats" aria-hidden="true"></span>
+            <h3 id="fit-heading">Fit Statistics</h3>
+          </div>
+          <p>
+            This analysis uses AMIGA’s <code>fit</code> function to extract quantitative growth parameters
+            from the Gaussian Process fit of each sample. MicroNet reports the area under the curve (AUC,
+            in units of OD), growth rate, linear carrying capacity (in units of OD), lag time, and doubling time.
+          </p>
+          <p>
+            Without pooling, statistics are reported per well. If you pool replicates by one or more metadata
+            columns, the statistics are reported for each pooled condition instead.
+          </p>
+        </article>
+
+        <article id="heatmap" class="resource-analysis" aria-labelledby="heatmap-heading">
+          <div class="resource-analysis-heading">
+            <span class="analysis-icon icon-grid" aria-hidden="true"></span>
+            <h3 id="heatmap-heading">Heatmap Plot</h3>
+          </div>
+          <p>
+            This analysis displays a single growth parameter across two metadata dimensions as a
+            color-coded grid. Choose the parameter to display (for example, growth rate) and the metadata
+            columns for the x- and y-axes. MicroNet runs an AMIGA fit to obtain the parameter values, then
+            renders the heatmap.
+          </p>
+          <p>
+            Use this view to spot patterns across a plate layout or across combinations of conditions.
+          </p>
+        </article>
+
+        <article id="test-differential-growth" class="resource-analysis" aria-labelledby="test-heading">
+          <div class="resource-analysis-heading">
+            <span class="analysis-icon icon-hypothesis" aria-hidden="true"></span>
+            <h3 id="test-heading">Test Hypothesis</h3>
+          </div>
+          <p>
+            This analysis uses Gaussian Process regression and AMIGA’s <code>test</code> function to test
+            for differential growth between two conditions. It uses AMIGA’s default of 99 permutations.
+            See the <a href="https://firasmidani.github.io/amiga/doc/hypothesistesting.html">AMIGA
+            hypothesis-testing guide</a> for details of the method and its command-line usage.
+          </p>
+          <p>
+            The output includes a normalized OD plot modeling the growth of the two selected conditions,
+            with thin lines showing 95% confidence intervals. The report gives the log Bayes Factor and
+            the confidence interval it must fall outside to indicate differential growth at a false
+            discovery rate (FDR) of 10%.
+          </p>
+          <p>
+            The time step size affects this analysis’s memory use and temporal resolution. See
+            <a href="#time-step-size">Time Step Size and Memory</a> for the available settings, minimum
+            number of time points, and automatic retry behavior.
+          </p>
+          <p>
+            For help interpreting the output, <a href="/contact">contact us</a> and someone on our team
+            can assist you by email.
+          </p>
+        </article>
+
+        <article id="compare-parameters" class="resource-analysis" aria-labelledby="compare-heading">
+          <div class="resource-analysis-heading">
+            <span class="analysis-icon icon-compare" aria-hidden="true"></span>
+            <h3 id="compare-heading">Compare Parameters</h3>
+          </div>
+          <p>
+            This analysis uses AMIGA’s <code>compare</code> function to statistically compare growth
+            parameters between pooled conditions. It fits the data while sampling from the posterior
+            distribution, providing both point estimates of each growth parameter and a measure of
+            uncertainty around the difference between conditions.
+          </p>
+          <p>
+            Use this for a quantitative comparison of growth parameter values. It complements the
+            visual comparison of growth curves provided by the Gaussian Process Plot.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="time-step-size" class="resources-method-note" aria-labelledby="time-step-heading">
+      <h2 id="time-step-heading">Time Step Size and Memory</h2>
+      <p>
+        Analyses that fit Gaussian Process models—the Gaussian Process Plot, Fit Statistics,
+        Heatmap, Compare Parameters, and Test Hypothesis—use a <em>time step size</em> that you
+        choose during upload. The default is <%= Job::DEFAULT_TSS %>; you can choose values
+        from <%= Job::DEFAULT_TSS %> to <%= Job::USER_SELECTABLE_TSS_MAX %>.
+      </p>
+      <p>
+        A time step size of 1 keeps every measurement. Larger values fit the model on fewer
+        time points, reducing memory use at the cost of temporal resolution. This can help with
+        large datasets, but may miss rapid changes in growth. MicroNet checks your choice against
+        the uploaded data so at least <%= Job::MIN_GP_TIME_POINTS %> time points remain for fitting;
+        if too few would remain, you must choose a smaller value.
+      </p>
+      <p>
+        If fitting runs out of memory, MicroNet automatically retries with progressively larger
+        time step sizes. It makes up to <%= Job::MAX_TSS_ATTEMPTS - 1 %> additional attempts,
+        increasing the step size by <%= Job::TSS_RETRY_INCREMENT %> each time, provided at least
+        <%= Job::MIN_GP_TIME_POINTS %> time points remain. If all permitted attempts fail, the
+        analysis is reported as failed.
+      </p>
+    </section>
+  </main>
+  <%= render "layouts/footer" %>
+</div>

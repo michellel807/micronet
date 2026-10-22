@@ -1,7 +1,7 @@
 /* ============================================================
    MicroNet Design System
    Single source of truth for tokens + shared components.
-   Load this on every page (after main.css). Component classes
+   Load this after Bootstrap and before shared/page styles. Component classes
    are namespaced (ds-*) so they never collide with legacy CSS.
    ============================================================ */
 
@@ -22,26 +22,26 @@
 
   /* Text */
   --tx-1:        #0F172A;
-  --tx-2:        #4B5563;
-  --tx-3:        #9CA3AF;
+  --tx-2:        #344054;
+  --tx-3:        #526174;
   --tx-inv:      #FFFFFF;
 
   /* Status */
-  --ok-bg:   #ECFDF5; --ok-fg:   #059669; --ok-bd:   #6EE7B7;
+  --ok-bg:   #ECFDF5; --ok-fg:   #047857; --ok-bd:   #6EE7B7;
   --warn-bg: #FFFBEB; --warn-fg: #B45309; --warn-bd: #FDE68A;
   --err-bg:  #FEF2F2; --err-fg:  #DC2626; --err-bd:  #FCA5A5;
-  --info-bg: #EBF5FB; --info-fg: #0577B1; --info-bd: #AED6F1;
+  --info-bg: #EBF5FB; --info-fg: #045D8A; --info-bd: #AED6F1;
   --q-bg:    #F0EDFF; --q-fg:    #6D28D9;
-  --dft-bg:  #F3F4F6; --dft-fg:  #6B7280;
+  --dft-bg:  #F3F4F6; --dft-fg:  #46556B;
 
   /* Elevation */
   --sh-xs: 0 1px 2px rgba(0,0,0,.05);
-  --sh-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
-  --sh-md: 0 4px 12px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.05);
+  --sh-sm: 0 1px 3px rgba(21,32,51,.05);
+  --sh-md: 0 3px 12px rgba(21,32,51,.06);
   --sh-lg: 0 8px 28px rgba(0,0,0,.10), 0 2px 6px rgba(0,0,0,.05);
 
   /* Radius */
-  --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 20px;
+  --r-sm: 6px; --r-md: 10px; --r-lg: 12px; --r-xl: 20px;
 
   /* Spacing scale (4px base) */
   --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
@@ -50,7 +50,23 @@
 
   /* Type */
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-input: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --mono: 'SF Mono', 'Fira Code', ui-monospace, 'SFMono-Regular', monospace;
+  --text-body: 15px;
+  --text-input: 16px;
+  --text-description: 14px;
+  --text-lead: 15px;
+  --text-small: 14px;
+  --text-caption: 13px;
+  --text-button: 14px;
+  --text-h1: 28px;
+  --text-h2: 20px;
+  --text-h3: 16px;
+  --text-section: 17px;
+  --leading-body: 1.65;
+  --content-width: 900px;
+  --reading-width: 720px;
+  --prose-width: 65ch;
 }
 
 /* ── Page surface ─────────────────────────────────────────── */
@@ -63,7 +79,7 @@
 
 /* Centered content column */
 .ds-container {
-  max-width: 1080px;
+  max-width: var(--content-width);
   width: 100%;
   margin: 0 auto;
   padding: var(--sp-10) var(--sp-8) var(--sp-16);
@@ -75,8 +91,8 @@
 /* ── Typography ───────────────────────────────────────────── */
 .ds-h1 {
   font-family: var(--font);
-  font-size: 28px;
-  font-weight: 700;
+  font-size: var(--text-h1);
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.15;
   color: var(--tx-1);
@@ -84,26 +100,26 @@
 
 .ds-h2 {
   font-family: var(--font);
-  font-size: 19px;
-  font-weight: 700;
+  font-size: var(--text-h2);
+  font-weight: 600;
   letter-spacing: -0.015em;
   color: var(--tx-1);
 }
 
 .ds-h3 {
   font-family: var(--font);
-  font-size: 15px;
+  font-size: var(--text-h3);
   font-weight: 600;
   color: var(--tx-1);
 }
 
 .ds-lead {
-  font-size: 15px;
+  font-size: var(--text-lead);
   color: var(--tx-2);
-  line-height: 1.6;
+  line-height: var(--leading-body);
 }
 
-.ds-muted { color: var(--tx-3); font-size: 13px; }
+.ds-muted { color: var(--tx-3); font-size: var(--text-small); }
 
 .ds-eyebrow {
   font-size: 11px;
@@ -161,9 +177,10 @@
   padding: 9px 18px;
   border-radius: var(--r-sm);
   font-family: var(--font);
-  font-size: 13px;
+  font-size: var(--text-button);
   font-weight: 600;
-  line-height: 1;
+  line-height: 1.4;
+  min-height: 44px;
   cursor: pointer;
   text-decoration: none;
   border: 1px solid transparent;
@@ -191,8 +208,8 @@
 .ds-btn-danger-soft { background: transparent; border-color: var(--err-bd); color: var(--err-fg); }
 .ds-btn-danger-soft:hover { background: var(--err-bg); border-color: var(--err-fg); }
 
-.ds-btn-lg { padding: 12px 24px; font-size: 14px; }
-.ds-btn-sm { padding: 6px 12px; font-size: 12px; }
+.ds-btn-lg { padding: 12px 24px; font-size: var(--text-button); }
+.ds-btn-sm { padding: 6px 12px; font-size: var(--text-small); min-height: 36px; }
 .ds-btn-block { width: 100%; }
 
 /* Forward-arrow affix for "Next / Continue" actions */
@@ -219,7 +236,7 @@
   gap: 5px;
   padding: 3px 9px;
   border-radius: var(--r-xl);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 600;
   letter-spacing: 0.01em;
   white-space: nowrap;
@@ -260,7 +277,7 @@
   padding: 9px 12px;
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
-  font-size: 14px;
+  font-size: var(--text-input);
   font-family: var(--font);
   font-weight: 400;
   color: var(--tx-1);

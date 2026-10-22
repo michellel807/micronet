@@ -1,8 +1,3 @@
-/* ...
-*= require_self
-*= require_tree .
-*/
-
 /* ── Upload screen ────────────────────────────────────────── */
 .uploadscreen {
   background: var(--bg);
@@ -14,38 +9,44 @@
 
 .uploadscreen .column.skinny {
   width: 100%;
-  max-width: 880px;
+  max-width: var(--content-width);
   margin: 0 auto;
-  padding: 40px 24px 80px;
+  padding: 48px 24px 64px;
+  align-items: stretch;
   text-align: left;
   flex: 1;
 }
 
 .uploadscreen h1 {
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--tx-1);
-  margin: 0 0 8px;
-  text-align: left;
+  font-size: var(--text-h1);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--duke);
+  margin: 0 0 12px;
+  text-align: center;
 }
+.uploadscreen .column > p { margin-left: auto; margin-right: auto; text-align: center; }
+.uploadscreen .column > p:first-of-type { font-size: var(--text-small); color: var(--tx-3); }
+.uploadscreen .column > p:nth-of-type(2) { font-size: var(--text-lead); }
 
 .uploadscreen .column.skinny h2 {
-  font-size: 14px;
+  font-size: var(--text-section);
   font-weight: 600;
-  color: var(--tx-1);
+  color: var(--duke);
   margin: 0 0 10px;
 }
+.uploadscreen h2 label { font-size: inherit; line-height: inherit; }
 
 .uploadscreen h3 {
-  font-size: 16px;
+  font-size: var(--text-body);
   font-weight: 600;
   color: var(--tx-1);
   margin: 20px 0 0;
 }
 
 .uploadscreen p {
-  font-size: 14px;
+  max-width: var(--prose-width);
+  font-size: var(--text-body);
   line-height: 1.6;
   color: var(--tx-2);
   text-align: left;
@@ -53,7 +54,7 @@
 
 .uploadscreen code {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--text-caption);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -80,7 +81,7 @@
   display: block;
   width: 100%;
   max-width: 320px;
-  font-size: 13px;
+  font-size: var(--text-small);
   color: var(--tx-2);
   background: var(--surface);
   border: 1px dashed var(--border);
@@ -97,7 +98,7 @@
 
 .uploadscreen input[type="file"]::file-selector-button {
   font-family: var(--font);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
   color: #fff;
   background: var(--duke);
@@ -117,7 +118,8 @@
   border: 1px solid var(--accent);
   border-radius: var(--r-sm);
   color: #fff;
-  font-size: 14px;
+  font-size: var(--text-button);
+  min-height: 44px;
   font-weight: 600;
   letter-spacing: 0.01em;
   text-decoration: none;
@@ -142,7 +144,7 @@
 
 /* Notice / error */
 .notice {
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 500;
   color: var(--ok-fg);
   margin: 24px 0;
@@ -153,7 +155,7 @@
 }
 
 .error {
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 500;
   color: var(--err-fg);
   margin-top: 20px;
@@ -204,7 +206,7 @@
   box-sizing: border-box;
   padding: 12px 14px;
   font-family: var(--font);
-  font-size: 13px;
+  font-size: var(--text-input);
   color: var(--tx-1);
   background: var(--surface);
   border: 1px solid var(--border);
@@ -220,30 +222,35 @@
   grid-column: 1 / -1;
   min-width: 0;
   margin: 0;
-  font-size: 13px;
+  font-size: var(--text-small);
   line-height: 1.5;
   color: var(--tx-2);
 }
-.uploadscreen .tss-help p { margin: 0 0 8px; font-size: 13px; }
+.uploadscreen .tss-help p { margin: 0 0 8px; font-size: var(--text-small); }
 .tss-help summary { width: fit-content; cursor: pointer; color: var(--accent); }
 .tss-help details[open] summary { margin-bottom: 8px; }
 .tss-help summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 .bold-text { font-weight: 600; }
 
+.upload-meta-section { margin-top: 40px; }
+.upload-meta-section p { max-width: none; }
+
 #meta-file-preview {
-  margin: 16px 0 !important;
-  background: var(--surface) !important;
-  color: var(--tx-2) !important;
+  margin: 16px 0;
+  background: var(--surface);
+  color: var(--tx-2);
   border: 1px solid var(--border);
-  padding: 12px !important;
+  padding: 12px;
   white-space: pre-wrap;
-  border-radius: var(--r-sm) !important;
-  height: 50px;
-  width: 320px !important;
-  overflow-y: auto;
+  overflow-wrap: anywhere;
+  border-radius: var(--r-sm);
+  max-height: 500px;
+  width: 100%;
+  max-width: 350px;
+  overflow: auto;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--text-caption);
   text-align: left;
 }
 
@@ -267,7 +274,7 @@
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   color: var(--tx-1);
-  font-size: 13px;
+  font-size: var(--text-small);
   word-wrap: break-word;
   cursor: grab;
   display: flex;
@@ -285,7 +292,7 @@
   border: none;
   color: var(--err-fg);
   cursor: pointer;
-  font-size: 16px;
+  font-size: var(--text-body);
   margin-left: 10px;
   line-height: 1;
 }
@@ -307,7 +314,7 @@
 }
 
 .pair-row-label {
-  font-size: 13px;
+  font-size: var(--text-small);
   color: var(--tx-2);
 }
 
@@ -317,7 +324,7 @@
   border-radius: var(--r-sm);
   color: var(--tx-2);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   padding: 6px 8px;
   cursor: pointer;
 }
@@ -349,7 +356,7 @@
 .upload-file-label {
   display: block;
   margin-bottom: 8px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
   color: var(--tx-2);
 }
@@ -369,7 +376,7 @@
   border: 1px dashed var(--border);
   border-radius: var(--r-sm);
   color: var(--tx-2);
-  font-size: 13px;
+  font-size: var(--text-small);
   overflow: hidden;
 }
 
@@ -421,17 +428,18 @@
 
 .uploadscreen footer { background: var(--surface); box-shadow: none; }
 
-.checkbox-container { text-align: center; margin-top: 20px; }
+.uploadscreen .checkbox-container { text-align: center; margin-top: 20px; }
 .background, .background-space { background: transparent; }
 
-tr > th:first-child,
-tr > td:first-child { position: sticky; left: 0; }
-table tr td:first-child { font-weight: 600; background: var(--surface); }
+.uploadscreen tr > th:first-child,
+.uploadscreen tr > td:first-child { position: sticky; left: 0; }
+.uploadscreen table tr td:first-child { font-weight: 600; background: var(--surface); }
 
 @media (max-width: 640px) {
   .pair-row { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .pair-row .upload-file-control { max-width: 100%; }
-  .uploadscreen h1 { font-size: 23px; }
+  .uploadscreen h1 { font-size: 26px; }
+  .uploadscreen .column.skinny { padding: 32px 20px 48px; }
   #upload-form > div[style*="flex"] { flex-direction: column; align-items: stretch; }
   .optional-upload-settings { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .sortable-list, #meta-file-preview { width: 100% !important; max-width: 100%; }

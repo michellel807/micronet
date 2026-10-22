@@ -1,8 +1,3 @@
-/* ...
-*= require_self
-*= require_tree .
-*/
-
 /* Shared buttons (.analysis-button, .edit-button, .secondary-action) live in main.css. */
 
 .selectanalyses {
@@ -14,30 +9,30 @@
 }
 
 .selectanalyses-shell {
-  width: min(1080px, calc(100% - 48px));
+  width: min(calc(var(--content-width) - 48px), calc(100% - 48px));
   margin: 0 auto;
-  padding: 40px 0 64px;
+  padding: 48px 0 64px;
   flex: 1;
 }
 
 .selectanalyses-heading {
-  margin: 0 0 28px;
+  margin: 0 0 32px;
   text-align: center;
 }
 
 .selectanalyses h1 {
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--tx-1);
-  margin: 0 0 8px;
+  font-size: var(--text-h1);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--duke);
+  margin: 0 0 12px;
 }
 
 .selectanalyses-heading p {
   color: var(--tx-2);
-  font-size: 15px;
+  font-size: var(--text-lead);
   line-height: 1.6;
-  max-width: 620px;
+  max-width: var(--prose-width);
   margin: 0 auto;
 }
 
@@ -69,11 +64,13 @@
 .analysis-card {
   position: relative;
   display: grid;
+  width: 100%;
+  margin: 0;
   min-height: 0;
-  grid-template-columns: 56px 1fr 24px;
-  gap: 16px;
+  grid-template-columns: 48px 1fr 20px;
+  gap: 12px;
   align-items: start;
-  padding: 20px;
+  padding: 18px;
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -87,77 +84,6 @@
   pointer-events: none;
 }
 
-.analysis-icon {
-  position: relative;
-  display: block;
-  width: 48px; height: 48px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  background: var(--bg);
-}
-
-.analysis-icon::before,
-.analysis-icon::after { position: absolute; content: ""; }
-
-/* Icon art (recolored to accent) */
-.icon-bars::before {
-  left: 11px; bottom: 10px; width: 6px; height: 23px;
-  border: 1px solid var(--accent);
-  border-top-width: 3px;
-  box-shadow:
-    10px 6px 0 -1px var(--surface), 10px 6px 0 0 var(--accent),
-    19px -2px 0 -1px var(--surface), 19px -2px 0 0 var(--accent);
-}
-.icon-curve::before {
-  left: 10px; bottom: 11px; width: 29px; height: 21px;
-  border-bottom: 3px solid var(--accent);
-  border-left: 3px solid var(--accent);
-}
-.icon-curve::after {
-  left: 13px; top: 15px; width: 28px; height: 18px;
-  border-top: 3px solid var(--accent);
-  border-radius: 48% 0 0 0;
-  transform: rotate(-18deg);
-}
-.icon-stats::before {
-  left: 9px; top: 10px; width: 30px; height: 30px;
-  background-image:
-    linear-gradient(var(--duke) 1px, transparent 1px),
-    linear-gradient(90deg, var(--duke) 1px, transparent 1px);
-  background-size: 10px 10px;
-}
-.icon-grid::before {
-  inset: 10px;
-  border: 2px solid var(--duke);
-  background-image:
-    linear-gradient(var(--duke) 2px, transparent 2px),
-    linear-gradient(90deg, var(--duke) 2px, transparent 2px);
-  background-size: 9px 9px;
-}
-.icon-hypothesis::before {
-  left: 10px; top: 11px; width: 28px; height: 26px;
-  border-bottom: 2px solid var(--duke);
-  border-left: 2px solid var(--duke);
-}
-.icon-hypothesis::after {
-  left: 13px; top: 15px; width: 26px; height: 21px;
-  background:
-    radial-gradient(circle at 4px 16px, var(--accent) 0 2px, transparent 3px),
-    radial-gradient(circle at 12px 11px, var(--accent) 0 2px, transparent 3px),
-    radial-gradient(circle at 19px 6px, var(--accent) 0 2px, transparent 3px),
-    linear-gradient(140deg, transparent 0 35%, var(--accent) 36% 41%, transparent 42%);
-}
-.icon-compare::before {
-  left: 12px; top: 13px; width: 24px; height: 24px;
-  border: 3px solid var(--duke);
-  border-radius: 50%;
-}
-.icon-compare::after {
-  left: 22px; top: 7px; width: 3px; height: 36px;
-  background: var(--accent);
-  transform: rotate(45deg);
-}
-
 .analysis-copy {
   display: flex;
   min-width: 0;
@@ -167,14 +93,14 @@
 
 .analysis-title {
   color: var(--tx-1);
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--text-h3);
+  font-weight: 600;
   line-height: 1.25;
 }
 
 .analysis-description {
   color: var(--tx-2);
-  font-size: 13px;
+  font-size: var(--text-description);
   font-weight: 400;
   line-height: 1.5;
 }
@@ -182,10 +108,8 @@
 .analysis-meta {
   margin-top: 2px;
   color: var(--tx-3);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: var(--text-caption);
+  font-weight: 500;
 }
 
 .analysis-check {
@@ -205,13 +129,13 @@
 .analysis-card:has(.analysis-toggle:checked) .analysis-check::before {
   color: #fff;
   content: "✓";
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
 /* ── Locked state (requires mapping file) ─────────────────── */
 .analysis-section:has(.analysis-toggle:disabled) {
-  opacity: 0.6;
+  opacity: 1;
 }
 .analysis-section:has(.analysis-toggle:disabled) .analysis-card {
   cursor: not-allowed;
@@ -224,7 +148,7 @@
   border-radius: 4px;
   background: var(--border-sub, #f1f5f9);
   color: var(--tx-3);
-  font-size: 10px;
+  font-size: var(--text-caption);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -237,7 +161,7 @@
 .pool-locked-note {
   margin-top: 6px;
   color: var(--tx-3);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-style: italic;
 }
 
@@ -266,16 +190,17 @@
   display: block;
   margin: 0 0 8px;
   color: var(--tx-1);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
+  font-size: var(--text-small);
+  font-weight: 400;
+  line-height: 1.5;
 }
+.analysis-settings .field-label, .chip-options h3 { font-weight: 600; }
 
 .field-label {
   display: block;
   margin-bottom: 6px;
   color: var(--tx-2);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -298,7 +223,7 @@
   background-repeat: no-repeat;
   background-position: right 12px center;
   background-size: 16px 16px;
-  font-size: 14px;
+  font-size: var(--text-input);
   font-weight: 500;
   font-family: var(--font);
   line-height: 22px;
@@ -346,7 +271,7 @@
   padding: 0 14px;
   border-radius: 4px;
   color: var(--tx-2);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 600;
   transition: all 0.15s;
 }
@@ -365,7 +290,7 @@
 .chip-options .additional-text {
   margin-bottom: 12px;
   color: var(--tx-2);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 400;
   line-height: 1.5;
 }
@@ -389,7 +314,7 @@
   margin: 0;
   padding: 0;
   color: var(--tx-2);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 500;
 }
 
@@ -398,7 +323,7 @@
 .comparison-settings .condition-hint {
   margin: 10px 0 0;
   color: var(--tx-2);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 400;
 }
 
@@ -406,11 +331,11 @@
 .subset-panel summary {
   padding: 12px 0 0;
   color: var(--tx-2);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 600;
   cursor: pointer;
 }
-.subset-count { margin-left: 8px; color: var(--tx-3); font-size: 12px; font-weight: 400; }
+.subset-count { margin-left: 8px; color: var(--tx-3); font-size: var(--text-caption); font-weight: 400; }
 .generated-subsets {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -459,7 +384,7 @@
 #checkbox-content .field-label {
   margin-bottom: 8px;
   color: var(--tx-1);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 600;
   text-transform: none;
   letter-spacing: 0;
@@ -472,7 +397,7 @@
   border-radius: var(--r-sm);
   color: #991B1B;
   background: var(--err-bg);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
@@ -487,12 +412,12 @@
 .analysis-actions-paired { justify-content: space-between; }
 
 @media (max-width: 840px) {
-  .selectanalyses-shell { width: min(100% - 24px, 620px); padding-top: 24px; }
+  .selectanalyses-shell { width: calc(100% - 40px); padding-top: 32px; }
   .analyses-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 560px) {
-  .selectanalyses h1 { font-size: 23px; }
+  .selectanalyses h1 { font-size: 26px; }
   .analysis-card { grid-template-columns: 44px 1fr 22px; gap: 14px; padding: 16px; }
   .analysis-icon { width: 44px; height: 44px; }
   .axis-grid { grid-template-columns: 1fr; }

@@ -1,8 +1,3 @@
-/* ...
-*= require_self
-*= require_tree .
-*/
-
 /* Review screen (renders inside .parameterscreen). Buttons live in main.css. */
 .parameterscreen {
   color: var(--tx-1);
@@ -14,29 +9,34 @@
 
 .parameterscreen .column.skinny {
   width: 100%;
-  max-width: 760px;
+  max-width: var(--reading-width);
   margin: 0 auto;
-  padding: 40px 24px 64px;
+  padding: 48px 24px 64px;
   text-align: left;
   flex: 1;
 }
 
 .parameterscreen h1 {
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--tx-1);
-  margin: 0 0 8px;
-  text-align: left;
+  font-size: var(--text-h1);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--duke);
+  margin: 0 0 12px;
+  text-align: center;
 }
 
 .parameterscreen > .column > form > p,
 .parameterscreen .column > p {
-  font-size: 15px;
+  max-width: var(--prose-width);
+  font-size: var(--text-lead);
   line-height: 1.6;
   color: var(--tx-2);
-  text-align: left;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
 }
+
+.parameterscreen form { width: 100%; }
 
 .parameterscreen footer { background: var(--surface); box-shadow: none; }
 
@@ -46,18 +46,18 @@
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--sh-sm);
-  padding: 28px 32px;
+  padding: 24px;
   margin-top: 20px;
   color: var(--tx-1);
 }
 
 .general-white-block h2 {
-  font-size: 12px;
+  font-size: var(--text-small);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.045em;
   color: var(--tx-3);
-  margin: 28px 0 8px;
+  margin: 24px 0 8px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border-sub);
 }
@@ -65,7 +65,8 @@
 .general-white-block h2:first-child { margin-top: 0; }
 
 .general-white-block p {
-  font-size: 14px;
+  overflow-wrap: anywhere;
+  font-size: var(--text-body);
   line-height: 1.6;
   color: var(--tx-2);
   margin: 4px 0;
@@ -76,20 +77,23 @@
 
 .general-white-block .edit-button {
   margin: 10px 0 4px;
-  padding: 6px 16px;
-  font-size: 13px;
+  padding: 5px 12px;
+  min-height: 34px;
+  font-size: var(--text-small);
   min-width: 0;
 }
 
 .general-white-block .analysis-button {
   margin-top: 24px;
-  font-size: 14px;
+  font-size: var(--text-button);
 }
 
-.additional-text { font-size: 14px; }
-.option-label { font-size: 15px; font-weight: 600; }
+.parameterscreen .additional-text { font-size: var(--text-small); }
+.parameterscreen .option-label { font-size: var(--text-body); font-weight: 600; }
 
 @media (max-width: 600px) {
-  .parameterscreen h1 { font-size: 23px; }
+  .parameterscreen h1 { font-size: 26px; }
   .general-white-block { padding: 20px; }
+  .general-white-block .edit-button { min-height: 44px; }
+  .parameterscreen .column.skinny { padding: 32px 20px 48px; }
 }

@@ -1,3 +1,7 @@
+<% content_for :title, "Welcome" %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "welcome", "data-turbo-track": "reload" %>
+<% end %>
 
 <div class="welcomescreen">
     <%= render "layouts/header" %>
@@ -30,7 +34,6 @@
           <div class="welcome-helprow">
             <%= link_to 'Need help getting started?', "help", id: "help_link" %>
           </div>
-          <p class="welcome-note">Each new analysis starts fresh. Temporary uploads expire after 24 hours of inactivity.</p>
           <div class="email-alert"><%= flash[:notice] %></div>
         </div>
 

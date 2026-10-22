@@ -1,20 +1,15 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Parameter page</title>
-    <%= stylesheet_link_tag 'selectanalyses' %>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  </head>
+<% content_for :title, "Select Analyses" %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "analysis-icons", "selectanalyses", "data-turbo-track": "reload" %>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<% end %>
 
-<body>
-  <div class="selectanalyses">
+<div class="selectanalyses">
     <%= render "layouts/header" %>
 
     <main class="selectanalyses-shell">
       <%= render "layouts/stepper", current_step: 2 %>
-
-      <% content_for :title, "Parameters page" %>
-      <div class="selectanalyses-heading">
+<div class="selectanalyses-heading">
         <h1>Select Analyses</h1>
         <p>Please select the analyses you would like to generate. For more details on each analysis, please see the "Resources" tab.</p>
       </div>
@@ -536,6 +531,3 @@
 
   });
 </script>
-
-</body>
-</html> 

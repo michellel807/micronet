@@ -1,3 +1,8 @@
+<% content_for :title, "Upload Files" %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "upload", "data-turbo-track": "reload" %>
+<% end %>
+
 <div class = "uploadscreen">
   <%= render "layouts/header" %>
 
@@ -27,7 +32,7 @@
   </div>
 
   <!-- Meta Files Upload -->
-  <div style="margin-top: 40px;">
+  <div class="upload-meta-section">
     <h2>Meta File (Optional)</h2>
     <p>
       Upload a meta file alongside your data files to add information that applies
@@ -111,9 +116,6 @@ document.getElementById('meta-file-input').addEventListener('change', function(e
   preview.hidden = !file;
   preview.textContent = ''; // Clear previous preview
   
-  // Reset height to small default before loading new content
-  preview.style.height = '50px';
-
   if (!file) return;
 
   const reader = new FileReader();
@@ -127,21 +129,11 @@ document.getElementById('meta-file-input').addEventListener('change', function(e
     }).filter(cell => cell !== undefined && cell !== '');
 
     preview.textContent = firstColumnLines.join('\n');
-
-    // Expand height based on content length, but max at 500px for example
-    const lineCount = firstColumnLines.length;
-    const lineHeightPx = 18; // Approximate line height in px (adjust if needed)
-    let newHeight = lineCount * lineHeightPx + 20; // 20px for padding
-
-    if (newHeight > 500) newHeight = 500;
-
-    preview.style.height = newHeight + 'px';
   };
 
   reader.onerror = function() {
     if (event.target.files[0] !== file) return;
     preview.textContent = 'Error reading file.';
-    preview.style.height = '50px'; // keep small on error
   };
 
   reader.readAsText(file);

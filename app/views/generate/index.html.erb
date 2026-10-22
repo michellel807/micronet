@@ -1,20 +1,14 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Generate page</title>
-    <%= stylesheet_link_tag 'generate' %>
-  <head>
-  <body>
-    <%= yield %>
-  </body>
-</html>
+<% content_for :title, "Submission Successful" %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "generate", "data-turbo-track": "reload" %>
+<% end %>
 
-<div class = "generatescreen">
+<div class="generatescreen">
   <%= render "layouts/header" %>
-  <h1> Submission successful! </h1>
-  <p> Your job is running, and you will receive an email containing a link to your  
-  results when it is finished. Thank you for using MicroNet! 
-  </p>
+  <main class="generate-main">
+    <h1>Submission successful!</h1>
+    <p>Your job is running, and you will receive an email containing a link to your
+      results when it is finished. Thank you for using MicroNet!</p>
+  </main>
+  <%= render "layouts/footer" %>
 </div>
-
-<%= render "layouts/footer" %>

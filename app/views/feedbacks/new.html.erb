@@ -1,18 +1,15 @@
-<!DOCTYPE html>
-<html>
+<% content_for :title, "Submit Feedback" %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "feedbacks", "data-turbo-track": "reload" %>
+<% end %>
 
-<head>
-  <title>Feedbacks page</title>
-  <%= stylesheet_link_tag 'feedbacks' %>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-</head>
-
-<body>
 <div class="feedbacksscreen">
+  <%= render "layouts/header" %>
+  <main class="feedback-main">
 
 <h1>Submit Feedback</h1>
 <p> We are continually improving the Schmid Lab Microbial Growth Model based on user feedback. If you have any questions, concerns, or suggestions for how the site could be improved, please submit them below. </p>
-<%= form_with(model: @feedback, url: feedbacks_path, method: :post) do |form| %>
+<%= form_with(model: @feedback, url: feedbacks_path, method: :post, class: "feedback-form") do |form| %>
   <% if @feedback.errors.any? %>
     <div id="error_explanation">
       <h2><%= pluralize(@feedback.errors.count, "error") %> prohibited this feedback from being 
@@ -41,8 +38,9 @@ saved:</h2>
   </div>
 
   <div class="actions">
-    <%= form.submit "Submit" %>
+    <%= form.submit "Submit", class: "analysis-button" %>
   </div>
 <% end %>
+  </main>
+  <%= render "layouts/footer" %>
 </div>
-</body>

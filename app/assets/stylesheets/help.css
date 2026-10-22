@@ -1,8 +1,3 @@
-/* ...
-*= require_self
-*= require_tree .
-*/
-
 /* Help screen */
 .help {
   color: var(--tx-1);
@@ -17,42 +12,42 @@
 .help main { flex: 1; }
 
 .help h1 {
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--tx-1);
+  font-size: var(--text-h1);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--duke);
   text-align: center;
-  margin: 32px 0 28px;
+  margin: 0 0 16px;
 }
 
-.help h3 { font-size: 18px; font-weight: 600; color: var(--tx-1); margin: 20px auto 0; }
-.help p { font-size: 15px; line-height: 1.7; color: var(--tx-2); margin-bottom: 18px; }
-.help label { font-size: 15px; font-weight: 600; }
+.help h3 { font-size: var(--text-h3); font-weight: 600; color: var(--tx-1); margin: 20px auto 0; }
+.help p { font-size: var(--text-body); line-height: var(--leading-body); color: var(--tx-2); margin-bottom: 18px; }
+.help label { font-size: var(--text-body); font-weight: 500; }
 .help footer { background: var(--surface); box-shadow: none; }
 
 .help-container {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  padding: 28px 32px;
-  margin: 20px auto;
-  max-width: 820px;
-  width: calc(100% - 48px);
+  padding: 24px;
+  margin: 24px 0 0;
+  max-width: none;
+  width: 100%;
   box-shadow: var(--sh-sm);
 }
 
 .help-container h2 {
-  color: var(--tx-1);
+  color: var(--duke);
   margin-bottom: 18px;
-  font-size: 19px;
-  font-weight: 700;
+  font-size: var(--text-h2);
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 
 .help-container h3 {
   color: var(--tx-1);
   margin: 22px 0 10px;
-  font-size: 15px;
+  font-size: var(--text-body);
   font-weight: 600;
 }
 
@@ -74,10 +69,25 @@
   border-radius: var(--r-sm);
   text-decoration: none !important;
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--text-small);
   transition: all 0.15s ease;
 }
 .doc-link:hover { background: var(--duke-dk); box-shadow: var(--sh-sm); }
 
-.help ul li a { font-size: 15px; font-weight: 600; }
-#downloadlinks { font-size: 18px; font-weight: 600; }
+.help ul li a { font-size: var(--text-body); font-weight: 500; }
+#downloadlinks { font-size: var(--text-h3); font-weight: 600; }
+
+.help > .column.skinny {
+  width: min(var(--reading-width), calc(100% - 48px));
+  padding: 48px 0 64px;
+  align-items: stretch;
+  text-align: left;
+}
+.help p { max-width: var(--prose-width); overflow-wrap: anywhere; }
+.help > .column > p { margin-left: auto; margin-right: auto; font-size: var(--text-lead); }
+@media (max-width: 600px) {
+  .help > .column.skinny { width: calc(100% - 40px); padding: 32px 0 48px; }
+  .help h1 { font-size: 26px; }
+}
+
+@media (max-width: 600px) { .help-container { padding: 24px 20px; } }

@@ -11,7 +11,7 @@
     flex-direction: column;
     align-items: center;
     flex: 1;
-    font-size: 13px;
+    font-size: var(--text-small);
     font-weight: 500;
     color: var(--tx-3);
 }
@@ -43,7 +43,7 @@
     background: var(--surface);
     border: 2px solid var(--border);
     margin-bottom: 8px;
-    font-size: 13px;
+    font-size: var(--text-small);
     font-weight: 600;
     text-decoration: none;
     color: var(--tx-3);
@@ -86,7 +86,7 @@
 
 .step-name { text-align: center; }
 
-@media (max-width: 840px) { .stepper-item { font-size: 11px; } }
+@media (max-width: 840px) { .stepper-item { font-size: var(--text-caption); } }
 @media (max-width: 560px) {
   .stepper-wrapper { width: 100%; }
   .stepper-item .step-counter { width: 30px; height: 30px; font-size: 12px; }

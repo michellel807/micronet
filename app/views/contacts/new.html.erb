@@ -1,20 +1,15 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Contact page</title>
-    <%= stylesheet_link_tag 'contact' %>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  </head>
-  <body>
-    <div class="contact">
-      <%= render "layouts/header" %>
-      <div class="column skinny">
-        <% content_for :title, "contacts page" %>
-        <h1>Contact Us</h1>
-        <p> If you have any questions or need assistance, please
-          <a href="mailto:schmidlabmodel@gmail.com"> email us</a> and someone from our team will be in touch. Thank you for using MicroNet!
-        </p>
-      </div>
-  </body>
+<% content_for :title, "Contact" %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "contact", "data-turbo-track": "reload" %>
+<% end %>
+
+<div class="contact">
+  <%= render "layouts/header" %>
+  <main class="column skinny">
+    <h1>Contact Us</h1>
+    <p>If you have any questions or need assistance, please
+      <a href="mailto:schmidlabmodel@gmail.com">email us</a> and someone from our team will be in touch. Thank you for using MicroNet!
+    </p>
+  </main>
   <%= render "layouts/footer" %>
-</html>
+</div>
