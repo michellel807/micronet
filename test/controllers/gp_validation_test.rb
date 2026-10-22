@@ -5,8 +5,9 @@ class ReviewGpValidationTest < ActionController::TestCase
 
   setup do
     @user = User.create!(email: "review-gp-validation@example.com")
-    @workspace = Job.create!(user: @user, status: Job::DRAFT_STATUS)
-    session[:current_user_id] = @workspace.id
+    @workspace = UploadWorkspace.create!
+    session[:user_id] = @user.id
+    session[:upload_token] = @workspace.token
     @workspace.ensure_upload_directories!
     mapping_path = @workspace.mapping_dir.join("mapping.txt")
     File.write(mapping_path, "Well\tCondition\tStrain\nA1\tControl\tWT\n")
@@ -81,6 +82,9 @@ class ReviewGpValidationTest < ActionController::TestCase
     assert_equal "'Condition:Control;Strain:WT,mutant'", session[:gp_finalsubset]
     assert_equal "Condition,Strain", session[:gp_pool_by_column]
     assert_select "p", text: /Subset on Condition: Control; Strain: WT, mutant;\s+Pooled by Condition, Strain/
+    summary = SubmissionSummary.from_session(session)
+    assert_equal "Condition: Control; Strain: WT, mutant", summary["Gaussian Process subset"]
+    assert_equal "Condition, Strain", summary["Gaussian Process pooling"]
   end
 
   test "pooling yes requires at least one grouping column" do
@@ -124,8 +128,9 @@ class GenerateGpValidationTest < ActionController::TestCase
 
   setup do
     @user = User.create!(email: "generate-gp-validation@example.com")
-    @workspace = Job.create!(user: @user, status: Job::DRAFT_STATUS)
-    session[:current_user_id] = @workspace.id
+    @workspace = UploadWorkspace.create!
+    session[:user_id] = @user.id
+    session[:upload_token] = @workspace.token
     @workspace.ensure_upload_directories!
     mapping_path = @workspace.mapping_dir.join("mapping.txt")
     File.write(mapping_path, "Well\tCondition\nA1\tControl\n")
@@ -151,7 +156,7 @@ class GenerateGpValidationTest < ActionController::TestCase
 
     assert_redirected_to selectanalyses_path
     assert_equal Job::GP_CONFIGURATION_ERROR, flash[:error]
-    assert_equal Job::DRAFT_STATUS, @workspace.reload.status
+    assert_equal 0, @user.jobs.count
   end
 
   test "submission validates every filter before queueing" do
@@ -165,7 +170,7 @@ class GenerateGpValidationTest < ActionController::TestCase
     assert_redirected_to selectanalyses_path
   end
 
-  test "valid multi-filter submission queues all grouping columns" do
+  test "valid multi-filter submission queues all grouping columns and saves email details" do
     File.write(session[:mapping_file_paths].first, "Well\tCondition\tStrain\tDose\nA1\tControl\tWT\t0\n")
     session[:gp_subset_filters] = [
       { "column" => "Condition", "values" => ["Control"] },
@@ -183,6 +188,8 @@ class GenerateGpValidationTest < ActionController::TestCase
     queued = Delayed::Job.order(:id).last.payload_object
     assert_equal "Strain,Dose", queued.gp_pool_by_column
     assert_equal "'Condition:Control;Dose:0'", queued.gp_finalsubset
+    assert_equal "Condition: Control; Dose: 0", Job.find(session[:current_user_id]).submission_options["Gaussian Process subset"]
+    assert_includes Job.find(session[:current_user_id]).submission_options["Analyses To Run"].first, "Pooled by Strain, Dose"
   end
 end
 
@@ -191,8 +198,9 @@ class SelectGpControlsTest < ActionController::TestCase
 
   test "restores multiple filters and grouping columns when returning from review" do
     @user = User.create!(email: "gp-controls@example.com")
-    job = Job.create!(user: @user, status: Job::DRAFT_STATUS)
-    session[:current_user_id] = job.id
+    job = UploadWorkspace.create!
+    session[:user_id] = @user.id
+    session[:upload_token] = job.token
     job.ensure_upload_directories!
     mapping = job.mapping_dir.join("mapping.txt")
     File.write(mapping, "Well\tCondition\tStrain\tDose\nA1\t(--Fe)\tWT\t0\nA2\t(--Fe)\tmutant\t10\n")

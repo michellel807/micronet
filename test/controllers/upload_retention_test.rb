@@ -6,16 +6,17 @@ class UploadRetentionTest < ActionController::TestCase
 
   setup do
     user = User.create!(email: "upload-retention@example.com")
-    @job = Job.create!(user: user, status: Job::DRAFT_STATUS)
-    session[:current_user_id] = @job.id
-    @job.ensure_upload_directories!
-    @data = @job.data_dir.join("file1.txt")
+    @workspace = UploadWorkspace.create!
+    session[:user_id] = user.id
+    session[:upload_token] = @workspace.token
+    @workspace.ensure_upload_directories!
+    @data = @workspace.data_dir.join("file1.txt")
     File.write(@data, "OD\nTime\t#{(0...32).to_a.join("\t")}\nA1\t#{Array.new(32, 1).join("\t")}\n")
-    @mapping = @job.mapping_dir.join("file1.txt")
+    @mapping = @workspace.mapping_dir.join("file1.txt")
     File.write(@mapping, "Well\tPlate_ID\tCondition\nA1\tfile1\tControl\n")
-    @interval = @job.parameters_dir.join("interval.txt")
+    @interval = @workspace.parameters_dir.join("interval.txt")
     File.write(@interval, "file1\t600\n")
-    File.write(@job.pair_metadata_path, { pairs: [{ pair_key: "file1", pair_index: 1, original_data_filename: "data.txt", original_mapping_filename: "mapping.txt", parsed_plate_id: "plate1" }] }.to_json)
+    File.write(@workspace.pair_metadata_path, { pairs: [{ pair_key: "file1", pair_index: 1, original_data_filename: "data.txt", original_mapping_filename: "mapping.txt", parsed_plate_id: "plate1" }] }.to_json)
     session[:data_file_paths] = [@data.to_s]
     session[:mapping_file_paths] = [@mapping.to_s]
     session[:usr_data_file_paths] = ["data.txt"]
@@ -26,7 +27,7 @@ class UploadRetentionTest < ActionController::TestCase
   end
 
   teardown do
-    @job.clear_uploads!
+    @workspace.clear_uploads!
   end
 
   test "revisit includes saved fields and time step without replacement warning" do
@@ -67,7 +68,7 @@ class UploadRetentionTest < ActionController::TestCase
     assert_includes File.read(@mapping), "Treatment"
     assert_equal ["replacement.txt"], session[:usr_mapping_file_paths]
     assert File.file?(@interval)
-    assert File.file?(@job.upload_root.join("originals", "mapping", "file1.txt"))
+    assert File.file?(@workspace.upload_root.join("originals", "mapping", "file1.txt"))
   ensure
     file&.unlink
   end
@@ -118,15 +119,15 @@ class UploadRetentionTest < ActionController::TestCase
   end
 
   test "removing a pair renumbers the remaining pair without mixing files" do
-    second_data = @job.data_dir.join("file2.txt")
+    second_data = @workspace.data_dir.join("file2.txt")
     File.write(second_data, File.read(@data).sub("A1", "B1"))
-    second_mapping = @job.mapping_dir.join("file2.txt")
+    second_mapping = @workspace.mapping_dir.join("file2.txt")
     File.write(second_mapping, File.read(@mapping).sub("A1", "B1"))
     session[:mapping_file_paths] += [second_mapping.to_s]
     session[:usr_mapping_file_paths] += ["second_mapping.txt"]
-    metadata = JSON.parse(File.read(@job.pair_metadata_path))
+    metadata = JSON.parse(File.read(@workspace.pair_metadata_path))
     metadata["pairs"] << { "pair_key" => "file2", "pair_index" => 2, "original_mapping_filename" => "second_mapping.txt", "parsed_plate_id" => "plate2" }
-    File.write(@job.pair_metadata_path, metadata.to_json)
+    File.write(@workspace.pair_metadata_path, metadata.to_json)
     session[:data_file_paths] += [second_data.to_s]
     session[:usr_data_file_paths] += ["second.txt"]
     Python.stub(:exec, true) do

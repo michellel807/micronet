@@ -8,8 +8,6 @@ Rails.application.routes.draw do
   root 'welcome#index'
   get '/upload/delete_files', to: 'upload#delete_files'
   get '/upload', to: 'upload#index'
-  post '/resume_job', to: 'welcome#resume_job', as: 'resume_job'
-  post '/create_job', to: 'welcome#create_job', as: 'create_job'
   get '/selectanalyses', to: 'selectanalyses#index'
   post '/selectanalyses', to: 'selectanalyses#index'
   get '/review', to: 'review#index'

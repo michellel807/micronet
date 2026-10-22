@@ -1,21 +1,10 @@
 class WelcomeController < ApplicationController
   def index
-    @user = User.find_by(email: params[:email])
-    @job = Job.find_by(id: session[:current_user_id])
-
-    # Only show resume prompt if there's an actual draft (In Progress status)
-    if @user && @job && @job.user_id == @user.id && @job.status == "In Progress"
-      flash.now[:alert] = "Looks like you have an unsaved job open. Would you like to resume?"
-    end
   end
 
   def create
     @user = User.find_or_create_by(email: job_params[:email])
-    session[:email] = job_params[:email]
-    session[:user_id] = @user.id
-
     if !@user.valid?
-      @user.destroy
       flash.now.notice = "Invalid Email"
       render "index"
       return
@@ -28,63 +17,23 @@ class WelcomeController < ApplicationController
       return
     end
 
-    # Only the most recent draft is kept; collapse any older ones.
-    draft_job = Job.prune_drafts(@user.id)
-    if draft_job.present?
-      flash.now.alert = "Looks like you have an unsaved job open. Would you like to resume?"
-      session[:user_id] = @user.id
-      session[:current_user_id] = draft_job.id
-      render "index"
-      return
-    end
-
-    # Create new job as draft with "In Progress" status. A concurrent
-    # request could race us to the single-draft unique index; if so, fall
-    # back to resuming whichever draft won.
-    begin
-      @job = Job.create!(user_id: @user.id, status: Job::DRAFT_STATUS)
-      Rails.logger.info("WelcomeController#create created draft job_id=#{@job.id} user_id=#{@user.id}")
-    rescue ActiveRecord::RecordNotUnique
-      @job = Job.prune_drafts(@user.id)
-    end
-    session[:current_user_id] = @job.id
-    redirect_to "/upload/delete_files"
-  end
-
-  def resume_job
-    @user = User.find_by(id: session[:user_id])
-    @job = Job.find_by(id: session[:current_user_id])
-    if @user && @job && @job.user_id == @user.id && @job.status == "In Progress"
-      redirect_to "/upload"
-    else
-      flash[:alert] = "No job to resume."
-      redirect_to root_path
-    end
-  end
-
-  def create_job
-    @user = User.find_by(id: session[:user_id])
-
-    unless @user
-      flash[:alert] = "Please enter your email first."
-      redirect_to root_path
-      return
-    end
-
-    # Starting over: discard every existing draft, then create a fresh one.
-    Job.where(user_id: @user.id, status: Job::DRAFT_STATUS).destroy_all
-
-    @job = Job.create(user_id: @user.id, status: Job::DRAFT_STATUS)
-    Rails.logger.info("WelcomeController#create_job created new draft job_id=#{@job.id} user_id=#{@user.id}")
-    session[:current_user_id] = @job.id
-
-    redirect_to "/upload/delete_files"
+    UploadWorkspace.find(session[:upload_token])&.discard!
+    @workspace = UploadWorkspace.create!
+    # Clear upload paths and analysis selections from the previous attempt,
+    # while preserving an administrator's independent login.
+    admin_id = session[:admin_id]
+    reset_session
+    session[:admin_id] = admin_id if admin_id
+    session[:email] = @user.email
+    session[:user_id] = @user.id
+    session[:upload_token] = @workspace.token
+    redirect_to upload_path
   end
 
   private
 
   def job_params
-    params.permit(:email, :status, :authenticity_token, :commit)
+    params.permit(:email)
   end
 
 end

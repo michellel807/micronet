@@ -3,7 +3,7 @@ require "test_helper"
 class UserMailerTest < ActionMailer::TestCase
   setup do
     @user = User.create!(email: "submission-mail@example.com")
-    @job = Job.create!(user: @user, status: "Job submitted", submission_options: {
+    @job = Job.create!(user: @user, status: "Job submitted", submission_number: 812, submission_options: {
       "Analyses" => "Gaussian Process Plot",
       "Gaussian Process subset" => "Strain: <control>",
       "Gaussian Process pooling" => "None"
@@ -20,7 +20,7 @@ class UserMailerTest < ActionMailer::TestCase
     ]
 
     messages.each do |message|
-      assert_includes message.subject, "[Job ##{@job.id}]"
+      assert_includes message.subject, "[Job ##{@job.submission_number}]"
       assert_includes (message.html_part || message).body.decoded, "Strain: &lt;control&gt;"
       if message.text_part
         assert_includes message.text_part.body.decoded, "Strain: <control>"
@@ -32,7 +32,7 @@ class UserMailerTest < ActionMailer::TestCase
     @job.update!(submission_options: {})
     message = UserMailer.processedjob_email([], @job)
 
-    assert_includes message.subject, "[Job ##{@job.id}]"
+    assert_includes message.subject, "[Job ##{@job.submission_number}]"
     assert_includes message.text_part.body.decoded, "Attached is your final analyzed data."
   end
 
@@ -42,7 +42,7 @@ class UserMailerTest < ActionMailer::TestCase
         "Gaussian Process Plot" => { requested: requested, used: requested, retried: false }
       }, requested)
 
-      assert_includes message.subject, "[Job ##{@job.id}]"
+      assert_includes message.subject, "[Job ##{@job.submission_number}]"
       [message.html_part, message.text_part].each do |part|
         body = part.body.decoded
         assert_not_includes body, "Submission Details"

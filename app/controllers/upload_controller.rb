@@ -1,5 +1,7 @@
 class UploadController < ApplicationController
 skip_before_action :verify_authenticity_token
+before_action :require_upload_workspace
+around_action :lock_upload_workspace
 require 'json'
 require 'tmpdir'
 require 'tempfile'
@@ -9,8 +11,9 @@ SavedUpload = Struct.new(:path, :original_filename)
 
 def delete_files
   # Clear data
-  @job = Job.find_by(id: session[:current_user_id])
-  @job&.clear_uploads!
+  @workspace.clear_uploads!
+  @workspace = UploadWorkspace.create!
+  session[:upload_token] = @workspace.token
   puts "files deleted"
   # Clear session variables
   session[:data_file_paths] = nil
@@ -41,10 +44,9 @@ def delete_files
 end
 
 def index
-  @job = Job.find(session[:current_user_id]) if session[:current_user_id]
   @selected_chart_types = [] # Initialize the selected_chart_types variable
   @charts_data = {}
-  @job&.ensure_upload_directories!
+  @workspace.ensure_upload_directories!
 
   @data_file_paths = session[:data_file_paths] || []     # Assign an empty array if session value is nil
   session[:data_file_paths] = @data_file_paths           # Set the session value if it's nil
@@ -81,8 +83,8 @@ def upload
   @interval_file_path = nil
   @usr_interval_file_path = nil
   @gp_time_step_size = Job::DEFAULT_TSS
-  current_job = Job.find(session[:current_user_id])
-  current_job.ensure_upload_directories!
+  workspace = @workspace
+  workspace.ensure_upload_directories!
 
   # Get uploaded files from explicit pair rows.
   data_pairs_param = params[:data_pair_files]
@@ -110,7 +112,7 @@ def upload
   @gp_time_step_size = params[:gp_time_step_size].presence || Job::DEFAULT_TSS
 
   # Saved selections are indices into this session, never client-provided paths.
-  saved_pairs = saved_upload_pairs(current_job)
+  saved_pairs = saved_upload_pairs(workspace)
   retained_pairs = params[:retained_pairs]
   uploads_changed = data_files_by_key.present? || mapping_files_by_key.present? ||
     meta_files.present? || interval_files.present? ||
@@ -122,12 +124,12 @@ def upload
       pair = saved_pairs.find { |entry| entry[:id].to_s == saved_index.to_s }
       next unless pair
 
-      data_files_by_key[key] ||= saved_upload(current_job, pair[:data_path], pair[:data_name], "data") unless Array(params[:remove_data_pairs]).include?(key)
-      mapping_files_by_key[key] ||= saved_upload(current_job, pair[:mapping_path], pair[:mapping_name], "mapping", pair[:plate_id]) unless Array(params[:remove_mapping_pairs]).include?(key)
+      data_files_by_key[key] ||= saved_upload(workspace, pair[:data_path], pair[:data_name], "data") unless Array(params[:remove_data_pairs]).include?(key)
+      mapping_files_by_key[key] ||= saved_upload(workspace, pair[:mapping_path], pair[:mapping_name], "mapping", pair[:plate_id]) unless Array(params[:remove_mapping_pairs]).include?(key)
     end
   end
-  meta_files ||= saved_upload(current_job, session[:meta_file_path], session[:usr_meta_file_path], "meta") unless params[:remove_meta_file] == "1"
-  interval_files ||= saved_upload(current_job, session[:interval_file_path], session[:usr_interval_file_path], "interval") unless params[:remove_interval_file] == "1"
+  meta_files ||= saved_upload(workspace, session[:meta_file_path], session[:usr_meta_file_path], "meta") unless params[:remove_meta_file] == "1"
+  interval_files ||= saved_upload(workspace, session[:interval_file_path], session[:usr_interval_file_path], "interval") unless params[:remove_interval_file] == "1"
   data_files_by_key.compact!
   mapping_files_by_key.compact!
 
@@ -246,7 +248,7 @@ def upload
     end
   end
 
-  write_pair_metadata(current_job, pair_metadata_entries, root: staging_root)
+  write_pair_metadata(pair_metadata_entries, root: staging_root)
 
   success = compare_pairs.all? do |data_file_path, mapping_file_path|
     Python.exec("lib/scripts/otherscripts/comparedataandmapping.py '#{data_file_path}' '#{mapping_file_path}'")
@@ -268,17 +270,17 @@ def upload
 
     # Replace only upload inputs; leave generated result directories alone.
     %w[data mapping parameters originals].each do |directory|
-      destination = current_job.upload_root.join(directory)
+      destination = workspace.upload_root.join(directory)
       FileUtils.rm_rf(destination)
       source = staging_root.join(directory)
       FileUtils.mv(source, destination) if source.exist?
     end
-    current_job.ensure_upload_directories!
-    FileUtils.cp(staging_root.join("pair_metadata.json"), current_job.pair_metadata_path)
-    @data_file_paths.map! { |path| path.sub(staging_root.to_s, current_job.upload_root.to_s) }
-    @mapping_file_paths.map! { |path| path.sub(staging_root.to_s, current_job.upload_root.to_s) }
-    @meta_file_path = @meta_file_path&.sub(staging_root.to_s, current_job.upload_root.to_s)
-    @interval_file_path = @interval_file_path&.sub(staging_root.to_s, current_job.upload_root.to_s)
+    workspace.ensure_upload_directories!
+    FileUtils.cp(staging_root.join("pair_metadata.json"), workspace.pair_metadata_path)
+    @data_file_paths.map! { |path| path.sub(staging_root.to_s, workspace.upload_root.to_s) }
+    @mapping_file_paths.map! { |path| path.sub(staging_root.to_s, workspace.upload_root.to_s) }
+    @meta_file_path = @meta_file_path&.sub(staging_root.to_s, workspace.upload_root.to_s)
+    @interval_file_path = @interval_file_path&.sub(staging_root.to_s, workspace.upload_root.to_s)
     persist_upload_session!
     session[:gp_time_step_size] = @gp_time_step_size
     # Reset analysis selections so a new upload starts fresh
@@ -318,9 +320,9 @@ end
 
 helper_method :convert_asc_to_tab_delimited
 def convert_asc_to_tab_delimited(file_path)
-  current_job = Job.find(session[:current_user_id])
+  workspace = @workspace
   input_file_path = file_path
-  output_file_path = current_job.data_dir.join(File.basename(file_path, '.*') + '.txt')
+  output_file_path = workspace.data_dir.join(File.basename(file_path, '.*') + '.txt')
 
   # Call the Python script and check for errors
   success = Python.exec("lib/scripts/otherscripts/convertasc.py #{input_file_path} #{output_file_path}")
@@ -391,9 +393,8 @@ def archive_uploads(root, pairs, meta, interval)
   end
 end
 
-def write_pair_metadata(job, pair_entries, root: job.upload_root)
+def write_pair_metadata(pair_entries, root:)
   metadata = {
-    "job_id" => job.id,
     "generated_at" => Time.current.iso8601,
     "pairs" => pair_entries
   }

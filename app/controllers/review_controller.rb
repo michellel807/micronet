@@ -3,11 +3,10 @@ class ReviewController < ApplicationController
   require 'open3'
 
   skip_before_action :verify_authenticity_token
+  before_action :require_upload_workspace
+  around_action :lock_upload_workspace
 
   def index
-    @job = Job.find(session[:current_user_id])
-    @user = User.find(@job.user_id)
-
     @data_file_paths = session[:data_file_paths]
     @usr_data_file_paths = session[:usr_data_file_paths]
     @mapping_file_paths = session[:mapping_file_paths]

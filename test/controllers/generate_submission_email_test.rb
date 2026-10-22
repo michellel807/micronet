@@ -5,8 +5,9 @@ class GenerateSubmissionEmailTest < ActionController::TestCase
 
   setup do
     @user = User.create!(email: "generate-submission@example.com")
-    @workspace = Job.create!(user: @user, status: Job::DRAFT_STATUS)
-    session[:current_user_id] = @workspace.id
+    @workspace = UploadWorkspace.create!
+    session[:user_id] = @user.id
+    session[:upload_token] = @workspace.token
     @data = @workspace.data_dir.join("file1.txt")
     @mapping = @workspace.mapping_dir.join("file1.txt")
     File.write(@data, "Time\t0\t1\nA1\t0.1\t0.2\n")
@@ -34,10 +35,23 @@ class GenerateSubmissionEmailTest < ActionController::TestCase
     assert_redirected_to "/generate"
     @job = Job.find(session[:current_user_id])
     assert_equal "Strain, Medium", @job.reload.submission_options["Fit Statistics pooling"]
+    assert_nil @job.submission_number
     message = ActionMailer::Base.deliveries.last
     assert_includes message.subject, "[Job ##{@job.id}]"
     assert_includes message.text_part.body.decoded, "Fit Statistics (Pool by Strain, Medium)"
     assert_includes message.text_part.body.decoded, "Gaussian Process time step size: 2"
   end
 
+  test "repeat submit does not enqueue or email a second time" do
+    post :run, params: { email: @user.email }
+    number = session[:current_user_id]
+    deliveries = ActionMailer::Base.deliveries.size
+
+    assert_no_difference "Delayed::Job.count" do
+      post :run, params: { email: @user.email }
+    end
+
+    assert_equal number, session[:current_user_id]
+    assert_equal deliveries, ActionMailer::Base.deliveries.size
+  end
 end

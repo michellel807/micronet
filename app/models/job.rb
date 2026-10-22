@@ -1,6 +1,8 @@
 require "shellwords"
 
 class Job < ApplicationRecord
+  include UploadDirectories
+
   belongs_to :user
   attr_accessor :title
 
@@ -14,6 +16,13 @@ class Job < ApplicationRecord
   MAX_ACTIVE_JOBS_PER_USER = 3
   ACTIVE_STATUSES = ["Job submitted", "Analyzing..."].freeze
   DRAFT_STATUS = "In Progress".freeze
+
+  # Older submitted jobs retain the numbers already sent in their emails.
+  # New jobs are created on submission and use their database ID directly.
+  def job_number
+    submission_number || id
+  end
+
   HEATMAP_VALUES = [
     "AUC in units of OD",
     "Growth Rate",
@@ -46,32 +55,9 @@ class Job < ApplicationRecord
   end
 
   def upload_root
-    Rails.root.join("private", "uploads", "jobs", id.to_s)
-  end
+    raise ArgumentError, "A job ID is required for permanent uploads" if id.blank?
 
-  def data_dir = upload_root.join("data")
-  def mapping_dir = upload_root.join("mapping")
-  def summary_dir = upload_root.join("summary")
-  def derived_dir = upload_root.join("derived")
-  def models_dir = upload_root.join("models")
-  def figures_dir = upload_root.join("figures")
-  def parameters_dir = upload_root.join("parameters")
-  def pair_metadata_path = upload_root.join("pair_metadata.json")
-
-  def ensure_upload_directories!
-    [upload_root, data_dir, mapping_dir, parameters_dir, figures_dir, summary_dir, derived_dir, models_dir].each { |d| FileUtils.mkdir_p(d) }
-  end
-
-  def clear_uploads!
-    FileUtils.rm_rf(upload_root)
-  end
-
-  # Keep only the most recent draft for a user, destroying any older
-  # "In Progress" jobs. Returns the surviving draft (or nil).
-  def self.prune_drafts(user_id)
-    drafts = where(user_id: user_id, status: DRAFT_STATUS).order(created_at: :desc).to_a
-    drafts.drop(1).each(&:destroy)
-    drafts.first
+    UploadDirectories.root.join("jobs", id.to_s)
   end
 
   def deleteoldfiles

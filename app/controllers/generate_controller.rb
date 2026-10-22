@@ -1,33 +1,12 @@
 class GenerateController < ApplicationController
- def index
-  @job = Job.find(session[:current_user_id])
-  @user = User.find_or_create_by(email: params[:email])
-  @pool_replicates= session[:pool_replicates]
-  @pool_options = session[:pool_options] || []
-  @compare_parameters_pool = session[:compare_parameters_pool]
-  if !@pool_options.empty?
-    @pool_options_string = "'#{ @pool_options.join(",") }'"
-  end
-  session[:pool_options_string] = @pool_options_string
-  logger.debug "@pool_replicates is #{@pool_replicates}"
-  logger.debug "@pool_options_string is #{@pool_options_string}"
-  logger.debug "session[:pool_options_string] is #{session[:pool_options_string]}"
-  logger.debug "session[:chart_types] is #{session[:chart_types]}"
-  logger.debug "test_finalsubset is #{session[:test_finalsubset]}"
-  logger.debug "hypothesis is #{session[:hypothesis]}"
-  logger.debug "compare_parameters_pool is #{session[:compare_parameters_pool]}"
-  logger.debug "compare_finalsubset is #{session[:compare_finalsubset]}"
-  logger.debug "gp_pool_by_column is #{session[:gp_pool_by_column]}"
-  logger.debug "gp_subset_choice is #{session[:gp_subset_choice]}"
-  logger.debug "gp_finalsubset is #{session[:gp_finalsubset]}"
-  logger.debug "heatmap_value is #{session[:heatmap_value]}"
-  logger.debug "heatmap_x is #{session[:heatmap_x]}"
-  logger.debug "heatmap_y is #{session[:heatmap_y]}"
-  
+  before_action :require_upload_workspace, only: :run
+
+  def index
+    @job = Job.find_by(id: session[:current_user_id], user_id: session[:user_id])
+    redirect_to root_path unless @job
   end
 
   def run
-    @job = Job.find(session[:current_user_id])
     analysis_columns =
       if (Array(session[:chart_types]) & %w[heatmap_plot gp_plot]).any?
         mapping_columns(session[:mapping_file_paths])
@@ -60,44 +39,23 @@ class GenerateController < ApplicationController
       redirect_to selectanalyses_path and return
     end
 
-    @user = User.find_or_create_by(email: params[:email])
-
-    if @job.nil?
-      flash[:alert] = "No active job found to submit."
-      redirect_to root_path and return
+    @job, created = JobSubmission.call(user: @user, workspace: @workspace, choices: session)
+    session[:current_user_id] = @job.id
+    if created
+      Rails.logger.info("GenerateController#run submitted job_id=#{@job.id}")
+      @job.sendconfirm
+      @job.sendadmin
     end
 
-    @job.update!(submission_options: SubmissionSummary.from_session(session))
-    @job.deleteoldfiles
-    logger.debug "old files deleted"
-    @job.sendconfirm
-    @job.sendadmin
-
-    Delayed::Job.enqueue(JobAnalyzer.new(
-      @job.id,
-      session[:chart_types],
-      session[:pool_replicates],
-      session[:pool_options_string],
-      session[:test_finalsubset],
-      session[:hypothesis],
-      session[:gp_pool_by_column],
-      nil, # Legacy gp_subset_choice slot in serialized JobAnalyzer jobs.
-      session[:gp_finalsubset],
-      session[:compare_parameters_pool],
-      session[:compare_finalsubset],
-      session[:heatmap_value],
-      session[:heatmap_x],
-      session[:heatmap_y],
-      session[:gp_time_step_size] || Job::DEFAULT_TSS
-    ))
-    Rails.logger.info("GenerateController#run enqueued JobAnalyzer job_id=#{@job.id}")
-    logger.debug "beginning analysis"
-    @job.update(status: "Job submitted")
-    logger.debug "Job status is #{@job.status}"
-    
-  respond_to do |format|
-    format.html { redirect_to '/generate'}
-    format.js 
+    respond_to do |format|
+      format.html { redirect_to '/generate' }
+      format.js { render js: "window.location = '/generate';" }
     end
+  rescue JobSubmission::InvalidUploads
+    redirect_to upload_path, alert: "Please upload a matching data and mapping file before submitting."
+  rescue JobSubmission::LimitReached
+    redirect_to root_path, alert: "You already have #{Job::MAX_ACTIVE_JOBS_PER_USER} jobs queued or running. Please wait for one to finish."
+  rescue UploadWorkspace::Expired
+    upload_workspace_expired
   end
 end

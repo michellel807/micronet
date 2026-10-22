@@ -153,7 +153,7 @@ document.getElementById('meta-file-input').addEventListener('change', function(e
     const pairRows = document.getElementById('pair-rows');
     const addPairButton = document.getElementById('add-pair-button');
     const form = document.getElementById('upload-form');
-    const savedPairs = <%= raw(json_escape(saved_upload_pairs(@job).map { |pair| pair.slice(:id, :data_name, :mapping_name) }.to_json)) %>;
+    const savedPairs = <%= raw(json_escape(saved_upload_pairs(@workspace).map { |pair| pair.slice(:id, :data_name, :mapping_name) }.to_json)) %>;
     const gpTimeStepInput = document.getElementById('gp-time-step-size');
     let nextPairId = 1;
 

@@ -1,7 +1,7 @@
 class Admin::JobsController < ApplicationController
   before_action :check_admin
   def index
-    @jobs = Job.order(created_at: :desc).limit(7)
+    @jobs = Job.where.not(status: Job::DRAFT_STATUS).order(created_at: :desc).limit(7)
   end
 
   def show

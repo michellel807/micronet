@@ -30,16 +30,13 @@
           <div class="welcome-helprow">
             <%= link_to 'Need help getting started?', "help", id: "help_link" %>
           </div>
+          <p class="welcome-note">Each new analysis starts fresh. Temporary uploads expire after 24 hours of inactivity.</p>
           <div class="email-alert"><%= flash[:notice] %></div>
         </div>
 
         <% if flash[:alert].present? && flash[:alert] != "Need help?" %>
-          <div class="welcome-resume">
-            <p class="unsavedjob-alert"><%= flash[:alert] %></p>
-            <div class="button-group">
-              <%= button_to "Resume", resume_job_path, method: :post, class: "ds-btn ds-btn-primary" %>
-              <%= button_to "Start new", create_job_path, method: :post, class: "ds-btn ds-btn-secondary" %>
-            </div>
+          <div class="welcome-alert">
+            <p><%= flash[:alert] %></p>
           </div>
         <% end %>
       </section>

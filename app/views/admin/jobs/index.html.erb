@@ -838,14 +838,14 @@
                        else job.status end %>
                   <tr>
                     <td><span class="c-email"><%= job.user.email %></span></td>
-                    <td><span class="c-id">#<%= job.id %></span></td>
+                    <td><span class="c-id">#<%= job.job_number %></span></td>
                     <td><span class="pill <%= pc %>"><%= pl %></span></td>
-                    <td><span class="c-time"><%= job.created_at.strftime("%b %d, %Y %H:%M") %></span></td>
+                    <td><span class="c-time"><%= (job.confirm_time || job.created_at).strftime("%b %d, %Y %H:%M") %></span></td>
                     <td><%= job.start_time.present? ? content_tag(:span, job.start_time.strftime("%b %d, %Y %H:%M"), class: "c-time") : content_tag(:span, "—", class: "c-nil") %></td>
                     <td><%= job.end_time.present?   ? content_tag(:span, job.end_time.strftime("%b %d, %Y %H:%M"),   class: "c-time") : content_tag(:span, "—", class: "c-nil") %></td>
                     <td>
                       <% if ["Job submitted","Analyzing..."].include?(job.status) && job.admin_can_manage_jobs?(current_admin) %>
-                        <button class="btn-cancel-row" onclick="showCancelModal(<%= job.id %>, '<%= job.user.email %>')">Cancel</button>
+                        <button class="btn-cancel-row" onclick="showCancelModal(<%= job.id %>, '<%= job.user.email %>', <%= job.job_number %>)">Cancel</button>
                       <% end %>
                     </td>
                   </tr>
@@ -889,14 +889,14 @@
                 <% active_sorted.each_with_index do |job, i| %>
                   <tr>
                     <td><span class="c-email"><%= job.user.email %></span></td>
-                    <td><span class="c-id">#<%= job.id %></span></td>
+                    <td><span class="c-id">#<%= job.job_number %></span></td>
                     <td><span class="pill <%= job.status == "Job submitted" ? "queued" : "running" %>"><%= job.status == "Job submitted" ? "Queued" : "Running" %></span></td>
-                    <td><span class="c-time"><%= job.created_at.strftime("%b %d, %Y %H:%M") %></span></td>
+                    <td><span class="c-time"><%= (job.confirm_time || job.created_at).strftime("%b %d, %Y %H:%M") %></span></td>
                     <td><%= job.start_time.present? ? content_tag(:span, job.start_time.strftime("%b %d, %Y %H:%M"), class: "c-time") : content_tag(:span, "—", class: "c-nil") %></td>
                     <td><%= job.status == "Job submitted" ? content_tag(:span, i + 1, class: "q-rank") : content_tag(:span, "—", class: "c-nil") %></td>
                     <td>
                       <% if job.admin_can_manage_jobs?(current_admin) %>
-                        <button class="btn-cancel-row" onclick="showCancelModal(<%= job.id %>, '<%= job.user.email %>')">Cancel</button>
+                        <button class="btn-cancel-row" onclick="showCancelModal(<%= job.id %>, '<%= job.user.email %>', <%= job.job_number %>)">Cancel</button>
                       <% end %>
                     </td>
                   </tr>
@@ -939,8 +939,8 @@
                 <% completed_sorted.each do |job| %>
                   <tr>
                     <td><span class="c-email"><%= job.user.email %></span></td>
-                    <td><span class="c-id">#<%= job.id %></span></td>
-                    <td><span class="c-time"><%= job.created_at.strftime("%b %d, %Y %H:%M") %></span></td>
+                    <td><span class="c-id">#<%= job.job_number %></span></td>
+                    <td><span class="c-time"><%= (job.confirm_time || job.created_at).strftime("%b %d, %Y %H:%M") %></span></td>
                     <td><%= job.start_time.present? ? content_tag(:span, job.start_time.strftime("%b %d, %Y %H:%M"), class: "c-time") : content_tag(:span, "—", class: "c-nil") %></td>
                     <td><%= job.end_time.present?   ? content_tag(:span, job.end_time.strftime("%b %d, %Y %H:%M"),   class: "c-time") : content_tag(:span, "—", class: "c-nil") %></td>
                     <td>
@@ -989,8 +989,8 @@
                 <% failed_sorted.each do |job| %>
                   <tr>
                     <td><span class="c-email"><%= job.user.email %></span></td>
-                    <td><span class="c-id">#<%= job.id %></span></td>
-                    <td><span class="c-time"><%= job.created_at.strftime("%b %d, %Y %H:%M") %></span></td>
+                    <td><span class="c-id">#<%= job.job_number %></span></td>
+                    <td><span class="c-time"><%= (job.confirm_time || job.created_at).strftime("%b %d, %Y %H:%M") %></span></td>
                     <td><%= job.start_time.present? ? content_tag(:span, job.start_time.strftime("%b %d, %Y %H:%M"), class: "c-time") : content_tag(:span, "—", class: "c-nil") %></td>
                     <td><%= job.end_time.present?   ? content_tag(:span, job.end_time.strftime("%b %d, %Y %H:%M"),   class: "c-time") : content_tag(:span, "—", class: "c-nil") %></td>
                   </tr>
@@ -1031,8 +1031,8 @@
                 <% cancelled_sorted.each do |job| %>
                   <tr>
                     <td><span class="c-email"><%= job.user.email %></span></td>
-                    <td><span class="c-id">#<%= job.id %></span></td>
-                    <td><span class="c-time"><%= job.created_at.strftime("%b %d, %Y %H:%M") %></span></td>
+                    <td><span class="c-id">#<%= job.job_number %></span></td>
+                    <td><span class="c-time"><%= (job.confirm_time || job.created_at).strftime("%b %d, %Y %H:%M") %></span></td>
                     <td><%= job.end_time.present? ? content_tag(:span, job.end_time.strftime("%b %d, %Y %H:%M"), class: "c-time") : content_tag(:span, "—", class: "c-nil") %></td>
                   </tr>
                 <% end %>
@@ -1145,8 +1145,8 @@
     if (sec) { const tb = sec.querySelector('tbody'); if (tb) tb.innerHTML = ''; }
   }
 
-  function showCancelModal(jobId, userEmail) {
-    document.getElementById('jobIdConfirm').innerText = '#' + jobId;
+  function showCancelModal(jobId, userEmail, jobNumber) {
+    document.getElementById('jobIdConfirm').innerText = '#' + jobNumber;
     document.getElementById('userEmailConfirm').innerText = userEmail;
     document.getElementById('confirmCancelBtn').onclick = function() { confirmCancel(jobId); };
     document.getElementById('cancelModal').classList.add('open');

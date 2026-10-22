@@ -63,6 +63,6 @@ class UserMailer < ApplicationMailer
   private
 
   def job_subject(event)
-    "Schmid Lab Microbial Growth Model: #{event} [Job ##{@job.id}]"
+    "Schmid Lab Microbial Growth Model: #{event} [Job ##{@job.job_number}]"
   end
 end

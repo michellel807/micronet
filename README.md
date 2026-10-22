@@ -69,6 +69,16 @@ the server's `micronet-01.oit.duke.edu` certificates under `/etc/letsencrypt`.
 docker-compose run --rm test
 ```
 
+Uploads stay in a temporary workspace until the user submits an analysis.
+Submission creates the job and moves its inputs to `private/uploads/jobs/<id>`.
+Existing submitted jobs retain their previously emailed numbers. New jobs use
+their database ID, assigned at submission, without a separate numbering counter.
+
+The Docker worker schedules hourly cleanup of temporary workspaces inactive for
+24 hours. When starting workers outside Docker, run
+`bundle exec rake uploads:schedule_cleanup jobs:work` to enable the same cleanup.
+For a manual cleanup, run `bundle exec rake uploads:cleanup_temporary`.
+
 ---
 
 ## 🚀 Features
