@@ -1,6 +1,8 @@
 class UserMailer < ApplicationMailer
   default from: "noreply@duke.edu"
   def processedjob_email(file_paths, job, used_tss = {}, requested_tss = Job::DEFAULT_TSS, analysis_failures = [])
+    @job = job
+    @hide_submission_summary = true
     @user = User.find(job.user_id)
     @file_names = file_paths.map { |fp| File.basename(fp) }
     @used_tss = used_tss || {}
@@ -17,7 +19,7 @@ class UserMailer < ApplicationMailer
       end
     end
 
-    mail(to: @user.email, subject: "Schmid Lab Microbial Growth Model: Processed Data")
+    mail(to: @user.email, subject: job_subject("Processed Data"))
   end
 
   # Sends a confirmation email with User-submitted meta data and optical density
@@ -30,30 +32,37 @@ class UserMailer < ApplicationMailer
     @user = User.find(params[:job].user_id)
     @hash = hashids.encode(@user.id)
     @job = params[:job]
-    mail(to: @user.email, subject: "Schmid Lab Microbial Growth Model: Job Submitted")
+    mail(to: @user.email, subject: job_subject("Job Submitted"))
   end
 
 
   def failedjob_email(job, exception_message)
     @job = job
     @exception_message = ERB::Util.html_escape(exception_message)
-    mail(to: @job.user.email, subject: 'Schmid Lab Microbial Growth Model: Job Failed')
+    mail(to: @job.user.email, subject: job_subject("Job Failed"))
   end
 
   def job_cancelled_email(job, admin_name = nil)
     @job = job
     @admin_name = admin_name || "Administrator"
-    mail(to: @job.user.email, subject: 'Schmid Lab Microbial Growth Model: Job Cancelled')
+    mail(to: @job.user.email, subject: job_subject("Job Cancelled"))
   end
 
   def failed_heatmap_email(job, exception_message)
     @job = job
     @exception_message = ERB::Util.html_escape(exception_message)
-    mail(to: @job.user.email, subject: 'Schmid Lab Microbial Growth Model: Heatmap Generation Failed')
+    mail(to: @job.user.email, subject: job_subject("Heatmap Generation Failed"))
   end
 
 
   def admin_email
-    mail(to: 'hrd11@duke.edu', subject: 'Schmid Lab Microbial Growth Model: Job Submitted')
+    @job = params[:job]
+    mail(to: 'hrd11@duke.edu', subject: job_subject("Job Submitted"))
+  end
+
+  private
+
+  def job_subject(event)
+    "Schmid Lab Microbial Growth Model: #{event} [Job ##{@job.id}]"
   end
 end

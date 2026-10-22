@@ -1,0 +1,22 @@
+<h3>Submission Details</h3>
+<p><strong>Job ID:</strong> <%= @job.id %></p>
+<% summary = @job.submission_options %>
+<% if summary["Uploaded Files"].present? %>
+  <h3>Uploaded Files</h3>
+  <% summary["Uploaded Files"].each do |label, filenames| %>
+    <p><strong><%= label %>:</strong> <%= filenames.join(", ") %></p>
+  <% end %>
+<% end %>
+<% if summary.key?("Analyses To Run") %>
+  <h3>Analyses To Run</h3>
+  <% summary["Analyses To Run"].each do |analysis| %>
+    <p><%= analysis %></p>
+  <% end %>
+  <p><strong>Gaussian Process time step size:</strong> <%= summary["Gaussian Process time step size"] %></p>
+<% elsif summary.present? %>
+  <ul>
+    <% summary.except("Uploaded Files").each do |label, value| %>
+      <li><strong><%= label %>:</strong> <%= value %></li>
+    <% end %>
+  </ul>
+<% end %>

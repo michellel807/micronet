@@ -67,6 +67,7 @@ class GenerateController < ApplicationController
       redirect_to root_path and return
     end
 
+    @job.update!(submission_options: SubmissionSummary.from_session(session))
     @job.deleteoldfiles
     logger.debug "old files deleted"
     @job.sendconfirm

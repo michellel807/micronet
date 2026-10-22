@@ -8,15 +8,6 @@ Attached are the results that MicroNet completed successfully.
 Attached is your final analyzed data.
 <% end %>
 
-Your Time Step Setting
-
-You selected a Gaussian Process time step size of <%= @requested_tss %> for this job.
-<% if @requested_tss == Job::DEFAULT_TSS %>
-This is the default setting and keeps the original time-point resolution unless MicroNet needs to retry an analysis.
-<% else %>
-This tells MicroNet to fit the model using fewer time points, which can lower memory use but may reduce temporal resolution.
-<% end %>
-
 <% if @optimized_tss.present? %>
 MicroNet Adjusted This Job
 
