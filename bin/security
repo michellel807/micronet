@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+set -eu
+cd "$(dirname "$0")/.."
+bundle exec bundler-audit check --update
+bundle exec brakeman --no-pager
+uv tool run --python /opt/uvenv/bin/python pip-audit==2.10.1 --requirement requirements.txt --disable-pip --no-deps

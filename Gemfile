@@ -1,84 +1,36 @@
 source "https://rubygems.org"
-git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby "3.2.2"
-gem 'bcrypt' #handle password encryption for admin page
-gem 'daemons' #to start delayed jobs automatically
-gem 'delayed_job_active_record' #apparently need this for delayed jobs too
-gem 'delayed_job' #need for delayed jobs to run
-gem 'hashids' #apparently need for hash IDs
-gem 'carrierwave'
-gem 'mini_magick' #to convert PDFs to PNGs
-gem 'activerecord-session_store' #to avoid cookie overflow
-gem 'csv'  # for CSV file processing
+ruby "4.0.9"
 
-# Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "rails", "~> 7.0.4", ">= 7.0.4.3"
-
-# The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
+gem "rails", "~> 8.1.4"
 gem "sprockets-rails"
-
-# Use sqlite3 as the database for Active Record
-gem "sqlite3", "~> 1.4"
-
-# Use postgresql as the database for Active Record
-gem "pg", "~> 1.3"
-
-# Use the Puma web server [https://github.com/puma/puma]
-gem "puma", "~> 5.0"
-
-# Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
+gem "pg"
+gem "puma", "~> 8.0"
+gem "bcrypt"
+gem "daemons"
+gem "delayed_job"
+gem "delayed_job_active_record"
+gem "hashids"
+gem "activerecord-session_store"
+gem "csv"
 gem "importmap-rails"
-
-# Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
 gem "turbo-rails"
-
-# Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
 gem "stimulus-rails"
-
-# Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem "jbuilder"
-
-# Use Redis adapter to run Action Cable in production
-# gem "redis", "~> 4.0"
-
-# Use Kredis to get higher-level data types in Redis [https://github.com/rails/kredis]
-# gem "kredis"
-
-# Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
-# gem "bcrypt", "~> 3.1.7"
-
-# Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem "tzinfo-data", platforms: %i[ mingw mswin x64_mingw jruby ]
-
-# Reduces boot times through caching; required in config/boot.rb
-# gem "bootsnap", require: false
-
-# Use Sass to process CSS
-# gem "sassc-rails"
-
-# Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
-# gem "image_processing", "~> 1.2"
+gem "tzinfo-data", platforms: %i[windows jruby]
 
 group :development, :test do
-  # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
-  gem "debug", platforms: %i[ mri mingw x64_mingw ]
+  gem "debug", platforms: %i[mri windows]
+  gem "brakeman", require: false
+  gem "bundler-audit", require: false
 end
 
 group :development do
-  # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
-  gem "byebug"
-  # Add speed badges [https://github.com/MiniProfiler/rack-mini-profiler]
-  # gem "rack-mini-profiler"
-
-  # Speed up commands on slow machines / big apps [https://github.com/rails/spring]
-  # gem "spring"
 end
 
 group :test do
-  # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
+  gem "minitest-mock"
   gem "capybara"
   gem "selenium-webdriver"
-  gem "webdrivers"
 end

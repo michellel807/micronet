@@ -115,7 +115,7 @@
                     <td><%= job.end_time.present?   ? content_tag(:span, job.end_time.strftime("%b %d, %Y %H:%M"),   class: "c-time") : content_tag(:span, "—", class: "c-nil") %></td>
                     <td>
                       <% if ["Job submitted","Analyzing..."].include?(job.status) && job.admin_can_manage_jobs?(current_admin) %>
-                        <button class="btn-cancel-row" onclick="showCancelModal(<%= job.id %>, '<%= job.user.email %>', <%= job.job_number %>)">Cancel</button>
+                        <button class="btn-cancel-row" onclick="showCancelModal(<%= job.id %>, <%= job.user.email.to_json %>, <%= job.job_number %>)">Cancel</button>
                       <% end %>
                     </td>
                   </tr>
@@ -166,7 +166,7 @@
                     <td><%= job.status == "Job submitted" ? content_tag(:span, i + 1, class: "q-rank") : content_tag(:span, "—", class: "c-nil") %></td>
                     <td>
                       <% if job.admin_can_manage_jobs?(current_admin) %>
-                        <button class="btn-cancel-row" onclick="showCancelModal(<%= job.id %>, '<%= job.user.email %>', <%= job.job_number %>)">Cancel</button>
+                        <button class="btn-cancel-row" onclick="showCancelModal(<%= job.id %>, <%= job.user.email.to_json %>, <%= job.job_number %>)">Cancel</button>
                       <% end %>
                     </td>
                   </tr>

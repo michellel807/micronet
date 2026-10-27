@@ -15,6 +15,6 @@ class AdminJobNumbersTest < ActionController::TestCase
     assert_response :success
     assert_select ".c-id", text: "#812"
     assert_not_includes response.body, unfinished_user.email
-    assert_includes response.body, "showCancelModal(#{submitted.id}, '#{submitted_user.email}', 812)"
+    assert_includes response.body, "showCancelModal(#{submitted.id}, &quot;#{submitted_user.email}&quot;, 812)"
   end
 end

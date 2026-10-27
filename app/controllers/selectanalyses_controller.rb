@@ -1,5 +1,4 @@
 class SelectanalysesController < ApplicationController
-  skip_before_action :verify_authenticity_token
   before_action :require_upload_workspace
   around_action :lock_upload_workspace
 

@@ -1,6 +1,12 @@
 # app/controllers/admin_controller.rb
 class AdminController < ApplicationController
-  before_action :authenticate_admin, except: :login
+  # A per-process backstop; use an ingress limit across multiple replicas too.
+  LOGIN_RATE_LIMIT_STORE = ActiveSupport::Cache::MemoryStore.new(size: 1.megabyte)
+  rate_limit to: 10, within: 3.minutes, only: :authenticate_admin,
+    store: LOGIN_RATE_LIMIT_STORE,
+    with: -> { render plain: "Too many login attempts. Please try again later.", status: :too_many_requests }
+
+  before_action :require_admin, except: [:login, :authenticate_admin]
 
   def index
   end
@@ -14,6 +20,7 @@ class AdminController < ApplicationController
       # Handle login form submission
       admin = Admin.find_by(username: params[:username])
       if admin && admin.authenticate(params[:password])
+        reset_session
         session[:admin_id] = admin.id
         redirect_to admin_jobs_path
       else
@@ -23,12 +30,12 @@ class AdminController < ApplicationController
       end
     else
       # Check if user is already logged in for non-POST requests
-      redirect_to login_path unless session[:admin_id]
+      redirect_to login_path unless current_admin
     end
   end
 
   def logout
-    session[:admin_id] = nil
+    reset_session
     redirect_to login_path
   end
 
@@ -61,7 +68,7 @@ class AdminController < ApplicationController
         redirect_to admin_jobs_path
       elsif admin.update(password: params[:new_password])
         # Force logout after password change for security
-        session[:admin_id] = nil
+        reset_session
         flash[:success] = 'Password updated successfully. Please log in with your new password.'
         redirect_to login_path
       else
@@ -74,5 +81,10 @@ class AdminController < ApplicationController
     end
   end
 
+  private
+
+  def require_admin
+    redirect_to login_path unless current_admin
+  end
 end
 

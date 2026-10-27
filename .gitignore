@@ -57,3 +57,6 @@
 
 # ignore the uploads folder
 /private/uploads*
+# Generated dependencies and debugger history
+/node_modules/
+/.byebug_history

@@ -1,0 +1,96 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "File Access",
+      "warning_code": 16,
+      "fingerprint": "6c6593b6874abcdfb874ac6259400d2b5edaabd7a8fb308b781af343ff881ead",
+      "check_name": "FileAccess",
+      "message": "Model attribute used in file name",
+      "file": "app/models/job_submission.rb",
+      "line": 55,
+      "link": "https://brakemanscanner.org/docs/warning_types/file_access/",
+      "code": "FileUtils.mv(user.jobs.create!(:status => \"Job submitted\", :confirm_time => Time.current, :upload_token => workspace.token, :submission_options => SubmissionSummary.from_session(choices)).upload_root, workspace.upload_root)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "JobSubmission",
+        "method": "JobSubmission.call"
+      },
+      "user_input": "SubmissionSummary.from_session(choices)",
+      "confidence": "Weak",
+      "cwe_id": [
+        22
+      ],
+      "note": "Reviewed: permanent directories use a database-generated integer job ID; temporary directories use a validated random 32-character hex token. The caller supplies a server-created UploadWorkspace, never an arbitrary pathname. Covered by JobSubmissionTest and UploadWorkspaceTest."
+    },
+    {
+      "warning_type": "File Access",
+      "warning_code": 16,
+      "fingerprint": "744029b4431166b06c4f32a597d79dcff0baec2924dbb99ffc22c3ee47b65e70",
+      "check_name": "SendFile",
+      "message": "Parameter value used in file name",
+      "file": "app/controllers/files_controller.rb",
+      "line": 23,
+      "link": "https://brakemanscanner.org/docs/warning_types/file_access/",
+      "code": "send_file(find_job_for_file_request.figures_dir.join(safe_filename(params[:filename])).cleanpath, :filename => safe_filename(params[:filename]), :disposition => disposition)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "FilesController",
+        "method": "serve_figure_file"
+      },
+      "user_input": "params[:filename]",
+      "confidence": "Weak",
+      "cwe_id": [
+        22
+      ],
+      "note": "Reviewed: filenames reject separators and traversal; access requires the submitting session or an administrator; realpath containment rejects symlink escapes. Covered by FilesControllerTest."
+    },
+    {
+      "warning_type": "File Access",
+      "warning_code": 16,
+      "fingerprint": "783793493b0dd41f621c42eee7d0655ac11e4e4c9c19a01daf5d97a641289123",
+      "check_name": "FileAccess",
+      "message": "Model attribute used in file name",
+      "file": "app/models/job_submission.rb",
+      "line": 28,
+      "link": "https://brakemanscanner.org/docs/warning_types/file_access/",
+      "code": "FileUtils.mkdir_p(user.jobs.create!(:status => \"Job submitted\", :confirm_time => Time.current, :upload_token => workspace.token, :submission_options => SubmissionSummary.from_session(choices)).upload_root.parent)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "JobSubmission",
+        "method": "JobSubmission.call"
+      },
+      "user_input": "SubmissionSummary.from_session(choices)",
+      "confidence": "Weak",
+      "cwe_id": [
+        22
+      ],
+      "note": "Reviewed: permanent directories use a database-generated integer job ID; temporary directories use a validated random 32-character hex token. The caller supplies a server-created UploadWorkspace, never an arbitrary pathname. Covered by JobSubmissionTest and UploadWorkspaceTest."
+    },
+    {
+      "warning_type": "File Access",
+      "warning_code": 16,
+      "fingerprint": "95ff5d0d9823ac55351a9a370b10b03b35778c0637f5156ecd38aa105df10fb8",
+      "check_name": "FileAccess",
+      "message": "Model attribute used in file name",
+      "file": "app/controllers/upload_controller.rb",
+      "line": 273,
+      "link": "https://brakemanscanner.org/docs/warning_types/file_access/",
+      "code": "FileUtils.rm_rf(UploadWorkspace.find(session[:upload_token]).upload_root.join(:BRAKEMAN_SAFE_LITERAL))",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "UploadController",
+        "method": "upload"
+      },
+      "user_input": "UploadWorkspace.find(session[:upload_token]).upload_root.join(:BRAKEMAN_SAFE_LITERAL)",
+      "confidence": "Medium",
+      "cwe_id": [
+        22
+      ],
+      "note": "Reviewed: require_upload_workspace resolves only a validated 32-character hex session token below UploadWorkspace.root. The removed child directory comes from the fixed data/mapping/parameters/originals literal list. Covered by UploadRetentionTest and TemporaryUploadFlowTest."
+    }
+  ]
+}

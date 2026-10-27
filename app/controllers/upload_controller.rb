@@ -1,5 +1,4 @@
 class UploadController < ApplicationController
-skip_before_action :verify_authenticity_token
 before_action :require_upload_workspace
 around_action :lock_upload_workspace
 require 'json'
@@ -251,12 +250,12 @@ def upload
   write_pair_metadata(pair_metadata_entries, root: staging_root)
 
   success = compare_pairs.all? do |data_file_path, mapping_file_path|
-    Python.exec("lib/scripts/otherscripts/comparedataandmapping.py '#{data_file_path}' '#{mapping_file_path}'")
+    Python.exec("lib/scripts/otherscripts/comparedataandmapping.py", data_file_path, mapping_file_path)
   end
 
   if @meta_file_path.present? && @data_file_paths.present?
     # Run the Python script to merge meta data with data files
-    success &&= Python.exec("lib/scripts/otherscripts/mergemeta.py #{staging_root.join('data')} #{staging_root.join('mapping')} #{staging_root.join('pair_metadata.json')}")
+    success &&= Python.exec("lib/scripts/otherscripts/mergemeta.py", staging_root.join("data"), staging_root.join("mapping"), staging_root.join("pair_metadata.json"))
     @mapping_file_paths = Dir.glob(staging_root.join('mapping', '*.txt'))
                          .reject { |path| File.basename(path) == 'meta.txt' }
                          .map(&:to_s)
@@ -325,7 +324,7 @@ def convert_asc_to_tab_delimited(file_path)
   output_file_path = workspace.data_dir.join(File.basename(file_path, '.*') + '.txt')
 
   # Call the Python script and check for errors
-  success = Python.exec("lib/scripts/otherscripts/convertasc.py #{input_file_path} #{output_file_path}")
+  success = Python.exec("lib/scripts/otherscripts/convertasc.py", input_file_path, output_file_path)
 
   return nil unless success && File.exist?(output_file_path)
 

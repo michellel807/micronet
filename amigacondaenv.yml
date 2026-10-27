@@ -1,8 +1,8 @@
 name: amigacondaenv
 channels:
   - conda-forge
-  - bioconda
-  - defaults
 dependencies:
-  - amiga=3.0.4
-prefix: /miniconda3/
+  - python=3.12
+  - pip
+  - pip:
+      - -r requirements.txt

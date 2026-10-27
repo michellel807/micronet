@@ -1,38 +1,8 @@
-# This file should contain all the record creation needed to seed the database with its default values.
-# The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
-#
-# Examples:
-#
-#   movies = Movie.create([{ name: "Star Wars" }, { name: "Lord of the Rings" }])
-#   Character.create(name: "Luke", movie: movies.first)
-
-# ============================================================================
-# DEFAULT ADMIN CREDENTIALS
-# ============================================================================
-# Default username: admin
-# Default password: admin123
-#
-# These credentials are ONLY used during initial setup (first db:seed).
-# After setup, credentials are stored in the database and updated through the web UI.
-#
-# RESETTING FORGOTTEN CREDENTIALS:
-# If the admin password is forgotten in production:
-#   1. Set environment variable: ADMIN_RESET_PASSWORD=<new_password>
-#   2. Run: rails admin:reset_password
-#   3. Username remains 'admin' unless changed via the web UI
-#
-# For local development:
-#   1. Edit .env and set: ADMIN_RESET_PASSWORD=<new_password>
-#   2. Run: rails admin:reset_password
-#
-# ============================================================================
-
-DEFAULT_ADMIN_USERNAME = 'admin'
-DEFAULT_ADMIN_PASSWORD = 'admin123'
-
-admin = Admin.find_or_initialize_by(username: DEFAULT_ADMIN_USERNAME)
-
-admin.password = DEFAULT_ADMIN_PASSWORD
-admin.password_confirmation = DEFAULT_ADMIN_PASSWORD
-
-admin.save!
+# Initial setup never overwrites an existing administrator's password.
+username = ENV.fetch("ADMIN_INITIAL_USERNAME", "admin")
+unless Admin.exists?(username: username)
+  password = ENV.fetch("ADMIN_INITIAL_PASSWORD") do
+    raise "Set ADMIN_INITIAL_PASSWORD to a unique password of at least 12 characters before seeding."
+  end
+  Admin.create!(username: username, password: password, password_confirmation: password)
+end

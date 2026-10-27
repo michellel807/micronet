@@ -17,7 +17,8 @@ class FilesController < ApplicationController
 
     file_path = job.figures_dir.join(filename).cleanpath
     return render_not_found unless file_path.to_s.start_with?(job.figures_dir.to_s + File::SEPARATOR)
-    return render_not_found unless File.exist?(file_path) && File.file?(file_path)
+    return render_not_found unless File.file?(file_path)
+    return render_not_found unless file_path.realpath.to_s.start_with?(job.figures_dir.realpath.to_s + File::SEPARATOR)
 
     send_file file_path, filename: filename, disposition: disposition
   end
@@ -26,7 +27,10 @@ class FilesController < ApplicationController
     job_id = params[:job_id].presence || session[:current_user_id]
     return nil if job_id.blank?
 
-    Job.find_by(id: job_id)
+    return Job.find_by(id: job_id) if current_admin
+    return nil unless job_id.to_s == session[:current_user_id].to_s && session[:user_id].present?
+
+    Job.find_by(id: job_id, user_id: session[:user_id])
   end
 
   def safe_filename(raw_filename)

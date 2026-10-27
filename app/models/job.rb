@@ -147,18 +147,23 @@ class Job < ApplicationRecord
     }
   end
 
+  # Older queued jobs include literal wrapping quotes around CLI values.
+  def cli_argument(value)
+    value.to_s.delete_prefix("'").delete_suffix("'")
+  end
+
   def run_with_tss_retry(base_command, analysis_name, starting_tss = DEFAULT_TSS)
     tss_retry_values(starting_tss).each do |tss|
       command = base_command.dup
-      command += " -tss #{tss}" unless tss == DEFAULT_TSS
+      command += ["-tss", tss.to_s] unless tss == DEFAULT_TSS
       @last_tss_attempts ||= {}
       @tss_attempts ||= {}
       @last_tss_attempts[analysis_name] = tss
       @tss_attempts[analysis_name] ||= []
       @tss_attempts[analysis_name] << tss
 
-      logger.info("[#{analysis_name}] Running: #{command}")
-      run_cancellable_command(command)
+      logger.info("[#{analysis_name}] Running: #{Shellwords.join(command)}")
+      run_cancellable_command(*command)
 
       if $?.success?
         record_used_tss(analysis_name, starting_tss, tss)
@@ -174,6 +179,7 @@ class Job < ApplicationRecord
   def run_cancellable_command(*command)
     raise Cancelled, "Job #{id} was cancelled." if cancelled?
 
+    command = Shellwords.split(command.first) if command.length == 1
     pid = Process.spawn(*command, pgroup: true)
     process_reaped = false
     loop do
@@ -191,8 +197,8 @@ class Job < ApplicationRecord
     terminate_process_group(pid) if pid && !process_reaped
   end
 
-  def run_python_script(script)
-    Python.exec(script) { |*command| run_cancellable_command(*command) }
+  def run_python_script(script, *arguments)
+    Python.exec(script, *arguments) { |*command| run_cancellable_command(*command) }
   end
 
   def cancelled?
@@ -367,14 +373,14 @@ class Job < ApplicationRecord
       if @selected_chart_types.include?('gp_plot')
         run_analysis_step("Gaussian Process Plot") do
           pool_by_clean = gp_pool_by_column.to_s.gsub(/\A'|'\z/, '').strip
-          pool_by_flag = pool_by_clean.present? && pool_by_clean != "None" ? "--pool-by #{Shellwords.escape(pool_by_clean)}" : ""
+          pool_by_flag = pool_by_clean.present? && pool_by_clean != "None" ? ["--pool-by", pool_by_clean] : []
           subset = gp_finalsubset.to_s.delete_prefix("'").delete_suffix("'")
-          unless run_with_tss_retry("amiga fit -i #{Shellwords.escape(upload_root.to_s)} -s #{Shellwords.escape(subset)} #{pool_by_flag} --save-gp-data -o plot","Gaussian Process Plot", @requested_tss)
+          unless run_with_tss_retry(["amiga", "fit", "-i", upload_root.to_s, "-s", subset, *pool_by_flag, "--save-gp-data", "-o", "plot"],"Gaussian Process Plot", @requested_tss)
             raise_if_memory_failure("The Gaussian Process Plot analysis")
             raise "The Gaussian Process Plot analysis failed. Please check that your input data or selected conditions are correct."
           end
           raise_if_memory_failure("The Gaussian Process Plot analysis")
-          run_python_script(Shellwords.join(["lib/scripts/otherscripts/gpplot.py", derived_dir.to_s, subset, pool_by_clean]))
+          run_python_script("lib/scripts/otherscripts/gpplot.py", derived_dir.to_s, subset, pool_by_clean)
           gp_plot_path = derived_dir.join('gp_plot.pdf')
           gp_plot_data = derived_dir.join('plot_gp_data.txt')
           raise "The GP plot analysis failed" unless File.exist?(gp_plot_path) && File.exist?(gp_plot_data)
@@ -386,14 +392,14 @@ class Job < ApplicationRecord
 
       if @selected_chart_types.include?('fit_stats') && %w[yes no].include?(@pool_replicates)
         run_analysis_step("Fit Statistics") do
-          pool_flag = @pool_replicates == "yes" ? "--pool-by '#{pool_options_string}'" : ""
+          pool_flag = @pool_replicates == "yes" ? ["--pool-by", pool_options_string.to_s] : []
 
-          unless run_with_tss_retry("amiga fit -i #{upload_root} #{pool_flag} -o fit", "Fit Statistics", @requested_tss)
+          unless run_with_tss_retry(["amiga", "fit", "-i", upload_root.to_s, *pool_flag, "-o", "fit"], "Fit Statistics", @requested_tss)
             raise_if_memory_failure("The Fit Statistics analysis")
             raise "The Fit Statistics analysis failed. Please check that your input data or selected conditions are correct."
           end
 
-          run_python_script("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
+          run_python_script("lib/scripts/otherscripts/simplifyfit.py", summary_dir.join('fit_summary.txt').to_s)
 
           fit_summary_path = summary_dir.join('fit_summary_modified.txt')
           raise "The Fit Statistics analysis failed. Please check that your input data or selected conditions are correct." unless File.exist?(fit_summary_path)
@@ -413,24 +419,24 @@ class Job < ApplicationRecord
               logger.debug "HEATMAP VALUE = #{@heatmap_value}"
               logger.debug "HEATMAP X = #{@heatmap_x}"
               logger.debug "HEATMAP Y = #{@heatmap_y}"
-              run_cancellable_command("amiga fit -i #{upload_root} -o heatmap_fit")
+              run_cancellable_command("amiga", "fit", "-i", upload_root.to_s, "-o", "heatmap_fit")
               raise "Your dataset is too large for the heatmap analysis. Please try uploading a smaller dataset or selecting a different variable." if $?.exitstatus == 137
-              run_python_script("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('heatmap_fit_summary.txt')}")
+              run_python_script("lib/scripts/otherscripts/simplifyfit.py", summary_dir.join('heatmap_fit_summary.txt').to_s)
               heatmap_fit_summary_path = summary_dir.join('heatmap_fit_summary_modified.txt')
               raise "The heatmap analysis failed. Please check your axis/value selections." unless File.exist?(heatmap_fit_summary_path)
-              run_cancellable_command("amiga heatmap -i #{heatmap_fit_summary_path} -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
+              run_cancellable_command("amiga", "heatmap", "-i", heatmap_fit_summary_path.to_s, "-o", "heatmap_plot", "-x", heatmap_x.to_s, "-y", heatmap_y.to_s, "-v", heatmap_value.to_s, "--title", "Heatmap: #{heatmap_value}", "--keep-columns-missing-data", "--keep-rows-missing-data", "--kwargs", "cmap:Reds", "--x-tick-labels-scale", "1", "--y-tick-labels-scale", "1", "--color-bar-labels-scale", "0.6")
             else
               heatmap_x = @heatmap_x == "Well positions" ? "Well" : @heatmap_x
               heatmap_y = @heatmap_y == "Well positions" ? "Well" : @heatmap_y
               logger.debug "HEATMAP VALUE = #{@heatmap_value.inspect}"
               logger.debug "HEATMAP X = #{@heatmap_x.inspect}"
               logger.debug "HEATMAP Y = #{@heatmap_y.inspect}"
-              run_cancellable_command("amiga fit -i #{upload_root} -o fit")
+              run_cancellable_command("amiga", "fit", "-i", upload_root.to_s, "-o", "fit")
               raise "Your dataset is too large for the heatmap analysis. Please try a smaller dataset or selecting a different variable." if $?.exitstatus == 137
-              run_python_script("lib/scripts/otherscripts/simplifyfit.py #{summary_dir.join('fit_summary.txt')}")
+              run_python_script("lib/scripts/otherscripts/simplifyfit.py", summary_dir.join('fit_summary.txt').to_s)
               heatmap_fit_summary_path = summary_dir.join('fit_summary_modified.txt')
               raise "The heatmap analysis failed. Please check your axis/value selections." unless File.exist?(heatmap_fit_summary_path)
-              run_cancellable_command("amiga heatmap -i #{summary_dir.join('fit_summary_modified.txt')} -o heatmap_plot -x \"#{heatmap_x}\" -y \"#{heatmap_y}\" -v \"#{heatmap_value}\" --title 'Heatmap: #{heatmap_value}' --keep-columns-missing-data --keep-rows-missing-data --kwargs 'cmap:Reds' --x-tick-labels-scale 1 --y-tick-labels-scale 1 --color-bar-labels-scale 0.6")
+              run_cancellable_command("amiga", "heatmap", "-i", summary_dir.join('fit_summary_modified.txt').to_s, "-o", "heatmap_plot", "-x", heatmap_x.to_s, "-y", heatmap_y.to_s, "-v", heatmap_value.to_s, "--title", "Heatmap: #{heatmap_value}", "--keep-columns-missing-data", "--keep-rows-missing-data", "--kwargs", "cmap:Reds", "--x-tick-labels-scale", "1", "--y-tick-labels-scale", "1", "--color-bar-labels-scale", "0.6")
             end
           else
             raise "Heatmap value, x-axis, or y-axis not selected"
@@ -449,7 +455,7 @@ class Job < ApplicationRecord
         run_analysis_step("Compare Parameters") do
           FileUtils.rm_rf(models_dir.join('compare-parameters.txt'))
           #ensures the previous job files are removed before calling amiga
-          unless run_with_tss_retry("amiga fit -i #{upload_root} --sample-posterior --pool-by #{compare_parameters_pool} -o compare","Compare Parameters", @requested_tss)
+          unless run_with_tss_retry(["amiga", "fit", "-i", upload_root.to_s, "--sample-posterior", "--pool-by", cli_argument(compare_parameters_pool), "-o", "compare"],"Compare Parameters", @requested_tss)
             raise_if_memory_failure("The Compare Parameters analysis")
             raise "The Compare Parameters analysis failed. Please check that your input data or selected conditions are correct."
           end
@@ -458,7 +464,7 @@ class Job < ApplicationRecord
             raise "Your dataset is too large for the compare parameters analysis. Please try uploading a smaller dataset or selecting a different variable." if $?.exitstatus == 137 || $?.signaled?
             raise "The compare parameters analysis failed. Please check that your input data or selected conditions are correct."
           end
-          run_cancellable_command("amiga compare -i #{summary_dir.join('compare_summary.txt')} -o compare-parameters -s #{compare_finalsubset} --verbose")
+          run_cancellable_command("amiga", "compare", "-i", summary_dir.join("compare_summary.txt").to_s, "-o", "compare-parameters", "-s", cli_argument(compare_finalsubset), "--verbose")
           old_path = "compare-parameters.txt"
           new_path = models_dir.join("compare-parameters.txt")
           File.rename(old_path, new_path) if File.exist?(old_path)
@@ -479,7 +485,7 @@ class Job < ApplicationRecord
         run_analysis_step("Test Hypothesis") do
           FileUtils.rm_rf(models_dir.join('test-hypothesis'))
           #ensures the previous job files are removed before calling amiga
-          unless run_with_tss_retry("amiga test -i #{upload_root} -s #{test_finalsubset} -y #{hypothesis} -o 'test-hypothesis'","Test Hypothesis", @requested_tss)
+          unless run_with_tss_retry(["amiga", "test", "-i", upload_root.to_s, "-s", cli_argument(test_finalsubset), "-y", cli_argument(hypothesis), "-o", "test-hypothesis"],"Test Hypothesis", @requested_tss)
             raise_if_memory_failure("The Test Hypothesis analysis")
           end
           test_hypothesis_txts = Dir.glob(models_dir.join('test-hypothesis', '*report.txt'))

@@ -1,75 +1,43 @@
-# Use the official Ruby image as base
-FROM image-mirror-prod-registry.cloud.duke.edu/library/ruby:3.2.2 as deps
+# syntax=docker/dockerfile:1
+FROM ghcr.io/astral-sh/uv:0.13.6 AS uv
+FROM ruby:4.0.9-slim-trixie AS deps
 
-# Set the working directory
 WORKDIR /app
-
-# Install dependencies (added python3-dev for Python.h)
 RUN apt-get update && apt-get -y upgrade && \
-    apt-get install -y nodejs && \
-    apt-get install -y --no-install-recommends \
-    git \
-    wget \
-    g++ \
-    gcc \
-    ca-certificates \
-    ghostscript \
-    python3 python3-venv python3-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create a Python virtual environment and install uv inside it
-RUN python3 -m venv /opt/python-base && \
-    /opt/python-base/bin/pip install --upgrade pip && \
-    /opt/python-base/bin/pip install uv
-
-# Ensure uv is on PATH for all following commands
-ENV PATH="/opt/python-base/bin:${PATH}"
-
-# Create virtual environment with uv and install amiga
-RUN uv venv /opt/uvenv && \
-    cp /opt/python-base/bin/uv /opt/uvenv/bin/ && \
-    /opt/uvenv/bin/uv pip list
-
-# uvenv to the path
+    apt-get install -y --no-install-recommends build-essential git ca-certificates \
+      libpq-dev libyaml-dev fonts-dejavu-core && \
+    rm -rf /var/lib/apt/lists/*
+COPY --from=uv /uv /usr/local/bin/uv
+# AMIGA requires Python <3.13. Use a maintained 3.12 patch release.
+ENV UV_PYTHON_INSTALL_DIR=/opt/python UV_LINK_MODE=copy UV_NO_CACHE=1
+RUN uv python install 3.12 && uv venv --python 3.12 /opt/uvenv
 ENV PATH="/opt/uvenv/bin:${PATH}"
 
-COPY requirements.txt ./
-RUN uv pip install -r requirements.txt
-
-# RUN uv pip list
-
-RUN sed -i 's|<policy domain="coder" rights="none" pattern="PDF" />||' /etc/ImageMagick-6/policy.xml
-
 ENV RAILS_LOG_TO_STDOUT=1
-
-# Copy Gemfile and Gemfile.lock into the image and install dependencies
 COPY Gemfile Gemfile.lock ./
 RUN bundle install
-
-# Copy the rest of the application code into the image
+COPY requirements.txt ./
+RUN uv pip sync --require-hashes requirements.txt
 COPY . /app
 
-FROM deps
-
-ENV RAILS_ENV=production \
-    RAILS_LOG_TO_STDOUT=1 \
-    RAILS_SERVE_STATIC_FILES=1
-
-# Set a home directory to silence bundler in console warnings
-RUN mkdir -p /okd_user_home \
-    && chgrp -R 0 /okd_user_home \
-    && chmod -R g+rwxs /okd_user_home
+FROM deps AS production
+# Build tools and headers are unnecessary in the deployed container.
+RUN apt-mark manual libpq5 libyaml-0-2 && \
+    apt-get purge -y --auto-remove build-essential gcc g++ libpq-dev libyaml-dev git && \
+    rm -rf /var/lib/apt/lists/*
+# The application does not need privileged OS helper executables.
+RUN find / -xdev -type f -perm /6000 -exec chmod a-s {} +
+# The locked json gem supersedes Ruby's vulnerable bundled default. Remove the
+# obsolete implementation too, rather than leave a second copy in the image.
+RUN ruby -rjson -rrbconfig -rfileutils -e 'abort "Upgrade the locked json gem" if Gem.loaded_specs.fetch("json").version < Gem::Version.new("2.19.2"); %w[json.rb json].each { |name| FileUtils.rm_rf(File.join(RbConfig::CONFIG.fetch("rubylibdir"), name)) }; FileUtils.rm_rf(File.join(RbConfig::CONFIG.fetch("archdir"), "json")); Dir[File.join(Gem.default_dir, "specifications/default/json-*.gemspec")].each { |path| FileUtils.rm_f(path) }'
+# uv manages this environment; the interpreter's bundled pip/ensurepip is unused.
+RUN python -c 'import pathlib, shutil, sys; base = pathlib.Path(sys.base_prefix); lib = base / "lib/python3.12"; [shutil.rmtree(p) for p in (lib / "site-packages").glob("pip*") if p.is_dir()]; shutil.rmtree(lib / "ensurepip", ignore_errors=True); [p.unlink() for p in (base / "bin").glob("pip*") if p.is_file()]'
+ENV RAILS_ENV=production RAILS_LOG_TO_STDOUT=1 RAILS_SERVE_STATIC_FILES=1
+RUN mkdir -p /okd_user_home tmp/pids tmp/cache private/uploads && \
+    chgrp -R 0 /okd_user_home tmp private/uploads && \
+    chmod -R g+rwX /okd_user_home tmp private/uploads
 ENV HOME=/okd_user_home
-
-# Allow writing to the Rails tmp directory
-RUN mkdir -p tmp/pids \
-    && mkdir -p tmp/cache \
-    && chgrp -R 0 tmp \
-    && chmod -R g+rwxs tmp
-
-COPY . /app
-
 RUN SKIP_VAULT=true SKIP_VALIDATION=true SECRET_KEY_BASE=fakeassetbuildersecret bundle exec rake assets:precompile
-
-# Command to run the Rails server
-CMD ["rails", "server", "-b", "0.0.0.0"]
+# Compatible with an arbitrary UID supplied by OpenShift, and non-root elsewhere.
+USER 1001:0
+CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]

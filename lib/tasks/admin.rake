@@ -19,7 +19,6 @@ namespace :admin do
     if admin.update(password: reset_password)
       puts "✓ Admin password reset successfully"
       puts "  Username: admin"
-      puts "  Password: #{reset_password}"
     else
       puts "ERROR: Failed to reset admin password"
       puts admin.errors.full_messages.join(', ')

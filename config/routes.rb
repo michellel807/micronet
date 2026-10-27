@@ -6,7 +6,7 @@ Rails.application.routes.draw do
   get "/", to: "welcome#index"
   post "/", to: "welcome#create"
   root 'welcome#index'
-  get '/upload/delete_files', to: 'upload#delete_files'
+  delete '/upload/delete_files', to: 'upload#delete_files'
   get '/upload', to: 'upload#index'
   get '/selectanalyses', to: 'selectanalyses#index'
   post '/selectanalyses', to: 'selectanalyses#index'
@@ -33,7 +33,7 @@ Rails.application.routes.draw do
   patch '/admin/update_password', to: 'admin#update_password', as: :update_admin_password
 
   scope '/admin' do
-    get 'login', to: 'admin#login'
+    get 'login', to: 'admin#login', as: :login
     post 'authenticate', to: 'admin#authenticate_admin', as: 'authenticate_admin'
     # Dispatch target for admin_logout_path (namespace helper below); keep.
     delete 'logout', to: 'admin#logout'

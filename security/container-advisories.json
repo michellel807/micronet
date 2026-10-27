@@ -1,0 +1,252 @@
+{
+  "checked_at": "2026-10-27T19:41:34.92975288Z",
+  "image": "micronet-security-update:production",
+  "scope": "HIGH and CRITICAL vulnerabilities in the production image",
+  "package_findings": 43,
+  "advisories": [
+    {
+      "id": "CVE-2026-76642",
+      "severity": "HIGH",
+      "title": "util-linux: util-linux: failed external mount helper still runs privileged X-mount post-hooks",
+      "vendor_fix_listed": false,
+      "debian_tracker": "https://security-tracker.debian.org/tracker/CVE-2026-76642",
+      "packages": [
+        {
+          "name": "bsdutils",
+          "version": "1:2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libblkid1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "liblastlog2-2",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libmount1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libsmartcols1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libuuid1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "login",
+          "version": "1:4.16.0-2+really2.41.5-0+deb13u1"
+        },
+        {
+          "name": "mount",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "util-linux",
+          "version": "2.41.5-0+deb13u1"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-78408",
+      "severity": "HIGH",
+      "title": "util-linux: util-linux: nsenter --join-cgroup leaks root cgroup migration authority",
+      "vendor_fix_listed": false,
+      "debian_tracker": "https://security-tracker.debian.org/tracker/CVE-2026-78408",
+      "packages": [
+        {
+          "name": "bsdutils",
+          "version": "1:2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libblkid1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "liblastlog2-2",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libmount1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libsmartcols1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libuuid1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "login",
+          "version": "1:4.16.0-2+really2.41.5-0+deb13u1"
+        },
+        {
+          "name": "mount",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "util-linux",
+          "version": "2.41.5-0+deb13u1"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-78409",
+      "severity": "HIGH",
+      "title": "util-linux: util-linux: X-mount.subdir detached-tree resolution can escape via intermediate symlinks",
+      "vendor_fix_listed": false,
+      "debian_tracker": "https://security-tracker.debian.org/tracker/CVE-2026-78409",
+      "packages": [
+        {
+          "name": "bsdutils",
+          "version": "1:2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libblkid1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "liblastlog2-2",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libmount1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libsmartcols1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libuuid1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "login",
+          "version": "1:4.16.0-2+really2.41.5-0+deb13u1"
+        },
+        {
+          "name": "mount",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "util-linux",
+          "version": "2.41.5-0+deb13u1"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-78410",
+      "severity": "HIGH",
+      "title": "util-linux: util-linux: restricted bind mounts do not pin the source, allowing X-mount.owner/group/mode redirection",
+      "vendor_fix_listed": false,
+      "debian_tracker": "https://security-tracker.debian.org/tracker/CVE-2026-78410",
+      "packages": [
+        {
+          "name": "bsdutils",
+          "version": "1:2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libblkid1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "liblastlog2-2",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libmount1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libsmartcols1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libuuid1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "login",
+          "version": "1:4.16.0-2+really2.41.5-0+deb13u1"
+        },
+        {
+          "name": "mount",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "util-linux",
+          "version": "2.41.5-0+deb13u1"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-54369",
+      "severity": "HIGH",
+      "title": "acl: Symlink traversal privilege escalation via libacl functions",
+      "vendor_fix_listed": false,
+      "debian_tracker": "https://security-tracker.debian.org/tracker/CVE-2026-54369",
+      "packages": [
+        {
+          "name": "libacl1",
+          "version": "2.3.2-2+b1"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-16742",
+      "severity": "HIGH",
+      "title": "systemd: systemd-homed: Local privilege escalation via missing home-record signature verification",
+      "vendor_fix_listed": false,
+      "debian_tracker": "https://security-tracker.debian.org/tracker/CVE-2026-16742",
+      "packages": [
+        {
+          "name": "libsystemd0",
+          "version": "257.13-1~deb13u1"
+        },
+        {
+          "name": "libudev1",
+          "version": "257.13-1~deb13u1"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2025-69720",
+      "severity": "HIGH",
+      "title": "ncurses: ncurses: Buffer overflow vulnerability may lead to arbitrary code execution.",
+      "vendor_fix_listed": false,
+      "debian_tracker": "https://security-tracker.debian.org/tracker/CVE-2025-69720",
+      "packages": [
+        {
+          "name": "libtinfo6",
+          "version": "6.5+20250216-2"
+        },
+        {
+          "name": "ncurses-base",
+          "version": "6.5+20250216-2"
+        },
+        {
+          "name": "ncurses-bin",
+          "version": "6.5+20250216-2"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-9538",
+      "severity": "HIGH",
+      "title": "perl-Archive-Tar: perl-Archive-Tar: Denial of Service via crafted tar header with large entry size",
+      "vendor_fix_listed": false,
+      "debian_tracker": "https://security-tracker.debian.org/tracker/CVE-2026-9538",
+      "packages": [
+        {
+          "name": "perl-base",
+          "version": "5.40.1-6+deb13u1"
+        }
+      ]
+    }
+  ]
+}

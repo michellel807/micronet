@@ -1,0 +1,17 @@
+# Python 3.12: AMIGA currently requires Python <3.13.
+amiga==3.0.4
+# AMIGA 3.0.4 casts one-element arrays to int; NumPy 2.4+ rejects this.
+numpy<2.4
+# AMIGA hypothesis testing replaces categorical strings with numbers in-place.
+pandas<3
+matplotlib
+scipy
+seaborn
+statsmodels
+plotly
+paramz
+GPy
+patsy
+tabulate
+cython
+pypdfium2

@@ -13,6 +13,11 @@ The platform is a user-friendly implementation of the AMiGA Python package devel
 #### `For Windows, change the bin/rails setting from CRLF into LF`
 #### `For macOS, some modifications to the Dockerfile may be needed`
 
+The container uses Ruby 4.0.9, Rails 8.1.4, and Python 3.12. Browser assets
+use Sprockets/import maps; Node, Yarn, and Webpacker are not required.
+Dependency compatibility limits, security fixes, and deployment follow-ups are
+recorded in [SECURITY_REVIEW.md](SECURITY_REVIEW.md).
+
 ### 1. Build the web with docker.
 
 ```bash
@@ -67,7 +72,25 @@ the server's `micronet-01.oit.duke.edu` certificates under `/etc/letsencrypt`.
 
 ```bash
 docker-compose run --rm test
+docker compose run --rm web python -m unittest discover -s test/scripts -p '*_test.py'
+docker compose run --rm web bin/security
 ```
+
+To create the first administrator, set `ADMIN_INITIAL_PASSWORD` to a unique
+password of at least 12 characters before running `rails db:seed`.
+`ADMIN_INITIAL_USERNAME` defaults to `admin`. Seeding preserves an existing
+administrator's password.
+
+Edit `requirements.in`, then refresh the Python lockfile in the container with:
+
+```sh
+uv pip compile --python-version 3.12 --python-platform x86_64-manylinux_2_28 \
+  --upgrade --generate-hashes requirements.in -o requirements.txt
+```
+
+The PostgreSQL service is pinned to the current 16.15 patch release. Major
+database upgrades require a separate data migration before changing the image
+tag. Pull the updated service images with `docker compose pull`.
 
 Uploads stay in a temporary workspace until the user submits an analysis.
 Submission creates the job and moves its inputs to `private/uploads/jobs/<id>`.

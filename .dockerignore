@@ -1,1 +1,15 @@
 .git
+.env
+.env.*
+!.env.example
+config/master.key
+.bundle
+node_modules
+log/*
+tmp/*
+private/uploads
+storage/*
+.DS_Store
+.byebug_history
+__pycache__
+*.pyc

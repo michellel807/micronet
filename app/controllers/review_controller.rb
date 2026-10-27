@@ -2,11 +2,12 @@ class ReviewController < ApplicationController
   require 'json'
   require 'open3'
 
-  skip_before_action :verify_authenticity_token
   before_action :require_upload_workspace
   around_action :lock_upload_workspace
 
   def index
+    return redirect_to selectanalyses_path unless request.post?
+
     @data_file_paths = session[:data_file_paths]
     @usr_data_file_paths = session[:usr_data_file_paths]
     @mapping_file_paths = session[:mapping_file_paths]
@@ -106,7 +107,8 @@ class ReviewController < ApplicationController
       puts "Heatmap x-axis: #{session[:heatmap_x]}"
       puts "Heatmap y-axis: #{session[:heatmap_y]}"
 
-    permitted = params.permit!
+    selection_keys = params.keys.grep(/\A(condition[12]_(test|pooled)|(test|pooled)_subset_.+)\z/)
+    permitted = params.permit(*selection_keys)
     session[:comparison_selections] = permitted.to_h.select do |key, _|
       key.match?(/\A(condition[12]_(test|pooled)|(test|pooled)_subset_.+)\z/)
     end

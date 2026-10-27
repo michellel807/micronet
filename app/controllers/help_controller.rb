@@ -24,6 +24,8 @@ class HelpController < ApplicationController
   private
 
   def send_example_file(file_name, folder)
+    return render plain: "File not found", status: :not_found unless file_name.to_s.match?(/\A[a-zA-Z0-9_-]+\z/)
+
     file_path = Rails.root.join("lib", "examplefiles", folder, "#{file_name}.txt")
     if File.exist?(file_path)
       send_file file_path, filename: "#{file_name}.txt", disposition: 'attachment'

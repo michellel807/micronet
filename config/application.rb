@@ -3,7 +3,6 @@ require_relative "boot"
 
 require 'rails/all'
 
-Bundler.require(*Rails.groups) #added by me
 
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
@@ -14,6 +13,7 @@ module HannahsGrowthModelWebApp
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 7.0
     config.assets.compile = true
+    config.active_storage.variant_processor = :disabled
     # Delayed Job configuration (added by me)
     config.active_job.queue_adapter = :delayed_job
     # Configuration for the application, engines, and railties goes here.

@@ -26,6 +26,6 @@ class Admin::JobsController < ApplicationController
   private
 
   def check_admin
-    redirect_to login_path unless session[:admin_id].present?
+    redirect_to login_path unless current_admin.present?
   end
 end

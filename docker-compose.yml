@@ -2,9 +2,9 @@
 services:
 
   db:
-    image: postgres:16
+    image: postgres:16.15
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     environment:
@@ -22,7 +22,7 @@ services:
       - bundle:/bundle
       - .:/app
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       - db
       - delayed_job
@@ -44,7 +44,7 @@ services:
       - local-email
 
   local-email:
-    image: inbucket/inbucket
+    image: inbucket/inbucket:3.2.0
     ports:
       - "127.0.0.1:9000:9000"
       - "127.0.0.1:2500:2500"
@@ -70,7 +70,7 @@ services:
   nginx-proxy:
     # Server HTTPS proxy; local development uses http://localhost:3000.
     profiles: ["server"]
-    image: nginx:alpine
+    image: nginx:1.30.6-alpine
     container_name: nginx_reverse_proxy
     restart: always
     ports:
