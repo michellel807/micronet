@@ -96,4 +96,45 @@ class UserMailerTest < ActionMailer::TestCase
     assert_includes message.text_part.body.decoded, "Mapping Files: mapping cleaned 1.txt"
     assert_not_includes message.text_part.body.decoded, "/private/uploads"
   end
+
+  test "growth subjects are unchanged and RNA-seq jobs are named in every subject" do
+    assert_equal "Schmid Lab Microbial Growth Model: Job Failed [Job #812]", UserMailer.failedjob_email(@job, "x").subject
+
+    rnaseq = Job.create!(user: @user, status: "Job submitted", analysis_type: "rnaseq",
+                         submission_options: { "Comparison" => "treated vs <control> (reference)" })
+    [UserMailer.with(job: rnaseq).confirm_email, UserMailer.failedjob_email(rnaseq, "x"), UserMailer.job_cancelled_email(rnaseq)].each do |message|
+      assert message.subject.start_with?("Schmid Lab RNA-seq Analysis: "), message.subject
+      assert_includes message.html_part.body.decoded, "treated vs &lt;control&gt; (reference)"
+    end
+  end
+
+  test "RNA-seq results summarize the comparison, list attachments and explain warnings" do
+    rnaseq = Job.create!(user: @user, status: "Completed", analysis_type: "rnaseq")
+    manifest = {
+      "design" => "~ batch + condition",
+      "contrast" => { "test_level" => "treated", "reference_level" => "control" },
+      "samples" => { "in_model" => 8 },
+      "genes" => { "in_input" => 2000, "tested" => 1951, "significant" => 209, "significant_up" => 109, "significant_down" => 100 }
+    }
+    Dir.mktmpdir do |directory|
+      zip = File.join(directory, "rnaseq_results_job#{rnaseq.job_number}.zip")
+      File.binwrite(zip, "PK\x03\x04")
+      message = UserMailer.rnaseq_results_email(rnaseq, [zip], manifest, [{ analysis: "Plots", message: "Could not draw <plots>" }])
+
+      assert_equal "Schmid Lab RNA-seq Analysis: Processed Data [Job ##{rnaseq.job_number}]", message.subject
+      assert_equal [File.basename(zip)], message.attachments.map(&:filename)
+      assert_equal "PK\x03\x04".b, message.attachments.first.decoded.b
+      assert_includes message.html_part.body.decoded, "Could not draw &lt;plots&gt;"
+      [Nokogiri::HTML(message.html_part.body.decoded).text, message.text_part.body.decoded].each do |text|
+        body = text.squish
+        assert_includes body, "compared treated with control (the reference)"
+        assert_includes body, "Design: ~ batch + condition"
+        assert_includes body, "Genes tested: 1951 of 2000"
+        assert_includes body, "Significant genes: 209 (109 higher and 100 lower in treated)"
+        assert_includes body, "Plots: Could not draw <plots>"
+        assert_not_includes body, "Submission Details"
+        assert_not_includes body, "time step"
+      end
+    end
+  end
 end

@@ -1,5 +1,7 @@
 class UserMailer < ApplicationMailer
   default from: "noreply@duke.edu"
+  SUBJECT_PREFIXES = { "rnaseq" => "Schmid Lab RNA-seq Analysis" }.freeze
+
   def processedjob_email(file_paths, job, used_tss = {}, requested_tss = Job::DEFAULT_TSS, analysis_failures = [])
     @job = job
     @hide_submission_summary = true
@@ -60,9 +62,28 @@ class UserMailer < ApplicationMailer
     mail(to: 'hrd11@duke.edu', subject: job_subject("Job Submitted"))
   end
 
+  def rnaseq_results_email(job, file_paths, manifest, warnings = [])
+    @job = job
+    @hide_submission_summary = true
+    @manifest = manifest
+    @warnings = warnings
+    @file_names = file_paths.map { |path| File.basename(path) }
+
+    file_paths.each do |file_path|
+      if File.exist?(file_path)
+        attachments[File.basename(file_path)] = File.binread(file_path)
+      else
+        logger.warn("Attachment missing: #{file_path}")
+      end
+    end
+
+    mail(to: job.user.email, subject: job_subject("Processed Data"))
+  end
+
   private
 
   def job_subject(event)
-    "Schmid Lab Microbial Growth Model: #{event} [Job ##{@job.job_number}]"
+    prefix = SUBJECT_PREFIXES.fetch(@job.analysis_type, "Schmid Lab Microbial Growth Model")
+    "#{prefix}: #{event} [Job ##{@job.job_number}]"
   end
 end

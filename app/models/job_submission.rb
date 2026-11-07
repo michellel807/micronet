@@ -2,7 +2,11 @@ class JobSubmission
   class InvalidUploads < StandardError; end
   class LimitReached < StandardError; end
 
-  def self.call(user:, workspace:, choices:)
+  # choices is the growth wizard's session, or for analysis_type "rnaseq" an
+  # RnaSeq::Configuration whose input files are in the workspace.
+  def self.call(user:, workspace:, choices:, analysis_type: "growth")
+    raise ArgumentError, "Unknown analysis type: #{analysis_type}" unless %w[growth rnaseq].include?(analysis_type)
+
     promoted_root = nil
     created = false
     job = nil
@@ -13,17 +17,24 @@ class JobSubmission
       raise LimitReached unless Job.can_user_submit?(user.id)
 
       workspace.with_lock do
-        data = Array(choices[:data_file_paths])
-        mappings = Array(choices[:mapping_file_paths])
-        valid_paths = data.any? && data.length == mappings.length &&
-          data.all? { |path| valid_input?(path, workspace.data_dir) } &&
-          mappings.all? { |path| valid_input?(path, workspace.mapping_dir) }
-        raise InvalidUploads unless valid_paths
+        if analysis_type == "rnaseq"
+          raise InvalidUploads unless choices.inputs_present?(workspace)
+
+          attributes = { analysis_type: "rnaseq", analysis_config: choices.to_h, submission_options: choices.summary }
+        else
+          data = Array(choices[:data_file_paths])
+          mappings = Array(choices[:mapping_file_paths])
+          valid_paths = data.any? && data.length == mappings.length &&
+            data.all? { |path| valid_input?(path, workspace.data_dir) } &&
+            mappings.all? { |path| valid_input?(path, workspace.mapping_dir) }
+          raise InvalidUploads unless valid_paths
+
+          attributes = { submission_options: SubmissionSummary.from_session(choices) }
+        end
 
         job = user.jobs.create!(
           status: "Job submitted", confirm_time: Time.current,
-          upload_token: workspace.token,
-          submission_options: SubmissionSummary.from_session(choices)
+          upload_token: workspace.token, **attributes
         )
         FileUtils.mkdir_p(job.upload_root.parent)
         destination = job.upload_root
@@ -36,14 +47,18 @@ class JobSubmission
           job.pair_metadata_path.write(JSON.pretty_generate(metadata))
         end
 
-        pool_options = choices[:pool_replicates] == "yes" ? Array(choices[:pool_options]).join(",") : nil
-        Delayed::Job.enqueue(JobAnalyzer.new(
-          job.id, choices[:chart_types], choices[:pool_replicates], pool_options,
-          choices[:test_finalsubset], choices[:hypothesis], choices[:gp_pool_by_column],
-          nil, choices[:gp_finalsubset], choices[:compare_parameters_pool], choices[:compare_finalsubset],
-          choices[:heatmap_value], choices[:heatmap_x], choices[:heatmap_y],
-          choices[:gp_time_step_size] || Job::DEFAULT_TSS
-        ))
+        if analysis_type == "rnaseq"
+          Delayed::Job.enqueue(RnaSeqAnalyzer.new(job.id))
+        else
+          pool_options = choices[:pool_replicates] == "yes" ? Array(choices[:pool_options]).join(",") : nil
+          Delayed::Job.enqueue(JobAnalyzer.new(
+            job.id, choices[:chart_types], choices[:pool_replicates], pool_options,
+            choices[:test_finalsubset], choices[:hypothesis], choices[:gp_pool_by_column],
+            nil, choices[:gp_finalsubset], choices[:compare_parameters_pool], choices[:compare_finalsubset],
+            choices[:heatmap_value], choices[:heatmap_x], choices[:heatmap_y],
+            choices[:gp_time_step_size] || Job::DEFAULT_TSS
+          ))
+        end
         created = true
       end
     end

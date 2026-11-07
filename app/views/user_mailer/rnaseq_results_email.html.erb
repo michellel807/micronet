@@ -1,0 +1,56 @@
+<% contrast = @manifest["contrast"] %>
+<% genes = @manifest["genes"] %>
+<div class="general-white-block-email">
+  <body class="email">
+
+    <h1>MicroNet RNA-seq Results</h1>
+
+    <p>Hello,</p>
+
+    <p>
+      Your differential expression analysis (Job #<%= @job.job_number %>) is complete.
+      It compared <strong><%= contrast["test_level"] %></strong> with
+      <strong><%= contrast["reference_level"] %></strong> (the reference).
+    </p>
+
+    <h3>Summary</h3>
+    <ul>
+      <li>Design: <%= @manifest["design"] %></li>
+      <li>Samples analyzed: <%= @manifest["samples"]["in_model"] %></li>
+      <li>Genes tested: <%= genes["tested"] %> of <%= genes["in_input"] %> in your count matrix</li>
+      <li>
+        Significant genes: <strong><%= genes["significant"] %></strong>
+        (<%= genes["significant_up"] %> higher and <%= genes["significant_down"] %> lower in <%= contrast["test_level"] %>)
+      </li>
+    </ul>
+
+    <h3>Attached</h3>
+    <ul>
+      <% @file_names.each do |name| %>
+        <li><%= name %></li>
+      <% end %>
+    </ul>
+    <p>
+      README.txt explains every file, the settings used, and how the results were computed.
+    </p>
+
+    <% if @warnings.present? %>
+      <h3>Please Note</h3>
+      <ul>
+        <% @warnings.each do |warning| %>
+          <li><strong><%= warning[:analysis] %>:</strong> <%= warning[:message] %></li>
+        <% end %>
+      </ul>
+    <% end %>
+
+    <p>
+      For more information, check out the papers under the Resources page
+      of MicroNet.
+    </p>
+
+    <p>
+      Thank you for using MicroNet!
+    </p>
+
+  </body>
+</div>

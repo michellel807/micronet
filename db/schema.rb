@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2026_10_21_140000) do
+ActiveRecord::Schema[7.0].define(version: 2026_11_04_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -63,6 +63,8 @@ ActiveRecord::Schema[7.0].define(version: 2026_10_21_140000) do
     t.jsonb "submission_options", default: {}, null: false
     t.bigint "submission_number"
     t.string "upload_token"
+    t.string "analysis_type", default: "growth", null: false
+    t.jsonb "analysis_config", default: {}, null: false
     t.index ["submission_number"], name: "index_jobs_on_submission_number", unique: true
     t.index ["upload_token"], name: "index_jobs_on_upload_token", unique: true
     t.index ["user_id"], name: "index_jobs_on_single_active_draft", unique: true, where: "((status)::text = 'In Progress'::text)"

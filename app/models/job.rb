@@ -623,10 +623,11 @@ class Job < ApplicationRecord
   def remove_pending_analysis
     handler_pattern = "%\njob_id: #{id}\n%"
     Delayed::Job.where(locked_at: nil)
-      .where("handler LIKE ? AND handler LIKE ?", "%JobAnalyzer%", handler_pattern)
+      .where("(handler LIKE ? OR handler LIKE ?) AND handler LIKE ?", "%JobAnalyzer%", "%RnaSeqAnalyzer%", handler_pattern)
       .find_each do |queued_job|
       payload = queued_job.payload_object
-      queued_job.destroy if payload.is_a?(JobAnalyzer) && payload.job_id.to_s == id.to_s
+      analyzer = payload.is_a?(JobAnalyzer) || payload.is_a?(RnaSeqAnalyzer)
+      queued_job.destroy if analyzer && payload.job_id.to_s == id.to_s
     end
   end
 

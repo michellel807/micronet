@@ -21,6 +21,26 @@ class JobCancellationTest < ActiveSupport::TestCase
     assert_equal [@user.email], ActionMailer::Base.deliveries.last.to
   end
 
+  test "cancelling a queued RNA-seq job removes its pending analyzer" do
+    rnaseq_job = Job.create!(user: @user, status: "Job submitted", analysis_type: "rnaseq")
+    queued_job = Delayed::Job.enqueue(RnaSeqAnalyzer.new(rnaseq_job.id))
+    other_queued_job = Delayed::Job.enqueue(analyzer_for(@job))
+
+    rnaseq_job.mark_cancelled
+
+    assert_equal "Cancelled", rnaseq_job.reload.status
+    assert_not Delayed::Job.exists?(queued_job.id)
+    assert Delayed::Job.exists?(other_queued_job.id)
+    assert_includes ActionMailer::Base.deliveries.last.subject, "RNA-seq"
+  end
+
+  test "a cancelled queued RNA-seq analyzer exits without starting the pipeline" do
+    @job.update!(status: "Cancelled", analysis_type: "rnaseq")
+    RnaSeq::Pipeline.stub(:new, ->(*) { flunk "cancelled analysis should not start" }) do
+      RnaSeqAnalyzer.new(@job.id).perform
+    end
+  end
+
   test "a cancelled queued analyzer exits without starting the analysis" do
     @job.update!(status: "Cancelled")
     analyzer = analyzer_for(@job)

@@ -3,13 +3,13 @@
     {
       "warning_type": "File Access",
       "warning_code": 16,
-      "fingerprint": "6c6593b6874abcdfb874ac6259400d2b5edaabd7a8fb308b781af343ff881ead",
+      "fingerprint": "22ca83c42010e122573ac8fe9da5d01521452e98c9b71c06cad630b2f81daaae",
       "check_name": "FileAccess",
       "message": "Model attribute used in file name",
       "file": "app/models/job_submission.rb",
-      "line": 55,
+      "line": 70,
       "link": "https://brakemanscanner.org/docs/warning_types/file_access/",
-      "code": "FileUtils.mv(user.jobs.create!(:status => \"Job submitted\", :confirm_time => Time.current, :upload_token => workspace.token, :submission_options => SubmissionSummary.from_session(choices)).upload_root, workspace.upload_root)",
+      "code": "FileUtils.mv(user.jobs.create!(:status => \"Job submitted\", :confirm_time => Time.current, :upload_token => workspace.token, **({ :analysis_type => \"rnaseq\", :analysis_config => choices.to_h, :submission_options => choices.summary } or { :submission_options => SubmissionSummary.from_session(choices) })).upload_root, workspace.upload_root)",
       "render_path": null,
       "location": {
         "type": "method",
@@ -21,7 +21,7 @@
       "cwe_id": [
         22
       ],
-      "note": "Reviewed: permanent directories use a database-generated integer job ID; temporary directories use a validated random 32-character hex token. The caller supplies a server-created UploadWorkspace, never an arbitrary pathname. Covered by JobSubmissionTest and UploadWorkspaceTest."
+      "note": "Reviewed: permanent directories use a database-generated integer job ID; temporary directories use a validated random 32-character hex token. The caller supplies a server-created UploadWorkspace, never an arbitrary pathname. Covered by JobSubmissionTest and UploadWorkspaceTest. RNA-seq submissions (analysis_type: \"rnaseq\") use the same job ID and workspace paths."
     },
     {
       "warning_type": "File Access",
@@ -49,13 +49,13 @@
     {
       "warning_type": "File Access",
       "warning_code": 16,
-      "fingerprint": "783793493b0dd41f621c42eee7d0655ac11e4e4c9c19a01daf5d97a641289123",
+      "fingerprint": "ec71e0a3acd191484870cc1f2bb2ae7bc340b125b1cc9c6576b96206506f1fd8",
       "check_name": "FileAccess",
       "message": "Model attribute used in file name",
       "file": "app/models/job_submission.rb",
-      "line": 28,
+      "line": 39,
       "link": "https://brakemanscanner.org/docs/warning_types/file_access/",
-      "code": "FileUtils.mkdir_p(user.jobs.create!(:status => \"Job submitted\", :confirm_time => Time.current, :upload_token => workspace.token, :submission_options => SubmissionSummary.from_session(choices)).upload_root.parent)",
+      "code": "FileUtils.mkdir_p(user.jobs.create!(:status => \"Job submitted\", :confirm_time => Time.current, :upload_token => workspace.token, **({ :analysis_type => \"rnaseq\", :analysis_config => choices.to_h, :submission_options => choices.summary } or { :submission_options => SubmissionSummary.from_session(choices) })).upload_root.parent)",
       "render_path": null,
       "location": {
         "type": "method",
@@ -67,7 +67,7 @@
       "cwe_id": [
         22
       ],
-      "note": "Reviewed: permanent directories use a database-generated integer job ID; temporary directories use a validated random 32-character hex token. The caller supplies a server-created UploadWorkspace, never an arbitrary pathname. Covered by JobSubmissionTest and UploadWorkspaceTest."
+      "note": "Reviewed: permanent directories use a database-generated integer job ID; temporary directories use a validated random 32-character hex token. The caller supplies a server-created UploadWorkspace, never an arbitrary pathname. Covered by JobSubmissionTest and UploadWorkspaceTest. RNA-seq submissions (analysis_type: \"rnaseq\") use the same job ID and workspace paths."
     },
     {
       "warning_type": "File Access",

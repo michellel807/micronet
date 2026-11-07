@@ -76,6 +76,22 @@ docker compose run --rm web python -m unittest discover -s test/scripts -p '*_te
 docker compose run --rm web bin/security
 ```
 
+The Python suite includes the RNA-seq DESeq2 tests
+(`test/scripts/deseq2_analysis_test.py`), which need the image's R and DESeq2
+and are skipped where `Rscript` is unavailable. They compare
+`lib/scripts/rnaseq/deseq2_analysis.R` with an independent reference, check
+recovery of simulated truth, and check input validation. Regenerate the example
+RNA-seq inputs with
+`docker compose run --rm web python test/scripts/rnaseq_simulation.py lib/examplefiles/rnaseq`.
+
+RNA-seq jobs run as `RnaSeqAnalyzer` Delayed::Jobs (`app/models/rna_seq/pipeline.rb`):
+DESeq2, then PCA/MA/volcano plots, then a zip with a README that is emailed
+to the user. Until the upload pages exist, queue the example dataset with
+`docker compose run --rm web bin/rails "rnaseq:submit_example[you@example.com]"`;
+the `delayed_job` worker processes it and the emails appear at
+http://localhost:9000. `RNASEQ_ATTACHMENT_LIMIT_MB` (default 20) sets the
+largest zip that is emailed; larger results send only the summary files.
+
 To create the first administrator, set `ADMIN_INITIAL_PASSWORD` to a unique
 password of at least 12 characters before running `rails db:seed`.
 `ADMIN_INITIAL_USERNAME` defaults to `admin`. Seeding preserves an existing

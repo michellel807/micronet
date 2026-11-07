@@ -107,8 +107,62 @@ class JobSubmissionTest < ActiveSupport::TestCase
     end
   end
 
+  test "growth submissions are recorded as growth analyses" do
+    job, = JobSubmission.call(user: @user, workspace: @workspace, choices: @choices)
+    assert_equal "growth", job.analysis_type
+    assert_equal({}, job.analysis_config)
+  end
+
+  test "an RNA-seq submission stores its settings, moves its inputs and queues the RNA-seq analyzer" do
+    rnaseq = rnaseq_configuration
+    write_rnaseq_inputs
+
+    job = nil
+    assert_difference ["Job.count", "Delayed::Job.count"], 1 do
+      job, created = JobSubmission.call(user: @user, workspace: @workspace, choices: rnaseq, analysis_type: "rnaseq")
+      assert created
+    end
+
+    assert_equal "rnaseq", job.analysis_type
+    assert_equal rnaseq.to_h, job.analysis_config
+    assert_equal rnaseq.summary, job.submission_options
+    assert_equal "gene_id\tc1\n", job.rnaseq_input_dir.join("counts.tsv").read
+    assert job.rnaseq_input_dir.join("samples.tsv").file?
+    assert_not @workspace.upload_root.exist?
+    queued = Delayed::Job.order(:id).last.payload_object
+    assert_instance_of RnaSeqAnalyzer, queued
+    assert_equal job.id, queued.job_id
+  end
+
+  test "an RNA-seq submission without its input files never creates a job" do
+    assert_no_difference ["Job.count", "Delayed::Job.count"] do
+      assert_raises(JobSubmission::InvalidUploads) do
+        JobSubmission.call(user: @user, workspace: @workspace, choices: rnaseq_configuration, analysis_type: "rnaseq")
+      end
+    end
+  end
+
+  test "unknown analysis types are refused" do
+    assert_raises(ArgumentError) do
+      JobSubmission.call(user: @user, workspace: @workspace, choices: @choices, analysis_type: "proteomics")
+    end
+  end
+
   test "old submitted numbers remain unchanged" do
     old = @user.jobs.create!(status: "Completed", submission_number: 812)
     assert_equal 812, old.reload.job_number
+  end
+
+  private
+
+  def rnaseq_configuration
+    RnaSeq::Configuration.new(counts_file: "counts.tsv", metadata_file: "samples.tsv",
+                              deseq2: { reference_level: "control", test_level: "treated" })
+  end
+
+  def write_rnaseq_inputs
+    FileUtils.mkdir_p(@workspace.rnaseq_input_dir)
+    @workspace.rnaseq_input_dir.join("counts.tsv").write("gene_id\tc1\n")
+    @workspace.rnaseq_input_dir.join("samples.tsv").write("sample\tcondition\n")
   end
 end

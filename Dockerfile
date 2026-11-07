@@ -7,6 +7,12 @@ RUN apt-get update && apt-get -y upgrade && \
     apt-get install -y --no-install-recommends build-essential git ca-certificates \
       libpq-dev libyaml-dev fonts-dejavu-core && \
     rm -rf /var/lib/apt/lists/*
+# RNA-seq differential expression (lib/scripts/rnaseq) runs DESeq2 in R. Debian's
+# prebuilt Bioconductor packages need no compiler, so they survive the
+# production stage's removal of build tools.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends r-base-core r-bioc-deseq2 r-cran-jsonlite && \
+    rm -rf /var/lib/apt/lists/*
 COPY --from=uv /uv /usr/local/bin/uv
 # AMIGA requires Python <3.13. Use a maintained 3.12 patch release.
 ENV UV_PYTHON_INSTALL_DIR=/opt/python UV_LINK_MODE=copy UV_NO_CACHE=1
@@ -22,9 +28,11 @@ COPY . /app
 
 FROM deps AS production
 # Build tools and headers are unnecessary in the deployed container.
-RUN apt-mark manual libpq5 libyaml-0-2 && \
+RUN apt-mark manual libpq5 libyaml-0-2 r-base-core r-bioc-deseq2 r-cran-jsonlite && \
     apt-get purge -y --auto-remove build-essential gcc g++ libpq-dev libyaml-dev git && \
     rm -rf /var/lib/apt/lists/*
+# Fail the build if removing build tools took the RNA-seq R runtime with it.
+RUN Rscript -e 'suppressPackageStartupMessages({library(DESeq2); library(jsonlite)})'
 # The application does not need privileged OS helper executables.
 RUN find / -xdev -type f -perm /6000 -exec chmod a-s {} +
 # The locked json gem supersedes Ruby's vulnerable bundled default. Remove the
