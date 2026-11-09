@@ -44,9 +44,10 @@ DESCRIPTIONS = {
     "cluster_gp_fits.tsv": "The fitted curve settings per cluster and condition: lengthscale (how quickly the curve can bend, "
                            "in time units), signal and noise variance, and log-likelihood.",
     "cluster_gp_differences.tsv": "The difference between the two conditions' curves per cluster, with its 95% band.",
-    "cluster_gp_curves.pdf": "One panel per cluster: the Gaussian process curve and 95% band per condition, with each sample as a dot.",
-    "cluster_gp_differences.pdf": "One panel per cluster: how the test condition's curve differs from the reference's over time; "
-                                  "shaded where the 95% band excludes 0.",
+    "cluster_gp_curves.pdf": "One page per cluster, drawn like MicroNet's growth Gaussian Process Plot: the curve and 95% band "
+                             "per condition, with each sample as a faint dot.",
+    "cluster_gp_differences.pdf": "One page per cluster: how the test condition's curve differs from the reference's over time, "
+                                  "with its 95% band; shaded where the band excludes 0.",
 }
 TIME_COURSE_RESULTS = ("Every tested gene: baseMean, the likelihood ratio test statistic (stat), pvalue, padj, significant, "
                        "why padj is missing (padj_na_reason), and log2 fold changes at each time point (log2FC_* columns; "

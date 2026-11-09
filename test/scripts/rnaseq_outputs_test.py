@@ -270,6 +270,47 @@ class TimeCourseOutputsTest(unittest.TestCase):
         self.assertIn("treated minus control", self.readme)
         self.assertIn("Rasmussen CE", self.readme)
 
+    def test_gp_plots_have_one_growth_style_page_per_cluster(self):
+        import re
+        clusters = json.loads((self.directory / "manifest.json").read_text())["clustering"]["clusters"]
+        for name in ["cluster_gp_curves.pdf", "cluster_gp_differences.pdf"]:
+            pages = re.findall(rb"/Type\s*/Page\b(?!s)", (self.directory / name).read_bytes())
+            self.assertEqual(len(pages), clusters, name)
+
+        captured = []
+
+        class Capture:
+            def __init__(self, path):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exception):
+                return False
+
+            def savefig(self, figure):
+                captured.append([(axes.get_title(), [line.get_label() for line in axes.get_lines()],
+                                  axes.xaxis._major_tick_kw.get("gridOn"), tuple(figure.get_size_inches()))
+                                 for axes in figure.axes][0])
+
+        original = plots.PdfPages
+        plots.PdfPages = Capture
+        try:
+            directory = Path(WORK.name) / "time-gp-style"
+            shutil.copytree(self.directory, directory, dirs_exist_ok=True)
+            plots.main(directory)
+        finally:
+            plots.PdfPages = original
+        curves, differences = captured[:clusters], captured[clusters:]
+        title, labels, grid, size = curves[0]
+        self.assertEqual(title.split(" (")[0], "Gaussian Process Plot: Cluster 1")
+        self.assertEqual(labels, ["control Mean", "treated Mean"])
+        self.assertTrue(grid)
+        self.assertEqual(size, (10.0, 6.0))
+        self.assertEqual(differences[0][0], "Gaussian Process Difference: Cluster 1")
+        self.assertIn("treated minus control Mean", differences[0][1])
+
     def test_too_few_significant_genes_skips_clustering_and_says_why(self):
         directory = Path(WORK.name) / "time-few-significant"
         shutil.copytree(self.directory, directory)

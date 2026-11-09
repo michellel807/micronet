@@ -9,8 +9,11 @@ ma_plot.pdf and volcano_plot.pdf for a two-condition comparison, or
 top_gene_trajectories.pdf (from group_means_vst.tsv) for a time course. When
 cluster_genes.py has clustered a time course, also cluster_trajectories.pdf and
 cluster_selection.pdf, and when gp_trajectories.py has fitted curves,
-cluster_gp_curves.pdf (plus cluster_gp_differences.pdf comparing conditions).
+cluster_gp_curves.pdf (plus cluster_gp_differences.pdf comparing conditions),
+one page per cluster drawn with the growth Gaussian Process Plot's helpers
+(lib/scripts/otherscripts/gpplot.py) so both look the same.
 """
+import importlib.util
 import json
 import sys
 from pathlib import Path
@@ -21,6 +24,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
+from matplotlib.backends.backend_pdf import PdfPages  # noqa: E402
+
+_spec = importlib.util.spec_from_file_location(
+    "gpplot", Path(__file__).resolve().parents[1] / "otherscripts" / "gpplot.py")
+gpplot = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(gpplot)
 
 # DESeq2::plotPCA uses the 500 genes with the highest variance across samples.
 PCA_TOP_GENES = 500
@@ -176,68 +185,59 @@ def plot_cluster_selection(selection, manifest, directory):
     save(figure, directory / OUTPUTS["cluster_selection"])
 
 
-def cluster_grid(count):
-    columns = min(4, count)
-    rows = int(np.ceil(count / columns))
-    return plt.subplots(rows, columns, figsize=(2.9 * columns + 0.6, 2.5 * rows + 0.9), squeeze=False,
-                        sharex=True, sharey=True)
+def gp_pages(path, numbers, draw):
+    """One growth-style Gaussian Process Plot page per cluster in a multi-page PDF."""
+    with plt.rc_context(gpplot.STYLE), PdfPages(path) as pdf:
+        for number in numbers:
+            figure, axes = plt.subplots(figsize=gpplot.FIGURE_SIZE)
+            draw(axes, number)
+            figure.tight_layout()
+            pdf.savefig(figure)
+            plt.close(figure)
+
+
+def gp_time_axis(axes, manifest):
+    levels, position = time_positions(manifest["time"])
+    axes.set_xticks([position[time] for time in levels])
+    axes.set_xticklabels(levels)
+    return f"Time ({manifest['time']['column']})"
 
 
 def plot_gp_curves(curves, points, manifest, directory):
-    """Each cluster's GP mean curve and 95% band per condition, over each sample's mean z-score."""
-    levels, position = time_positions(manifest["time"])
+    """Each cluster's GP mean curve and 95% band per condition, with each sample as a faint dot."""
     gp = manifest["gaussian_process"]
     curves = curves.assign(condition=curves["condition"].fillna("").astype(str))
     points = points.assign(condition=points["condition"].fillna("").astype(str))
-    sizes = dict(zip(range(1, len(manifest["clustering"]["cluster_sizes"]) + 1), manifest["clustering"]["cluster_sizes"]))
-    count = manifest["clustering"]["clusters"]
-    figure, grid = cluster_grid(count)
-    for number, axes in zip(range(1, count + 1), grid.flat):
-        for color, condition in zip(CONDITION_COLORS * 10, gp["conditions"]):
-            dots = points[(points["cluster"] == number) & (points["condition"] == condition)]
-            axes.scatter(dots["time"], dots["mean_z"], color=color, s=12, alpha=0.7, linewidth=0, zorder=3)
+    sizes = manifest["clustering"]["cluster_sizes"]
+
+    def draw(axes, number):
+        for condition in gp["conditions"]:
             curve = curves[(curves["cluster"] == number) & (curves["condition"] == condition)]
-            axes.fill_between(curve["time"], curve["lower"], curve["upper"], color=color, alpha=0.25, linewidth=0)
-            axes.plot(curve["time"], curve["mean"], color=color, linewidth=2, label=condition or None)
-        axes.axhline(0, color=NOT_SIGNIFICANT, linewidth=0.5, zorder=0)
-        axes.set_title(f"Cluster {number}: {sizes.get(number, 0)} genes", fontsize=9)
-        axes.set_xticks([position[time] for time in levels])
-        axes.set_xticklabels(levels, fontsize=7)
-        axes.tick_params(axis="y", labelsize=7)
-    for axes in list(grid.flat)[count:]:
-        axes.axis("off")
-    if gp["conditions"] != [""]:
-        grid.flat[0].legend(fontsize=7)
-    figure.supxlabel(f"Time ({manifest['time']['column']})", fontsize=9)
-    figure.supylabel("Cluster mean expression (z-score)", fontsize=9)
-    figure.suptitle("Gaussian process curve per cluster (line: mean pattern; band: 95% interval; dots: samples)", fontsize=10)
-    save(figure, directory / OUTPUTS["gp_curves"])
+            line = gpplot.draw_gp_curve(axes, curve["time"], curve["mean"], curve["sd"], condition or f"Cluster {number}")
+            dots = points[(points["cluster"] == number) & (points["condition"] == condition)]
+            axes.scatter(dots["time"], dots["mean_z"], color=line.get_color(), s=12, alpha=0.35, linewidth=0)
+        xlabel = gp_time_axis(axes, manifest)
+        gpplot.finish_gp_plot(axes, f"Gaussian Process Plot: Cluster {number} ({sizes[number - 1]} genes)",
+                              "Cluster mean expression (z-score)", xlabel)
+
+    gp_pages(directory / OUTPUTS["gp_curves"], range(1, manifest["clustering"]["clusters"] + 1), draw)
 
 
 def plot_gp_differences(differences, manifest, directory):
-    """Test minus reference curve per cluster; shaded where the 95% band excludes 0."""
-    levels, position = time_positions(manifest["time"])
+    """Test minus reference curve per cluster; lightly shaded where the 95% band excludes 0."""
     difference = manifest["gaussian_process"]["difference"]
-    count = manifest["clustering"]["clusters"]
-    figure, grid = cluster_grid(count)
-    for number, axes in zip(range(1, count + 1), grid.flat):
+    label = f"{difference['test_level']} minus {difference['reference_level']}"
+
+    def draw(axes, number):
         curve = differences[differences["cluster"] == number]
         axes.axhline(0, color="black", linewidth=0.8)
-        axes.fill_between(curve["time"], curve["lower"], curve["upper"], color=LOWER, alpha=0.25, linewidth=0)
-        axes.plot(curve["time"], curve["difference"], color=LOWER, linewidth=2)
+        gpplot.draw_gp_curve(axes, curve["time"], curve["difference"], curve["sd"], label)
         for interval in difference["intervals"].get(str(number), []):
             axes.axvspan(interval["start"], interval["end"], color=HIGHER, alpha=0.08, linewidth=0)
-        axes.set_title(f"Cluster {number}", fontsize=9)
-        axes.set_xticks([position[time] for time in levels])
-        axes.set_xticklabels(levels, fontsize=7)
-        axes.tick_params(axis="y", labelsize=7)
-    for axes in list(grid.flat)[count:]:
-        axes.axis("off")
-    figure.supxlabel(f"Time ({manifest['time']['column']})", fontsize=9)
-    figure.supylabel(f"{difference['test_level']} minus {difference['reference_level']} (z-score)", fontsize=9)
-    figure.suptitle(f"How {difference['test_level']} differs from {difference['reference_level']} over time "
-                    "(band: 95% interval; shaded: band excludes 0)", fontsize=10)
-    save(figure, directory / OUTPUTS["gp_differences"])
+        xlabel = gp_time_axis(axes, manifest)
+        gpplot.finish_gp_plot(axes, f"Gaussian Process Difference: Cluster {number}", f"{label} (z-score)", xlabel)
+
+    gp_pages(directory / OUTPUTS["gp_differences"], range(1, manifest["clustering"]["clusters"] + 1), draw)
 
 
 def plot_trajectories(results, vst, samples, means, manifest, directory):

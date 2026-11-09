@@ -105,7 +105,9 @@ pattern, the input for Gaussian process trajectories) and
 (`lib/scripts/rnaseq/gp_trajectories.py`): each sample's mean z-score over the
 cluster's genes is fitted with an RBF-plus-noise GP at the numeric times
 (`cluster_gp_curves.tsv` and `.pdf`; condition-by-time runs also get
-`cluster_gp_differences.tsv` and `.pdf`). Non-numeric time points skip the
+`cluster_gp_differences.tsv` and `.pdf`). The PDFs have one page per cluster,
+drawn with the growth GP plot's helpers in `lib/scripts/otherscripts/gpplot.py`
+so both look the same. Non-numeric time points skip the
 curves with a note. Clustering and curves are optional stages: if either fails,
 the job still delivers the DESeq2 results with a warning. On the website, choose "RNA-seq differential expression" on the
 home page, then upload a count matrix and sample sheet (`RnaSeqController`,
