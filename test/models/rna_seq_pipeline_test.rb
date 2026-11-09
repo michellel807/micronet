@@ -46,6 +46,52 @@ class RnaSeqPipelineTest < ActiveSupport::TestCase
     assert_includes message.text_part.body.decoded, "Significant genes: #{manifest['genes']['significant']}"
   end
 
+  test "a time course clusters its significant genes and explains the clusters" do
+    require_rscript
+    use_time_course
+    RnaSeq::Pipeline.new(@job).run
+
+    assert_equal "Completed", @job.reload.status
+    folder = "rnaseq_results_job#{@job.job_number}"
+    entries = zip_entries(ActionMailer::Base.deliveries.sole.attachments.first.decoded)
+    %w[gene_clusters.tsv cluster_profiles.tsv cluster_selection.tsv cluster_trajectories.pdf cluster_selection.pdf
+       top_gene_trajectories.pdf group_means_vst.tsv].each { |name| assert_includes entries, "#{folder}/#{name}" }
+    clustering = JSON.parse(@job.rnaseq_results_dir.join("manifest.json").read)["clustering"]
+    assert_equal "silhouette", clustering["chosen_by"]
+    assert_includes 2..10, clustering["clusters"]
+    assert_includes @job.rnaseq_results_dir.join("README.txt").read, "CLUSTERS"
+  end
+
+  test "a chosen number of clusters is passed to the clustering script" do
+    require_rscript
+    use_time_course(clustering: { clusters: 3 })
+    RnaSeq::Pipeline.new(@job).run
+
+    clustering = JSON.parse(@job.rnaseq_results_dir.join("manifest.json").read)["clustering"]
+    assert_equal 3, clustering["clusters"]
+    assert_equal "user", clustering["chosen_by"]
+  end
+
+  test "clustering runs only for time courses" do
+    assert_not_includes RnaSeq::Pipeline.new(@job).stages.map(&:name), "Gene clustering"
+    use_time_course
+    assert_equal ["Differential expression", "Gene clustering", "Plots", "Packaging"],
+                 RnaSeq::Pipeline.new(@job).stages.map(&:name)
+  end
+
+  test "failed clustering still delivers the results, with a warning" do
+    require_rscript
+    use_time_course
+    run_command = @job.method(:run_cancellable_command)
+    fails = ->(*command) { command.any? { |part| part.to_s.end_with?("cluster_genes.py") } ? false : run_command.call(*command) }
+    @job.stub(:run_cancellable_command, fails) { RnaSeq::Pipeline.new(@job).run }
+
+    assert_equal "Completed with warnings", @job.reload.status
+    assert_includes ActionMailer::Base.deliveries.sole.text_part.body.decoded, "Gene clustering: The genes could not be clustered"
+    assert @job.rnaseq_results_dir.join("top_gene_trajectories.pdf").file?
+    assert_not @job.rnaseq_results_dir.join("cluster_trajectories.pdf").exist?
+  end
+
   test "failed plots still deliver the tables, with a warning" do
     require_rscript
     run_command = @job.method(:run_cancellable_command)
@@ -123,6 +169,16 @@ class RnaSeqPipelineTest < ActiveSupport::TestCase
   end
 
   private
+
+  def use_time_course(clustering: nil)
+    configuration = RnaSeq::Configuration.new(
+      counts_file: "counts.tsv", metadata_file: "sample_metadata.tsv",
+      deseq2: { experiment_type: "time_course", time_column: "time" }, clustering: clustering
+    )
+    @job.update!(analysis_config: configuration.to_h, submission_options: configuration.summary)
+    FileUtils.cp(EXAMPLES.join("timecourse_counts.tsv"), @job.rnaseq_input_dir.join("counts.tsv"))
+    FileUtils.cp(EXAMPLES.join("timecourse_sample_metadata.tsv"), @job.rnaseq_input_dir.join("sample_metadata.tsv"))
+  end
 
   def zip_entries(bytes)
     list = "import io, sys, zipfile; print(*zipfile.ZipFile(io.BytesIO(sys.stdin.buffer.read())).namelist(), sep=chr(10))"

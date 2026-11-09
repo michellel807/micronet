@@ -31,6 +31,13 @@ DESCRIPTIONS = {
     "group_means_vst.tsv": "Mean VST value of every gene in each group (condition and time point), one row per gene and group, "
                            "with the numeric time (time_value) when the times are numbers. Use these for trajectory plots and modeling.",
     "top_gene_trajectories.pdf": "The most significant genes over time: group means as lines, each sample as a dot.",
+    "gene_clusters.tsv": "The cluster of each clustered gene, with its padj, largest fold change, and distance from its cluster's "
+                         "average pattern (small = typical member). Sorted by cluster, most typical genes first.",
+    "cluster_profiles.tsv": "Each cluster's average pattern: mean and standard deviation of the genes' z-scores in every group "
+                            "(condition and time point), with the numeric time (time_value).",
+    "cluster_selection.tsv": "The silhouette score and within-cluster spread for each number of clusters tried; chosen marks the one used.",
+    "cluster_trajectories.pdf": "One panel per cluster: each gene's z-scored pattern over time as a thin line, the cluster average in bold.",
+    "cluster_selection.pdf": "Silhouette score against the number of clusters, with the number used circled.",
 }
 TIME_COURSE_RESULTS = ("Every tested gene: baseMean, the likelihood ratio test statistic (stat), pvalue, padj, significant, "
                        "why padj is missing (padj_na_reason), and log2 fold changes at each time point (log2FC_* columns; "
@@ -82,6 +89,47 @@ def comparison_lines(manifest):
     return lines
 
 
+def silhouette_meaning(score):
+    if score >= 0.5:
+        return "the clusters are clearly separated"
+    if score >= 0.25:
+        return "the clusters are reasonably separated, with some genes between patterns"
+    return ("the patterns blend into each other, so treat the clusters as a convenient split "
+            "rather than distinct groups")
+
+
+def clustering_lines(clustering):
+    """The CLUSTERS section of the README, or nothing when clustering did not run."""
+    if not clustering:
+        return []
+    lines = ["", "CLUSTERS"]
+    if clustering.get("status") != "completed":
+        return lines + [f"  Not clustered: {clustering.get('reason', 'clustering did not run')}"]
+    if clustering["chosen_by"] == "user":
+        how = f"You chose {clustering['clusters']} clusters."
+    else:
+        how = (f"{clustering['clusters']} clusters: of the numbers tried (2 to 10), this one gave the highest\n"
+               "  silhouette score (see cluster_selection.pdf).")
+    sizes = ", ".join(f"{number}: {size}" for number, size in enumerate(clustering["cluster_sizes"], start=1))
+    lines += [
+        "  The significant genes were grouped by the shape of their change over time.",
+        "  1. Each gene's mean expression (vst) in every group (condition and time point) was",
+        "     converted to z-scores (its own mean subtracted, divided by its own standard deviation),",
+        "     so genes with the same pattern group together however highly they are expressed.",
+        "  2. k-means clustering (k-means++ starts, 10 restarts, fixed seed, so reruns give the",
+        "     same clusters) grouped the patterns. Clusters are numbered by size, largest first.",
+        f"  {how}",
+        f"  Genes clustered: {clustering['genes_clustered']}"
+        + (f" ({clustering['genes_excluded']} significant genes without a usable pattern were left out)"
+           if clustering.get("genes_excluded") else ""),
+        f"  Cluster sizes: {sizes}",
+        f"  Silhouette score: {clustering['silhouette']:.2f} (from -1 to 1; {silhouette_meaning(clustering['silhouette'])}).",
+    ]
+    if clustering.get("silhouette_sampled_genes"):
+        lines.append(f"    The score was computed on a fixed random sample of {clustering['silhouette_sampled_genes']} genes.")
+    return lines
+
+
 def readme(manifest, job_number, files):
     parameters, genes, samples = manifest["parameters"], manifest["genes"], manifest["samples"]
     time_course = bool(manifest.get("time"))
@@ -130,6 +178,10 @@ def readme(manifest, job_number, files):
         f"{str(parameters['vst_blind']).upper()}) was applied to all remaining genes.",
         "  4. Only then were significant genes selected, so vst_significant.tsv holds values",
         "     transformed together with the whole dataset.",
+        "",
+    ]
+    lines += clustering_lines(manifest.get("clustering"))
+    lines += [
         "",
         "FILES",
     ]

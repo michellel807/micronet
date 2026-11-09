@@ -51,6 +51,9 @@
           and <%= time_course ? "largest |log2 fold change| across time points" : "|log2 fold change|" %> ≥ <%= @advanced["lfc_threshold"] %>
           (<%= RnaSeq::Configuration::LFC_TESTS[time_course ? "posthoc" : @advanced["lfc_test"]].downcase %>)<% end %></p>
         <p><strong>Covariates:</strong> <%= @advanced["covariates"].presence&.join(", ") || "None" %></p>
+        <% if time_course %>
+          <p><strong>Gene clusters:</strong> <%= @configuration.cluster_description %></p>
+        <% end %>
         <% unless time_course %>
           <p><strong>Samples in the model:</strong> <%= RnaSeq::Configuration::SAMPLES_IN_MODEL[@advanced["samples_in_model"]] %></p>
         <% end %>

@@ -6,7 +6,9 @@ Usage:
 Reads manifest.json, deseq2_results.tsv, size_factors.tsv and vst_all.tsv from
 RESULTS_DIR and writes pca.pdf and pca_coordinates.tsv beside them, plus
 ma_plot.pdf and volcano_plot.pdf for a two-condition comparison, or
-top_gene_trajectories.pdf (from group_means_vst.tsv) for a time course.
+top_gene_trajectories.pdf (from group_means_vst.tsv) for a time course. When
+cluster_genes.py has clustered a time course, also cluster_trajectories.pdf and
+cluster_selection.pdf.
 """
 import json
 import sys
@@ -31,7 +33,8 @@ MARKERS = ["o", "s", "^", "D", "v", "P"]
 TRAJECTORY_GENES = 12
 OUTPUTS = {"pca": "pca.pdf", "pca_coordinates": "pca_coordinates.tsv",
            "ma": "ma_plot.pdf", "volcano": "volcano_plot.pdf",
-           "trajectories": "top_gene_trajectories.pdf"}
+           "trajectories": "top_gene_trajectories.pdf",
+           "cluster_trajectories": "cluster_trajectories.pdf", "cluster_selection": "cluster_selection.pdf"}
 
 
 def read_table(path):
@@ -104,13 +107,77 @@ def plot_time_pca(vst, samples, time_levels, condition_name, directory):
     save(figure, directory / OUTPUTS["pca"])
 
 
+def time_positions(time_info):
+    """Time levels and their x positions: the real times when they are numbers, otherwise evenly spaced."""
+    levels = [str(level) for level in time_info["levels"]]
+    numeric = time_info.get("numeric_values")
+    return levels, dict(zip(levels, numeric if numeric else range(len(levels))))
+
+
+def plot_clusters(clusters, profiles, means, manifest, directory):
+    """Each cluster's genes over time (z-scores), with the cluster mean in bold."""
+    levels, position = time_positions(manifest["time"])
+    clustering = manifest["clustering"]
+    means = means.assign(time=means["time"].astype(str), condition=means["condition"].fillna("").astype(str))
+    profiles = profiles.assign(time=profiles["time"].astype(str), condition=profiles["condition"].fillna("").astype(str))
+    groups = [(group["condition"], str(group["time"])) for group in clustering["groups"]]
+    matrix = (means[means["gene_id"].isin(set(clusters["gene_id"]))]
+              .pivot_table(index="gene_id", columns=["condition", "time"], values="mean_vst", aggfunc="first")
+              .reindex(columns=pd.MultiIndex.from_tuples(groups)))
+    values = matrix.to_numpy(dtype=float)
+    scaled = pd.DataFrame((values - values.mean(axis=1, keepdims=True)) / values.std(axis=1, keepdims=True),
+                          index=matrix.index, columns=matrix.columns)
+    conditions = list(dict.fromkeys(condition for condition, _ in groups))
+    count = clustering["clusters"]
+    columns = min(4, count)
+    rows = int(np.ceil(count / columns))
+    figure, grid = plt.subplots(rows, columns, figsize=(2.9 * columns + 0.6, 2.5 * rows + 0.9), squeeze=False,
+                                sharex=True, sharey=True)
+    for number, axes in zip(range(1, count + 1), grid.flat):
+        members = clusters.loc[clusters["cluster"] == number, "gene_id"]
+        for color, condition in zip(CONDITION_COLORS * 10, conditions):
+            times = [time for (group_condition, time) in groups if group_condition == condition]
+            x = [position[time] for time in times]
+            lines = scaled.loc[members, [(condition, time) for time in times]].to_numpy()
+            axes.plot(x, lines.T, color=color, alpha=min(0.5, 8 / max(len(lines), 1)), linewidth=0.6)
+            mean = profiles[(profiles["cluster"] == number) & (profiles["condition"] == condition)].set_index("time")
+            axes.plot(x, mean.loc[times, "mean_z"], color=color, linewidth=2.5, marker="o", markersize=4,
+                      label=condition or None)
+        axes.axhline(0, color=NOT_SIGNIFICANT, linewidth=0.5, zorder=0)
+        axes.set_title(f"Cluster {number}: {len(members)} genes", fontsize=9)
+        axes.set_xticks([position[time] for time in levels])
+        axes.set_xticklabels(levels, fontsize=7)
+        axes.tick_params(axis="y", labelsize=7)
+    for axes in list(grid.flat)[count:]:
+        axes.axis("off")
+    if conditions != [""]:
+        grid.flat[0].legend(fontsize=7)
+    figure.supxlabel(f"Time ({manifest['time']['column']})", fontsize=9)
+    figure.supylabel("Expression, z-score within each gene", fontsize=9)
+    how = "number set by you" if clustering["chosen_by"] == "user" else "number chosen by silhouette score"
+    figure.suptitle(f"Gene clusters by pattern over time ({how}; thin lines: genes, bold: cluster mean)", fontsize=10)
+    save(figure, directory / OUTPUTS["cluster_trajectories"])
+
+
+def plot_cluster_selection(selection, manifest, directory):
+    """Silhouette score for each number of clusters tried, with the one used marked."""
+    figure, axes = plt.subplots(figsize=(5.5, 3.8))
+    axes.plot(selection["k"], selection["silhouette"], color=LOWER, marker="o")
+    chosen = selection[selection["chosen"].astype(str).str.upper().eq("TRUE")]
+    axes.scatter(chosen["k"], chosen["silhouette"], s=120, facecolors="none", edgecolors=HIGHER, linewidths=2,
+                 label=f"Used: {int(chosen['k'].iloc[0])} clusters", zorder=3)
+    axes.set_xticks(selection["k"])
+    axes.set_xlabel("Number of clusters")
+    axes.set_ylabel("Mean silhouette (higher = better separated)")
+    axes.set_title("Choosing the number of gene clusters", fontsize=10)
+    axes.legend(fontsize=8)
+    save(figure, directory / OUTPUTS["cluster_selection"])
+
+
 def plot_trajectories(results, vst, samples, means, manifest, directory):
     """Mean VST over time for the most significant genes, with each sample as a dot."""
     time_info = manifest["time"]
-    levels = [str(level) for level in time_info["levels"]]
-    numeric = time_info.get("numeric_values")
-    # Plot at the real times when they are numbers, otherwise evenly spaced.
-    position = dict(zip(levels, numeric if numeric else range(len(levels))))
+    levels, position = time_positions(time_info)
     significant = results[results["significant"]]
     chosen = significant if len(significant) else results[results["pvalue"].notna()]
     genes = list(chosen.sort_values(["padj", "pvalue"], kind="stable").index[:TRAJECTORY_GENES])
@@ -211,6 +278,13 @@ def main(results_dir):
         means = pd.read_csv(directory / manifest["outputs"]["group_means"], sep="\t", keep_default_na=False, na_values=["NA"])
         means["gene_id"] = means["gene_id"].astype(str)
         plot_trajectories(results, vst, samples, means, manifest, directory)
+        if (manifest.get("clustering") or {}).get("status") == "completed":
+            clusters = pd.read_csv(directory / manifest["outputs"]["gene_clusters"], sep="\t", dtype={"gene_id": str})
+            profiles = pd.read_csv(directory / manifest["outputs"]["cluster_profiles"], sep="\t",
+                                   keep_default_na=False, na_values=["NA"])
+            selection = pd.read_csv(directory / manifest["outputs"]["cluster_selection"], sep="\t")
+            plot_clusters(clusters, profiles, means, manifest, directory)
+            plot_cluster_selection(selection, manifest, directory)
         return
 
     contrast = f"log2 fold change, {manifest['contrast']['log2_fold_change']}"

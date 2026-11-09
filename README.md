@@ -93,7 +93,16 @@ tests with time points as categories: `time_course` (does a gene change over
 time, optionally within one condition) and `condition_by_time` (does it change
 differently over time between two conditions). Time courses also write
 `group_means_vst.tsv`, the mean VST per condition and time point with numeric
-times, for trajectory modeling, and plot the top genes over time. On the website, choose "RNA-seq differential expression" on the
+times, for trajectory modeling, and plot the top genes over time.
+Time courses then cluster their significant genes by pattern
+(`lib/scripts/rnaseq/cluster_genes.py`): each gene's group means are z-scored
+and grouped with k-means, and the number of clusters is the k from 2 to 10 with
+the highest silhouette score unless the user sets one under Advanced settings.
+This writes `gene_clusters.tsv`, `cluster_profiles.tsv` (each cluster's mean
+pattern, the input for Gaussian process trajectories) and
+`cluster_selection.tsv`, plotted as `cluster_trajectories.pdf` and
+`cluster_selection.pdf`. Clustering is optional: if it fails, the job still
+delivers the DESeq2 results with a warning. On the website, choose "RNA-seq differential expression" on the
 home page, then upload a count matrix and sample sheet (`RnaSeqController`,
 pages under `/rnaseq`); the example files are linked from the upload page.
 To queue the example dataset without the website, run

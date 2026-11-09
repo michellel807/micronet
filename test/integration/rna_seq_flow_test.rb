@@ -256,6 +256,50 @@ class RnaSeqFlowTest < ActionDispatch::IntegrationTest
     assert_equal({ "experiment_type" => "time_course", "time_column" => "time" }, session[:rnaseq_config]["deseq2"])
   end
 
+  test "the number of gene clusters is automatic unless chosen under advanced settings" do
+    start
+    upload_time_course
+    get rnaseq_configure_path
+    assert_select "select#clusters option[selected]", "Automatic (recommended)"
+
+    base = TIME_DEFAULTS.merge(experiment_type: "time_course", time_column: "time")
+    post rnaseq_configure_path, params: base.merge(clusters: "")
+    assert_redirected_to rnaseq_review_path
+    assert_not session[:rnaseq_config].key?("clustering")
+    follow_redirect!
+    assert_includes response.body, "Number chosen automatically from the data"
+
+    %w[1 11 four].each do |clusters|
+      post rnaseq_configure_path, params: base.merge(clusters: clusters)
+      assert_response :unprocessable_content, clusters
+      assert_includes response.body, "whole number from 2 to 10", clusters
+    end
+
+    post rnaseq_configure_path, params: base.merge(clusters: "5")
+    assert_redirected_to rnaseq_review_path
+    assert_equal({ "clusters" => 5 }, session[:rnaseq_config]["clustering"])
+    follow_redirect!
+    assert_includes response.body, "5 (set by you)"
+    get rnaseq_configure_path
+    assert_select "select#clusters option[selected]", "5"
+    assert_select "details.rnaseq-advanced[open]"
+
+    token = session[:upload_token]
+    post rnaseq_submit_path
+    assert_equal({ "clusters" => 5 }, Job.find_by!(upload_token: token).analysis_config["clustering"])
+  end
+
+  test "a two-condition analysis ignores a number of gene clusters" do
+    start
+    upload_examples
+    post rnaseq_configure_path, params: TIME_DEFAULTS.merge(condition_column: "condition", reference_level: "control",
+                                                            test_level: "treated", clusters: "4")
+    assert_redirected_to rnaseq_review_path
+    assert_not session[:rnaseq_config].key?("clustering")
+    follow_redirect!
+    assert_not_includes response.body, "Gene clusters"
+  end
+
   test "time-course settings that cannot be analyzed are explained" do
     start
     upload_time_course

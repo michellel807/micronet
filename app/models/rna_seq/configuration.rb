@@ -2,6 +2,8 @@ module RnaSeq
   # The settings for one RNA-seq job, saved in Job#analysis_config. The
   # statistical settings are passed unchanged to deseq2_analysis.R, which
   # validates their values; this class checks only names and input files.
+  # Gene clustering settings (time courses only) are kept apart from the
+  # DESeq2 settings, which the R script rejects when it does not know them.
   class Configuration
     class Invalid < StandardError; end
 
@@ -31,26 +33,37 @@ module RnaSeq
     }.freeze
     LFC_TESTS = { "posthoc" => "Filter after testing", "deseq2" => "Test against the cutoff (DESeq2 lfcThreshold)" }.freeze
     SAMPLES_IN_MODEL = { "all" => "All samples", "contrast_only" => "Only the two compared groups" }.freeze
+    # Matches MIN_CLUSTERS and MAX_CLUSTERS in lib/scripts/rnaseq/cluster_genes.py.
+    CLUSTER_COUNTS = (2..10).freeze
+    CLUSTERING_SETTINGS = %w[clusters].freeze
 
-    attr_reader :counts_file, :metadata_file, :original_filenames, :deseq2
+    attr_reader :counts_file, :metadata_file, :original_filenames, :deseq2, :clustering
 
     def self.from_h(hash)
       hash = hash.to_h.deep_stringify_keys
       new(counts_file: hash["counts_file"], metadata_file: hash["metadata_file"],
-          deseq2: hash["deseq2"], original_filenames: hash["original_filenames"])
+          deseq2: hash["deseq2"], original_filenames: hash["original_filenames"], clustering: hash["clustering"])
     end
 
-    def initialize(counts_file:, metadata_file:, deseq2:, original_filenames: nil)
+    def initialize(counts_file:, metadata_file:, deseq2:, original_filenames: nil, clustering: nil)
       @counts_file = counts_file.to_s
       @metadata_file = metadata_file.to_s
       @deseq2 = deseq2.to_h.deep_stringify_keys
       @original_filenames = (original_filenames || {}).to_h.stringify_keys
+      @clustering = clustering.to_h.stringify_keys.compact
       validate!
     end
 
     def to_h
-      { "counts_file" => counts_file, "metadata_file" => metadata_file,
-        "original_filenames" => original_filenames, "deseq2" => deseq2 }
+      hash = { "counts_file" => counts_file, "metadata_file" => metadata_file,
+               "original_filenames" => original_filenames, "deseq2" => deseq2 }
+      hash["clustering"] = clustering if clustering.present?
+      hash
+    end
+
+    # The number of gene clusters the user chose, or nil to choose it from the data.
+    def cluster_count
+      clustering["clusters"]
     end
 
     def inputs_present?(directories)
@@ -85,11 +98,16 @@ module RnaSeq
         "Comparison" => comparison_description(settings),
         "Covariates" => Array(settings["covariates"]).presence&.join(", ") || "None",
         "Significance" => significance,
+        **(time_course? ? { "Gene clusters" => cluster_description } : {}),
         "Uploaded Files" => {
           "Count Matrix" => [original_filenames.fetch("counts", counts_file)],
           "Sample Metadata" => [original_filenames.fetch("metadata", metadata_file)]
         }
       }
+    end
+
+    def cluster_description
+      cluster_count ? "#{cluster_count} (set by you)" : "Number chosen automatically from the data"
     end
 
     private
@@ -122,6 +140,18 @@ module RnaSeq
         %w[reference_level test_level].each do |key|
           raise Invalid, "The RNA-seq #{key.tr('_', ' ')} is required" if deseq2[key].blank?
         end
+      end
+      validate_clustering!
+    end
+
+    def validate_clustering!
+      unknown = clustering.keys - CLUSTERING_SETTINGS
+      raise Invalid, "Unknown gene clustering settings: #{unknown.join(', ')}" if unknown.any?
+      return if cluster_count.nil?
+
+      raise Invalid, "Gene clustering applies only to time-course analyses" unless time_course?
+      unless cluster_count.is_a?(Integer) && CLUSTER_COUNTS.cover?(cluster_count)
+        raise Invalid, "The number of gene clusters must be a whole number from #{CLUSTER_COUNTS.min} to #{CLUSTER_COUNTS.max}"
       end
     end
   end

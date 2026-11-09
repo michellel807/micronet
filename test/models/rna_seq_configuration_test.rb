@@ -73,4 +73,24 @@ class RnaSeqConfigurationTest < ActiveSupport::TestCase
     assert_raises(RnaSeq::Configuration::Invalid) { configuration(deseq2: { experiment_type: "multi_condition", reference_level: "a", test_level: "b" }) }
     assert_not configuration.time_course?
   end
+
+  test "a time course keeps an optional number of gene clusters apart from the DESeq2 settings" do
+    time = { experiment_type: "time_course", time_column: "time" }
+    automatic = configuration(deseq2: time)
+    assert_nil automatic.cluster_count
+    assert_not automatic.to_h.key?("clustering")
+    assert_equal "Number chosen automatically from the data", automatic.summary["Gene clusters"]
+
+    chosen = configuration(deseq2: time, clustering: { clusters: 4 })
+    loaded = RnaSeq::Configuration.from_h(chosen.to_h.as_json)
+    assert_equal 4, loaded.cluster_count
+    assert_equal "4 (set by you)", loaded.summary["Gene clusters"]
+    assert_not loaded.deseq2.key?("clusters"), "the R script rejects settings it does not know"
+
+    assert_not configuration.summary.key?("Gene clusters")
+    [{ clusters: 1 }, { clusters: 11 }, { clusters: "4" }, { k: 4 }].each do |clustering|
+      assert_raises(RnaSeq::Configuration::Invalid, clustering.inspect) { configuration(deseq2: time, clustering: clustering) }
+    end
+    assert_raises(RnaSeq::Configuration::Invalid) { configuration(clustering: { clusters: 4 }) }
+  end
 end

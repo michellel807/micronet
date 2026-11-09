@@ -122,6 +122,12 @@
               <p class="rnaseq-hint">Other sample sheet columns, such as batch, to adjust for. The condition and time columns cannot also be covariates.</p>
             <% end %>
           </fieldset>
+
+          <div class="ds-field" data-show-for="time_course condition_by_time">
+            <label class="ds-label" for="clusters">Number of gene clusters</label>
+            <%= select_tag :clusters, options_for_select([["Automatic (recommended)", ""]] + RnaSeq::Configuration::CLUSTER_COUNTS.map { |count| [count, count.to_s] }, @form["clusters"]), class: "ds-select" %>
+            <p class="rnaseq-hint">Significant genes are grouped by the shape of their change over time. Automatic tries 2 to 10 groups and keeps the number that separates the patterns best (highest silhouette score).</p>
+          </div>
         </details>
       </div>
 

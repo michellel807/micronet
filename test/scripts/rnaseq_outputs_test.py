@@ -188,6 +188,8 @@ class TimeCourseOutputsTest(unittest.TestCase):
         cls.directory = Path(WORK.name) / "time-analysis"
         subprocess.run([RSCRIPT, str(SCRIPTS / "deseq2_analysis.R"), "--counts", str(counts), "--metadata", str(metadata),
                         "--config", str(config), "--out", str(cls.directory)], check=True, capture_output=True)
+        result = run_script("cluster_genes.py", cls.directory)
+        assert result.returncode == 0, result.stderr
         result = run_script("plot_results.py", cls.directory)
         assert result.returncode == 0, result.stderr
         cls.zip_path = Path(WORK.name) / "time-results.zip"
@@ -217,6 +219,56 @@ class TimeCourseOutputsTest(unittest.TestCase):
         self.assertIn("log2FC_treated_vs_control_at_time_T", self.readme)
         self.assertIn("group_means_vst.tsv", self.readme)
         self.assertNotIn("higher and", self.readme)
+
+    def test_significant_genes_are_clustered_across_both_conditions(self):
+        manifest = json.loads((self.directory / "manifest.json").read_text())
+        clustering = manifest["clustering"]
+        self.assertEqual(clustering["status"], "completed")
+        self.assertEqual(clustering["chosen_by"], "silhouette")
+        self.assertEqual(len(clustering["groups"]), 6, "both conditions at three time points")
+        clusters = pd.read_csv(self.directory / "gene_clusters.tsv", sep="\t")
+        significant = pd.read_csv(self.directory / "significant_genes.tsv", sep="\t")
+        self.assertEqual(len(clusters) + clustering["genes_excluded"], len(significant))
+        self.assertTrue(set(clusters["gene_id"]) <= set(significant["gene_id"]))
+        self.assertEqual(clustering["cluster_sizes"], clusters["cluster"].value_counts().sort_index().tolist())
+        profiles = pd.read_csv(self.directory / "cluster_profiles.tsv", sep="\t")
+        self.assertEqual(len(profiles), clustering["clusters"] * 6)
+        # Each cluster's average z-scores sum to zero across its groups.
+        np.testing.assert_allclose(profiles.groupby("cluster")["mean_z"].sum(), 0, atol=1e-9)
+
+    def test_zip_and_readme_include_the_clusters(self):
+        with zipfile.ZipFile(self.zip_path) as archive:
+            names = {Path(name).name for name in archive.namelist()}
+        self.assertTrue({"gene_clusters.tsv", "cluster_profiles.tsv", "cluster_selection.tsv",
+                         "cluster_trajectories.pdf", "cluster_selection.pdf"} <= names)
+        for name in ["cluster_trajectories.pdf", "cluster_selection.pdf"]:
+            self.assertEqual((self.directory / name).read_bytes()[:5], b"%PDF-", name)
+        self.assertIn("CLUSTERS", self.readme)
+        self.assertIn("highest\n  silhouette score", self.readme)
+
+    def test_too_few_significant_genes_skips_clustering_and_says_why(self):
+        directory = Path(WORK.name) / "time-few-significant"
+        shutil.copytree(self.directory, directory)
+        results = pd.read_csv(directory / "deseq2_results.tsv", sep="\t")
+        results["significant"] = results.index < 5
+        results.to_csv(directory / "deseq2_results.tsv", sep="\t", index=False)
+        for script, *arguments in [("cluster_genes.py",), ("plot_results.py",),
+                                   ("package_results.py", Path(WORK.name) / "few.zip", "--job-number", 3)]:
+            result = run_script(script, directory, *arguments)
+            self.assertEqual(result.returncode, 0, result.stderr)
+        manifest = json.loads((directory / "manifest.json").read_text())
+        self.assertEqual(manifest["clustering"]["status"], "skipped")
+        self.assertNotIn("gene_clusters", manifest["outputs"])
+        self.assertFalse((directory / "gene_clusters.tsv").exists())
+        self.assertIn("Not clustered: Clustering needs at least 20 significant genes", (directory / "README.txt").read_text())
+
+    def test_two_condition_results_are_not_clustered(self):
+        directory = fresh_copy("two-condition-clustering")
+        before = (directory / "manifest.json").read_text()
+        result = run_script("cluster_genes.py", directory)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((directory / "manifest.json").read_text(), before)
+        self.assertFalse((directory / "gene_clusters.tsv").exists())
 
     def test_no_significant_genes_still_plots_trajectories(self):
         directory = Path(WORK.name) / "time-no-significant"
