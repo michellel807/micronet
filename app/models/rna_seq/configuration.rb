@@ -8,12 +8,29 @@ module RnaSeq
     INPUT_EXTENSIONS = %w[.csv .tsv .txt].freeze
     DESEQ2_SETTINGS = %w[
       schema_version experiment_type sample_column condition_column reference_level test_level
+      time_column subset_level
       covariates samples_in_model min_replicates prefilter alpha lfc_threshold lfc_test vst_blind
     ].freeze
-    EXPERIMENT_TYPES = { "two_condition" => "Two-condition differential expression" }.freeze
+    EXPERIMENT_TYPES = {
+      "two_condition" => "Two-condition differential expression",
+      "time_course" => "Time course",
+      "condition_by_time" => "Condition-by-time interaction"
+    }.freeze
+    TIME_TYPES = %w[time_course condition_by_time].freeze
+    # Types that compare a test condition with a reference condition.
+    COMPARISON_TYPES = %w[two_condition condition_by_time].freeze
     # Shown in emails when a setting is omitted; DEFAULT_CONFIG in
     # lib/scripts/rnaseq/R/validate.R is what the analysis actually uses.
-    DISPLAY_DEFAULTS = { "experiment_type" => "two_condition", "condition_column" => "condition", "alpha" => 0.05, "lfc_threshold" => 0 }.freeze
+    DISPLAY_DEFAULTS = { "experiment_type" => "two_condition", "condition_column" => "condition", "time_column" => "time", "alpha" => 0.05, "lfc_threshold" => 0 }.freeze
+    # The optional settings on the web form, pre-filled with the R defaults.
+    # Values equal to these are left out of the saved settings so the R
+    # defaults stay in charge of them.
+    ADVANCED_DEFAULTS = {
+      "alpha" => 0.05, "lfc_threshold" => 0.0, "lfc_test" => "posthoc",
+      "samples_in_model" => "all", "covariates" => []
+    }.freeze
+    LFC_TESTS = { "posthoc" => "Filter after testing", "deseq2" => "Test against the cutoff (DESeq2 lfcThreshold)" }.freeze
+    SAMPLES_IN_MODEL = { "all" => "All samples", "contrast_only" => "Only the two compared groups" }.freeze
 
     attr_reader :counts_file, :metadata_file, :original_filenames, :deseq2
 
@@ -43,6 +60,14 @@ module RnaSeq
       end
     end
 
+    def experiment_type
+      deseq2["experiment_type"].presence || DISPLAY_DEFAULTS["experiment_type"]
+    end
+
+    def time_course?
+      TIME_TYPES.include?(experiment_type)
+    end
+
     def write_deseq2_config(path)
       File.write(path, JSON.pretty_generate(deseq2))
     end
@@ -51,10 +76,13 @@ module RnaSeq
     def summary
       settings = DISPLAY_DEFAULTS.merge(deseq2)
       significance = "adjusted p-value < #{settings['alpha']}"
-      significance += " and |log2 fold change| ≥ #{settings['lfc_threshold']}" if settings["lfc_threshold"].to_f.positive?
+      if settings["lfc_threshold"].to_f.positive?
+        size = time_course? ? "largest |log2 fold change| across time points" : "|log2 fold change|"
+        significance += " and #{size} ≥ #{settings['lfc_threshold']}"
+      end
       {
         "Analysis" => "RNA-seq: #{EXPERIMENT_TYPES.fetch(settings['experiment_type'], settings['experiment_type'])} (DESeq2)",
-        "Comparison" => "#{settings['test_level']} vs #{settings['reference_level']} (reference), column #{settings['condition_column']}",
+        "Comparison" => comparison_description(settings),
         "Covariates" => Array(settings["covariates"]).presence&.join(", ") || "None",
         "Significance" => significance,
         "Uploaded Files" => {
@@ -66,6 +94,19 @@ module RnaSeq
 
     private
 
+    def comparison_description(settings)
+      case settings["experiment_type"]
+      when "time_course"
+        samples = settings["subset_level"].present? ? "samples with #{settings['condition_column']} = #{settings['subset_level']}" : "all samples"
+        "Change over time (column #{settings['time_column']}), #{samples}"
+      when "condition_by_time"
+        "How #{settings['test_level']} vs #{settings['reference_level']} (reference) changes over time " \
+          "(columns #{settings['condition_column']} and #{settings['time_column']})"
+      else
+        "#{settings['test_level']} vs #{settings['reference_level']} (reference), column #{settings['condition_column']}"
+      end
+    end
+
     def validate!
       [counts_file, metadata_file].each do |name|
         unless name == File.basename(name) && INPUT_EXTENSIONS.include?(File.extname(name).downcase)
@@ -76,8 +117,11 @@ module RnaSeq
 
       unknown = deseq2.keys - DESEQ2_SETTINGS
       raise Invalid, "Unknown RNA-seq settings: #{unknown.join(', ')}" if unknown.any?
-      %w[reference_level test_level].each do |key|
-        raise Invalid, "The RNA-seq #{key.tr('_', ' ')} is required" if deseq2[key].blank?
+      raise Invalid, "Unknown RNA-seq experiment type: #{experiment_type}" unless EXPERIMENT_TYPES.key?(experiment_type)
+      if COMPARISON_TYPES.include?(experiment_type)
+        %w[reference_level test_level].each do |key|
+          raise Invalid, "The RNA-seq #{key.tr('_', ' ')} is required" if deseq2[key].blank?
+        end
       end
     end
   end

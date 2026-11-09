@@ -137,4 +137,23 @@ class UserMailerTest < ActionMailer::TestCase
       end
     end
   end
+
+  test "time-course results state the question and do not claim a direction" do
+    rnaseq = Job.create!(user: @user, status: "Completed", analysis_type: "rnaseq")
+    manifest = {
+      "design" => "full: ~ condition + time + condition:time; reduced: ~ condition + time (likelihood ratio test)",
+      "question" => "Which genes change differently over time in treated than in control (the reference)?",
+      "contrast" => { "test_level" => "treated", "reference_level" => "control" },
+      "time" => { "column" => "time", "levels" => %w[0 6 24] },
+      "samples" => { "in_model" => 18 },
+      "genes" => { "in_input" => 2000, "tested" => 1980, "significant" => 190, "significant_up" => nil, "significant_down" => nil }
+    }
+    message = UserMailer.rnaseq_results_email(rnaseq, [], manifest, [])
+    [Nokogiri::HTML(message.html_part.body.decoded).text, message.text_part.body.decoded].each do |text|
+      body = text.squish
+      assert_includes body, "It tested: Which genes change differently over time in treated than in control (the reference)?"
+      assert_includes body, "Significant genes: 190"
+      assert_not_includes body, "higher and"
+    end
+  end
 end

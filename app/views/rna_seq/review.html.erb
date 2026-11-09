@@ -1,0 +1,72 @@
+<% content_for :title, "RNA-seq: Review and Submit" %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "parameter", "rnaseq", "data-turbo-track": "reload" %>
+<% end %>
+
+<div class="parameterscreen rnaseq">
+  <%= render "layouts/header" %>
+
+  <div class="column skinny">
+    <%= render "layouts/stepper", current_step: 3, steps: rnaseq_steps %>
+
+    <h1>RNA-seq: Review and Submit</h1>
+    <p>Please check your details. When you click "Start My Job," you will receive an email confirming your submission, and another with the results when the analysis finishes.</p>
+
+    <% if flash[:alert].present? %>
+      <div class="rnaseq-alert" role="alert"><%= flash[:alert] %></div>
+    <% end %>
+
+    <%= form_with url: rnaseq_submit_path, method: :post do %>
+      <div class="general-white-block">
+        <h2>Email</h2>
+        <p><%= @user.email %></p>
+        <%= link_to "Edit", root_path(analysis_type: "rnaseq"), class: "edit-button" %>
+
+        <h2>Uploaded files</h2>
+        <p><strong>Count matrix:</strong> <%= @files.dig("original", "counts") %> (<%= @inputs.sample_ids.length %> samples)</p>
+        <p><strong>Sample sheet:</strong> <%= @files.dig("original", "metadata") %></p>
+        <%= link_to "Edit", rnaseq_upload_path, class: "edit-button" %>
+
+        <h2>Analysis</h2>
+        <% time_course = @configuration.time_course? %>
+        <p><strong>Method:</strong> <%= RnaSeq::Configuration::EXPERIMENT_TYPES[@configuration.experiment_type] %> with DESeq2<%= " (likelihood ratio test)" if time_course %></p>
+        <p><strong>Question:</strong>
+          <% case @configuration.experiment_type
+             when "two_condition" %>
+            Which genes differ between <%= @settings["test_level"] %> and <%= @settings["reference_level"] %> (the reference)?
+          <% when "condition_by_time" %>
+            Which genes change differently over time in <%= @settings["test_level"] %> than in <%= @settings["reference_level"] %> (the reference)?
+          <% else %>
+            Which genes change over time<%= " in samples with #{@settings['condition_column']} = #{@settings['subset_level']}" if @settings["subset_level"].present? %>?
+          <% end %>
+        </p>
+        <% if @configuration.experiment_type != "time_course" || @settings["subset_level"].present? %>
+          <p><strong>Condition column:</strong> <%= @settings["condition_column"] %></p>
+        <% end %>
+        <% if time_course %>
+          <p><strong>Time column:</strong> <%= @settings["time_column"] %> (each time point is treated as a separate group)</p>
+        <% end %>
+        <p><strong>Samples per group:</strong> <%= @groups.map { |group, count| "#{group}: #{count}" }.join("; ") %></p>
+        <p><strong>Significance:</strong> adjusted p-value &lt; <%= @advanced["alpha"] %><% if @advanced["lfc_threshold"].to_f.positive? %>
+          and <%= time_course ? "largest |log2 fold change| across time points" : "|log2 fold change|" %> ≥ <%= @advanced["lfc_threshold"] %>
+          (<%= RnaSeq::Configuration::LFC_TESTS[time_course ? "posthoc" : @advanced["lfc_test"]].downcase %>)<% end %></p>
+        <p><strong>Covariates:</strong> <%= @advanced["covariates"].presence&.join(", ") || "None" %></p>
+        <% unless time_course %>
+          <p><strong>Samples in the model:</strong> <%= RnaSeq::Configuration::SAMPLES_IN_MODEL[@advanced["samples_in_model"]] %></p>
+        <% end %>
+        <%= link_to "Edit", rnaseq_configure_path, class: "edit-button" %>
+
+        <h2>Results</h2>
+        <% if @configuration.time_course? %>
+          <p>You will receive a zip file with the full DESeq2 results table (with log2 fold changes at each time point), the significant genes, normalized and variance-stabilized counts, group means over time, a PCA plot and a plot of the top genes over time.</p>
+        <% else %>
+          <p>You will receive a zip file with the full DESeq2 results table, the significant genes, normalized and variance-stabilized counts, and PCA, MA and volcano plots.</p>
+        <% end %>
+
+        <%= submit_tag "Start My Job", class: "analysis-button" %>
+      </div>
+    <% end %>
+  </div>
+
+  <%= render "layouts/footer" %>
+</div>

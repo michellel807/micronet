@@ -54,7 +54,7 @@ class RnaSeqPipelineTest < ActiveSupport::TestCase
 
     assert_equal "Completed with warnings", @job.reload.status
     body = ActionMailer::Base.deliveries.sole.text_part.body.decoded
-    assert_includes body, "Plots: The PCA, MA and volcano plots could not be drawn"
+    assert_includes body, "Plots: The plots could not be drawn"
     assert @job.rnaseq_results_dir.join("significant_genes.tsv").file?
   end
 

@@ -175,5 +175,58 @@ class PackageResultsTest(unittest.TestCase):
         self.assertFalse(zip_path.exists())
 
 
+@unittest.skipUnless(RSCRIPT, "Rscript is not installed; run these tests inside the MicroNet Docker image.")
+class TimeCourseOutputsTest(unittest.TestCase):
+    """Plots and packaging for a condition-by-time analysis."""
+
+    @classmethod
+    def setUpClass(cls):
+        inputs = Path(WORK.name) / "time-inputs"
+        counts, metadata = simulation.write_inputs(simulation.simulate_time_course(seed=91, n_genes=1200), inputs)
+        config = inputs / "config.json"
+        config.write_text(json.dumps({"experiment_type": "condition_by_time", "reference_level": "control", "test_level": "treated"}))
+        cls.directory = Path(WORK.name) / "time-analysis"
+        subprocess.run([RSCRIPT, str(SCRIPTS / "deseq2_analysis.R"), "--counts", str(counts), "--metadata", str(metadata),
+                        "--config", str(config), "--out", str(cls.directory)], check=True, capture_output=True)
+        result = run_script("plot_results.py", cls.directory)
+        assert result.returncode == 0, result.stderr
+        cls.zip_path = Path(WORK.name) / "time-results.zip"
+        result = run_script("package_results.py", cls.directory, cls.zip_path, "--job-number", 9)
+        assert result.returncode == 0, result.stderr
+        cls.readme = (cls.directory / "README.txt").read_text()
+
+    def test_time_course_plots_replace_ma_and_volcano(self):
+        for name in ["pca.pdf", "top_gene_trajectories.pdf"]:
+            self.assertEqual((self.directory / name).read_bytes()[:5], b"%PDF-", name)
+        self.assertFalse((self.directory / "ma_plot.pdf").exists())
+        self.assertFalse((self.directory / "volcano_plot.pdf").exists())
+
+    def test_pca_coordinates_record_condition_and_time(self):
+        coordinates = pd.read_csv(self.directory / "pca_coordinates.tsv", sep="\t", index_col="sample")
+        self.assertEqual(list(coordinates.columns[:2]), ["condition", "time"])
+        self.assertEqual(sorted(coordinates["time"].unique()), [0, 6, 24])
+
+    def test_zip_includes_group_means(self):
+        with zipfile.ZipFile(self.zip_path) as archive:
+            names = {Path(name).name for name in archive.namelist()}
+        self.assertTrue({"group_means_vst.tsv", "top_gene_trajectories.pdf", "significant_genes.tsv"} <= names)
+
+    def test_readme_explains_the_interaction_test(self):
+        self.assertIn("likelihood ratio test of the condition-by-time interaction", self.readme)
+        self.assertIn("Time points (time), treated as categories: 0, 6, 24", self.readme)
+        self.assertIn("log2FC_treated_vs_control_at_time_T", self.readme)
+        self.assertIn("group_means_vst.tsv", self.readme)
+        self.assertNotIn("higher and", self.readme)
+
+    def test_no_significant_genes_still_plots_trajectories(self):
+        directory = Path(WORK.name) / "time-no-significant"
+        shutil.copytree(self.directory, directory)
+        results = pd.read_csv(directory / "deseq2_results.tsv", sep="\t")
+        results["significant"] = False
+        results.to_csv(directory / "deseq2_results.tsv", sep="\t", index=False)
+        result = run_script("plot_results.py", directory)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

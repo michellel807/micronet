@@ -1,0 +1,191 @@
+<% content_for :title, "RNA-seq: Choose Comparison" %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "parameter", "rnaseq", "data-turbo-track": "reload" %>
+<% end %>
+<% levels_by_column = @inputs.levels_by_column %>
+<% level_options = ->(column) { levels_by_column.fetch(column, {}).map { |level, count| ["#{level} (#{count} samples)", level] } } %>
+<% defaults = RnaSeq::Configuration::ADVANCED_DEFAULTS %>
+<% types = {
+     "two_condition" => ["Compare two conditions", "Which genes differ between a test condition and a reference? For example, treated vs control."],
+     "time_course" => ["Change over time", "Which genes change at any time point? Uses one condition, or all samples."],
+     "condition_by_time" => ["Compare conditions over time", "Which genes change differently over time in a test condition than in a reference?"]
+   } %>
+
+<div class="parameterscreen rnaseq">
+  <%= render "layouts/header" %>
+
+  <div class="column skinny">
+    <%= render "layouts/stepper", current_step: 2, steps: rnaseq_steps %>
+
+    <h1>RNA-seq: Choose Comparison</h1>
+    <p>Choose what to test. <%= @inputs.sample_ids.length %> samples in <strong><%= @files.dig("original", "counts") %></strong>.</p>
+
+    <% if flash[:alert].present? %>
+      <div class="rnaseq-alert" role="alert"><%= flash[:alert] %></div>
+    <% end %>
+
+    <%= form_with url: rnaseq_configure_path, method: :post, class: "rnaseq-form", id: "rnaseq-configure",
+                  data: { levels: levels_by_column.to_json } do %>
+      <div class="general-white-block">
+        <h2>Type of analysis</h2>
+        <fieldset class="rnaseq-types">
+          <legend class="visually-hidden">Type of analysis</legend>
+          <% types.each do |value, (title, description)| %>
+            <label class="rnaseq-type">
+              <%= radio_button_tag :experiment_type, value, @form["experiment_type"] == value %>
+              <span class="rnaseq-type-title"><%= title %></span>
+              <span class="rnaseq-type-description"><%= description %></span>
+            </label>
+          <% end %>
+        </fieldset>
+
+        <h2>Samples</h2>
+        <div class="ds-field" data-show-for="time_course condition_by_time">
+          <label class="ds-label" for="time_column">Time column</label>
+          <%= select_tag :time_column, options_for_select(@inputs.condition_columns, @form["time_column"]), class: "ds-select" %>
+          <p class="rnaseq-hint">The sample sheet column with each sample's time point, such as 0, 6 and 24. Each time point is treated as its own group, so every time point needs at least <%= RnaSeq::Inputs::MIN_REPLICATES %> replicates<span data-show-for="condition_by_time"> in each condition</span>.</p>
+        </div>
+
+        <div class="ds-field">
+          <label class="ds-label" for="condition_column">Condition column</label>
+          <%= select_tag :condition_column, options_for_select(@inputs.condition_columns, @form["condition_column"]), class: "ds-select" %>
+          <p class="rnaseq-hint" data-show-for="two_condition condition_by_time">The sample sheet column that says which condition each sample belongs to.</p>
+          <p class="rnaseq-hint" data-show-for="time_course">Used only if you choose to analyze one condition below.</p>
+        </div>
+
+        <div class="ds-field" data-show-for="time_course">
+          <label class="ds-label" for="subset_level">Samples to analyze</label>
+          <%= select_tag :subset_level, options_for_select(level_options.call(@form["condition_column"]), @form["subset_level"]),
+                include_blank: "All samples", class: "ds-select", data: { level_select: true } %>
+          <p class="rnaseq-hint">Analyze one condition's samples, or all samples together.</p>
+        </div>
+
+        <div class="rnaseq-pair" data-show-for="two_condition condition_by_time">
+          <div class="ds-field">
+            <label class="ds-label" for="reference_level">Reference condition</label>
+            <%= select_tag :reference_level, options_for_select(level_options.call(@form["condition_column"]), @form["reference_level"]),
+                  include_blank: "Choose…", class: "ds-select", data: { level_select: true } %>
+            <p class="rnaseq-hint">The baseline, such as control or wild type.</p>
+          </div>
+          <div class="ds-field">
+            <label class="ds-label" for="test_level">Test condition</label>
+            <%= select_tag :test_level, options_for_select(level_options.call(@form["condition_column"]), @form["test_level"]),
+                  include_blank: "Choose…", class: "ds-select", data: { level_select: true } %>
+            <p class="rnaseq-hint">The condition compared against the reference.</p>
+          </div>
+        </div>
+        <p class="rnaseq-hint" data-show-for="two_condition">Each condition needs at least <%= RnaSeq::Inputs::MIN_REPLICATES %> replicate samples; 3 or more are recommended.</p>
+        <p class="rnaseq-hint" data-show-for="condition_by_time">Only the two chosen conditions are analyzed, and both need samples at every time point.</p>
+
+        <details class="rnaseq-advanced" <%= "open" if @advanced_open %>>
+          <summary>Advanced settings</summary>
+          <p class="rnaseq-hint">The defaults suit most experiments.</p>
+
+          <div class="rnaseq-pair">
+            <div class="ds-field">
+              <label class="ds-label" for="alpha">Significance level (adjusted p-value)</label>
+              <%= text_field_tag :alpha, @form["alpha"], class: "ds-input", inputmode: "decimal" %>
+              <p class="rnaseq-hint">Genes with an adjusted p-value below this are called significant. Default <%= defaults["alpha"] %>.</p>
+            </div>
+            <div class="ds-field">
+              <label class="ds-label" for="lfc_threshold">Log2 fold-change cutoff</label>
+              <%= text_field_tag :lfc_threshold, @form["lfc_threshold"], class: "ds-input", inputmode: "decimal" %>
+              <p class="rnaseq-hint">0 means no cutoff. 1 means at least a two-fold change<span data-show-for="time_course condition_by_time"> at one or more time points</span>.</p>
+            </div>
+          </div>
+
+          <fieldset class="ds-field rnaseq-radios" data-show-for="two_condition">
+            <legend class="ds-label">How to apply the fold-change cutoff</legend>
+            <% RnaSeq::Configuration::LFC_TESTS.each do |value, label| %>
+              <label><%= radio_button_tag :lfc_test, value, @form["lfc_test"] == value %> <%= label %></label>
+            <% end %>
+            <p class="rnaseq-hint">Filtering after testing keeps genes whose estimated change passes the cutoff. Testing against the cutoff is stricter: it asks whether the true change is larger than the cutoff. Has no effect when the cutoff is 0.</p>
+          </fieldset>
+
+          <fieldset class="ds-field rnaseq-radios" data-show-for="two_condition">
+            <legend class="ds-label">Samples in the model</legend>
+            <% RnaSeq::Configuration::SAMPLES_IN_MODEL.each do |value, label| %>
+              <label><%= radio_button_tag :samples_in_model, value, @form["samples_in_model"] == value %> <%= label %></label>
+            <% end %>
+            <p class="rnaseq-hint">If the sample sheet has more than two conditions, keeping all samples gives DESeq2 more data to estimate variability.</p>
+          </fieldset>
+
+          <fieldset class="ds-field rnaseq-radios">
+            <legend class="ds-label">Covariates</legend>
+            <% covariate_options = @inputs.condition_columns %>
+            <% if covariate_options.length < 2 %>
+              <p class="rnaseq-hint">Add columns such as <code>batch</code> to the sample sheet to adjust for them.</p>
+            <% else %>
+              <% covariate_options.each do |column| %>
+                <label data-covariate="<%= column %>"><%= check_box_tag "covariates[]", column, @form["covariates"].include?(column), id: "covariate_#{column.parameterize(separator: '_')}" %> <%= column %></label>
+              <% end %>
+              <p class="rnaseq-hint">Other sample sheet columns, such as batch, to adjust for. The condition and time columns cannot also be covariates.</p>
+            <% end %>
+          </fieldset>
+        </details>
+      </div>
+
+      <div class="rnaseq-actions">
+        <%= link_to "Back", rnaseq_upload_path, class: "ds-btn ds-btn-secondary ds-btn-back" %>
+        <%= submit_tag "Continue", class: "ds-btn ds-btn-accent ds-btn-next" %>
+      </div>
+    <% end %>
+  </div>
+
+  <%= render "layouts/footer" %>
+</div>
+
+<script>
+  (function () {
+    var form = document.getElementById("rnaseq-configure");
+    if (!form) return;
+    var levels = JSON.parse(form.dataset.levels || "{}");
+    var column = document.getElementById("condition_column");
+    var timeColumn = document.getElementById("time_column");
+    var selects = form.querySelectorAll("[data-level-select]");
+
+    function type() {
+      var checked = form.querySelector("input[name=experiment_type]:checked");
+      return checked ? checked.value : "two_condition";
+    }
+
+    function fillLevels() {
+      var options = levels[column.value] || {};
+      selects.forEach(function (select) {
+        var previous = select.value;
+        select.length = 1; // keep the blank first option
+        Object.keys(options).forEach(function (level) {
+          var option = new Option(level + " (" + options[level] + " samples)", level);
+          option.selected = level === previous;
+          select.add(option);
+        });
+      });
+    }
+
+    function update() {
+      var current = type();
+      var subset = document.getElementById("subset_level");
+      form.querySelectorAll("[data-show-for]").forEach(function (element) {
+        var shown = element.dataset.showFor.split(" ").indexOf(current) !== -1;
+        element.hidden = !shown;
+        element.querySelectorAll("select, input").forEach(function (input) { input.disabled = !shown; });
+      });
+      // In a time course the condition column only matters when one condition is chosen.
+      var usesCondition = current !== "time_course" || (subset && subset.value !== "");
+      var usesTime = current !== "two_condition";
+      form.querySelectorAll("[data-covariate]").forEach(function (label) {
+        var reserved = (usesCondition && label.dataset.covariate === column.value) ||
+                       (usesTime && label.dataset.covariate === timeColumn.value);
+        var box = label.querySelector("input");
+        box.disabled = reserved;
+        if (reserved) box.checked = false;
+        label.classList.toggle("is-disabled", reserved);
+      });
+    }
+
+    column.addEventListener("change", function () { fillLevels(); update(); });
+    form.addEventListener("change", update);
+    fillLevels();
+    update();
+  })();
+</script>

@@ -1,16 +1,17 @@
 <% contrast = @manifest["contrast"] %>
 <% genes = @manifest["genes"] %>
+<% question = @manifest["time"].present? ? "It tested: #{@manifest["question"]}" : "It compared #{contrast["test_level"]} with #{contrast["reference_level"]} (the reference)." %>
 MicroNet RNA-seq Results
 
 Hello,
 
-Your differential expression analysis (Job #<%= @job.job_number %>) is complete. It compared <%= contrast["test_level"] %> with <%= contrast["reference_level"] %> (the reference).
+Your differential expression analysis (Job #<%= @job.job_number %>) is complete. <%= question %>
 
 Summary
 - Design: <%= @manifest["design"] %>
 - Samples analyzed: <%= @manifest["samples"]["in_model"] %>
 - Genes tested: <%= genes["tested"] %> of <%= genes["in_input"] %> in your count matrix
-- Significant genes: <%= genes["significant"] %> (<%= genes["significant_up"] %> higher and <%= genes["significant_down"] %> lower in <%= contrast["test_level"] %>)
+- Significant genes: <%= genes["significant"] %><% unless genes["significant_up"].nil? %> (<%= genes["significant_up"] %> higher and <%= genes["significant_down"] %> lower in <%= contrast["test_level"] %>)<% end %>
 
 Attached
 <% @file_names.each do |name| %>

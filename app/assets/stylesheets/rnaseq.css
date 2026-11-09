@@ -1,0 +1,151 @@
+/* RNA-seq wizard pages (render inside .parameterscreen, see parameter.css). */
+.rnaseq code {
+  font-size: 0.92em;
+  color: var(--tx-1);
+  background: var(--surface-2);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.rnaseq-alert {
+  max-width: var(--prose-width);
+  margin: 16px auto 0;
+  padding: 12px 16px;
+  border: 1px solid var(--err-bd);
+  border-radius: var(--r-md);
+  background: var(--err-bg);
+  color: var(--err-fg);
+  font-size: var(--text-small);
+  font-weight: 500;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.rnaseq-example {
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border: 1px solid var(--border-sub);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--tx-2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.rnaseq-file {
+  display: block;
+  width: 100%;
+  margin: 4px 0 6px;
+  font-size: var(--text-small);
+}
+
+.general-white-block .rnaseq-hint,
+.rnaseq-hint {
+  margin: 4px 0 0;
+  font-size: var(--text-small);
+  color: var(--tx-3);
+}
+
+.rnaseq-hint a { color: var(--accent); font-weight: 500; }
+
+.general-white-block .rnaseq-current {
+  margin: 8px 0 10px;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  background: var(--accent-bg);
+  font-size: var(--text-small);
+}
+
+.rnaseq-types {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.rnaseq-type {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 12px 12px 12px 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.rnaseq-type:has(input:checked) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(5,119,177,0.08);
+}
+
+.rnaseq-type input {
+  position: absolute;
+  top: 14px;
+  left: 12px;
+  accent-color: var(--accent);
+}
+
+.rnaseq-type-title { font-weight: 600; font-size: var(--text-small); color: var(--tx-1); }
+.rnaseq-type-description { font-size: 13px; line-height: 1.45; color: var(--tx-2); }
+
+.rnaseq [hidden] { display: none !important; }
+
+.rnaseq-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.rnaseq .ds-field { margin-top: 14px; }
+
+.rnaseq-advanced {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-sub);
+}
+
+.rnaseq-advanced summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent);
+  font-size: var(--text-body);
+}
+
+.rnaseq-radios {
+  margin-left: 0;
+  margin-right: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.rnaseq-radios label {
+  display: block;
+  margin: 6px 0;
+  color: var(--tx-1);
+  font-size: var(--text-body);
+  cursor: pointer;
+}
+
+.rnaseq-radios input { accent-color: var(--accent); margin-right: 6px; }
+.rnaseq-radios label.is-disabled { color: var(--tx-3); cursor: not-allowed; }
+
+.rnaseq-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+@media (max-width: 600px) {
+  .rnaseq-pair { grid-template-columns: 1fr; gap: 0; }
+  .rnaseq-types { grid-template-columns: 1fr; }
+  .rnaseq-actions .ds-btn { flex: 1; }
+}

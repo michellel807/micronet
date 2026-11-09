@@ -112,6 +112,65 @@
 
 .welcome-cta .ds-btn-lg { height: 44px; }
 
+/* Analysis choice cards */
+.welcome-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0 0 20px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.welcome-choices legend { float: left; width: 100%; padding: 0; }
+
+.welcome-choice {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 14px 14px 14px 40px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.welcome-choice:hover { border-color: #CBD5E1; }
+
+.welcome-choice:has(.welcome-choice-input:checked) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(5,119,177,0.08);
+}
+
+.welcome-choice:has(.welcome-choice-input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.welcome-choice-input {
+  position: absolute;
+  top: 16px;
+  left: 14px;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.welcome-choice-title {
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--tx-1);
+  line-height: 1.3;
+}
+
+.welcome-choice-description {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--tx-2);
+}
+
 .welcome-helprow { margin-top: 16px; }
 
 #help_link {
@@ -198,6 +257,7 @@
   .welcome-main { padding: 48px 16px; }
   .welcome-cta { padding: 20px; }
   .welcome-form-row { flex-direction: column; }
+  .welcome-choices { grid-template-columns: 1fr; }
   .welcome-cta .ds-btn-lg { width: 100%; }
   .privacy-container { padding: 28px 22px; }
 }

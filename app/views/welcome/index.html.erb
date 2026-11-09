@@ -22,6 +22,19 @@
 
         <div class="welcome-cta">
           <%= form_with url: "/", method: :post, class: "welcome-form" do |form| %>
+            <fieldset class="welcome-choices">
+              <legend class="welcome-form-label">What would you like to analyze?</legend>
+              <label class="welcome-choice">
+                <%= radio_button_tag :analysis_type, "growth", @analysis_type != "rnaseq", class: "welcome-choice-input" %>
+                <span class="welcome-choice-title">Microbial growth</span>
+                <span class="welcome-choice-description">Growth curves from plate reader data, modeled with Gaussian Process regression.</span>
+              </label>
+              <label class="welcome-choice">
+                <%= radio_button_tag :analysis_type, "rnaseq", @analysis_type == "rnaseq", class: "welcome-choice-input" %>
+                <span class="welcome-choice-title">RNA-seq differential expression</span>
+                <span class="welcome-choice-description">Compare gene expression between two conditions with DESeq2.</span>
+              </label>
+            </fieldset>
             <label class="welcome-form-label" for="email">Where should we send your results?</label>
             <div class="welcome-form-row">
               <%= form.text_field :email,

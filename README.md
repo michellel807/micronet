@@ -82,13 +82,23 @@ and are skipped where `Rscript` is unavailable. They compare
 `lib/scripts/rnaseq/deseq2_analysis.R` with an independent reference, check
 recovery of simulated truth, and check input validation. Regenerate the example
 RNA-seq inputs with
-`docker compose run --rm web python test/scripts/rnaseq_simulation.py lib/examplefiles/rnaseq`.
+`docker compose run --rm web python test/scripts/rnaseq_simulation.py lib/examplefiles/rnaseq`
+(add `--time-course` for the time-course example).
 
 RNA-seq jobs run as `RnaSeqAnalyzer` Delayed::Jobs (`app/models/rna_seq/pipeline.rb`):
-DESeq2, then PCA/MA/volcano plots, then a zip with a README that is emailed
-to the user. Until the upload pages exist, queue the example dataset with
-`docker compose run --rm web bin/rails "rnaseq:submit_example[you@example.com]"`;
-the `delayed_job` worker processes it and the emails appear at
+DESeq2, then plots, then a zip with a README that is emailed to the user.
+Three experiment types are supported (`lib/scripts/rnaseq/R/designs.R`):
+`two_condition` (Wald test, PCA/MA/volcano plots), and two likelihood ratio
+tests with time points as categories: `time_course` (does a gene change over
+time, optionally within one condition) and `condition_by_time` (does it change
+differently over time between two conditions). Time courses also write
+`group_means_vst.tsv`, the mean VST per condition and time point with numeric
+times, for trajectory modeling, and plot the top genes over time. On the website, choose "RNA-seq differential expression" on the
+home page, then upload a count matrix and sample sheet (`RnaSeqController`,
+pages under `/rnaseq`); the example files are linked from the upload page.
+To queue the example dataset without the website, run
+`docker compose run --rm web bin/rails "rnaseq:submit_example[you@example.com]"`.
+The `delayed_job` worker processes jobs and the emails appear at
 http://localhost:9000. `RNASEQ_ATTACHMENT_LIMIT_MB` (default 20) sets the
 largest zip that is emailed; larger results send only the summary files.
 

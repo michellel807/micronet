@@ -4,8 +4,9 @@ Usage:
     python plot_results.py RESULTS_DIR
 
 Reads manifest.json, deseq2_results.tsv, size_factors.tsv and vst_all.tsv from
-RESULTS_DIR and writes pca.pdf, pca_coordinates.tsv, ma_plot.pdf and
-volcano_plot.pdf beside them.
+RESULTS_DIR and writes pca.pdf and pca_coordinates.tsv beside them, plus
+ma_plot.pdf and volcano_plot.pdf for a two-condition comparison, or
+top_gene_trajectories.pdf (from group_means_vst.tsv) for a time course.
 """
 import json
 import sys
@@ -25,8 +26,12 @@ NOT_SIGNIFICANT = "#9a9a9a"
 HIGHER = "#c0392b"
 LOWER = "#2e6da4"
 CONDITION_COLORS = ["#2e6da4", "#c0392b", "#27ae60", "#8e44ad", "#d68910", "#17a589"]
+TIME_COLORS = "viridis"
+MARKERS = ["o", "s", "^", "D", "v", "P"]
+TRAJECTORY_GENES = 12
 OUTPUTS = {"pca": "pca.pdf", "pca_coordinates": "pca_coordinates.tsv",
-           "ma": "ma_plot.pdf", "volcano": "volcano_plot.pdf"}
+           "ma": "ma_plot.pdf", "volcano": "volcano_plot.pdf",
+           "trajectories": "top_gene_trajectories.pdf"}
 
 
 def read_table(path):
@@ -65,6 +70,80 @@ def plot_pca(vst, conditions, directory):
     axes.set_title(f"Sample PCA (VST, {top} most variable genes)", fontsize=10)
     axes.legend(title=conditions.name, fontsize=8)
     save(figure, directory / OUTPUTS["pca"])
+
+
+def plot_time_pca(vst, samples, time_levels, condition_name, directory):
+    """PCA colored by time point (in time order), one marker shape per condition."""
+    coordinates, explained = principal_components(vst)
+    info = samples.loc[coordinates.index]
+    has_condition = "condition" in info.columns
+    if has_condition:
+        coordinates.insert(0, "condition", info["condition"])
+    coordinates.insert(1 if has_condition else 0, "time", info["time"].astype(str))
+    coordinates.index.name = "sample"
+    coordinates.to_csv(directory / OUTPUTS["pca_coordinates"], sep="\t")
+
+    colors = plt.get_cmap(TIME_COLORS)(np.linspace(0.05, 0.9, len(time_levels)))
+    color_of = dict(zip(time_levels, colors))
+    conditions = list(dict.fromkeys(coordinates["condition"])) if has_condition else [None]
+    figure, axes = plt.subplots(figsize=(6.5, 5))
+    for marker, condition in zip(MARKERS * 10, conditions):
+        group = coordinates if condition is None else coordinates[coordinates["condition"] == condition]
+        axes.scatter(group["PC1"], group["PC2"], s=60, c=[color_of[time] for time in group["time"]],
+                     marker=marker, edgecolor="white", linewidth=0.8)
+    for time in time_levels:
+        axes.scatter([], [], s=50, color=color_of[time], label=f"time {time}")
+    if has_condition:
+        for marker, condition in zip(MARKERS * 10, conditions):
+            axes.scatter([], [], s=50, color="#555555", marker=marker, label=f"{condition_name} {condition}")
+    axes.set_xlabel(f"PC1: {explained[0]:.0%} of variance")
+    axes.set_ylabel(f"PC2: {explained[1]:.0%} of variance")
+    top = min(PCA_TOP_GENES, len(vst))
+    axes.set_title(f"Sample PCA (VST, {top} most variable genes)", fontsize=10)
+    axes.legend(fontsize=7)
+    save(figure, directory / OUTPUTS["pca"])
+
+
+def plot_trajectories(results, vst, samples, means, manifest, directory):
+    """Mean VST over time for the most significant genes, with each sample as a dot."""
+    time_info = manifest["time"]
+    levels = [str(level) for level in time_info["levels"]]
+    numeric = time_info.get("numeric_values")
+    # Plot at the real times when they are numbers, otherwise evenly spaced.
+    position = dict(zip(levels, numeric if numeric else range(len(levels))))
+    significant = results[results["significant"]]
+    chosen = significant if len(significant) else results[results["pvalue"].notna()]
+    genes = list(chosen.sort_values(["padj", "pvalue"], kind="stable").index[:TRAJECTORY_GENES])
+
+    columns = 4
+    rows = max(1, int(np.ceil(len(genes) / columns)))
+    figure, grid = plt.subplots(rows, columns, figsize=(11, 2.6 * rows + 0.8), squeeze=False)
+    means = means.assign(time=means["time"].astype(str), condition=means["condition"].fillna("").astype(str))
+    sample_conditions = samples["condition"].astype(str) if "condition" in samples.columns else pd.Series("", index=samples.index)
+    conditions = list(dict.fromkeys(means["condition"]))
+    for axes, gene in zip(grid.flat, genes):
+        for color, condition in zip(CONDITION_COLORS * 10, conditions):
+            line = means[(means["gene_id"] == gene) & (means["condition"] == condition)]
+            line = line.set_index("time").loc[[time for time in levels if time in set(line["time"])]]
+            axes.plot([position[time] for time in line.index], line["mean_vst"], color=color, marker="o",
+                      linewidth=1.5, markersize=4, label=condition or None)
+            members = sample_conditions.index[sample_conditions == condition] if condition else samples.index
+            members = [sample for sample in members if sample in vst.columns]
+            axes.scatter([position[str(samples.loc[sample, "time"])] for sample in members],
+                         vst.loc[gene, members], color=color, s=10, alpha=0.5, linewidth=0)
+        axes.set_title(f"{gene} (padj {results.loc[gene, 'padj']:.2g})", fontsize=8)
+        axes.set_xticks([position[time] for time in levels])
+        axes.set_xticklabels(levels, fontsize=7)
+        axes.tick_params(axis="y", labelsize=7)
+    for axes in list(grid.flat)[len(genes):]:
+        axes.axis("off")
+    if conditions != [""]:
+        grid.flat[0].legend(fontsize=7)
+    figure.supxlabel(f"Time ({time_info['column']})", fontsize=9)
+    figure.supylabel("VST expression", fontsize=9)
+    title = "Most significant genes over time" if len(significant) else "No significant genes: lowest p-values shown"
+    figure.suptitle(f"{title} (lines: group means; dots: samples)", fontsize=10)
+    save(figure, directory / OUTPUTS["trajectories"])
 
 
 def plot_ma(results, contrast, directory):
@@ -119,14 +198,23 @@ def main(results_dir):
     manifest = json.loads((directory / "manifest.json").read_text())
     if manifest.get("status") != "completed":
         raise SystemExit("The differential expression results are incomplete; no plots were drawn.")
-    contrast = f"log2 fold change, {manifest['contrast']['log2_fold_change']}"
-
     results = read_table(directory / manifest["outputs"]["results"])
     results["significant"] = results["significant"].astype(str).str.upper().eq("TRUE")
     vst = read_table(directory / manifest["outputs"]["vst_all"])
     samples = read_table(directory / manifest["outputs"]["size_factors"])
-    conditions = samples["condition"].rename(manifest["contrast"]["variable"])
 
+    if manifest.get("time"):
+        levels = [str(level) for level in manifest["time"]["levels"]]
+        samples["time"] = samples["time"].astype(str)
+        condition_name = (manifest.get("contrast") or {}).get("variable", "condition")
+        plot_time_pca(vst, samples, levels, condition_name, directory)
+        means = pd.read_csv(directory / manifest["outputs"]["group_means"], sep="\t", keep_default_na=False, na_values=["NA"])
+        means["gene_id"] = means["gene_id"].astype(str)
+        plot_trajectories(results, vst, samples, means, manifest, directory)
+        return
+
+    contrast = f"log2 fold change, {manifest['contrast']['log2_fold_change']}"
+    conditions = samples["condition"].rename(manifest["contrast"]["variable"])
     plot_pca(vst, conditions, directory)
     plot_ma(results, contrast, directory)
     plot_volcano(results, contrast, manifest["contrast"]["test_level"], directory)

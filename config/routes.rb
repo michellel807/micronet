@@ -17,6 +17,13 @@ Rails.application.routes.draw do
   post '/upload', to: 'upload#upload'
   get '/uploads/jobs/:job_id/figures/:filename', to: 'files#serve_image', as: 'serve_job_image', format: false, constraints: { filename: /[^\/]+/ }
   get '/jobs/:job_id/downloads/figures/:filename', to: 'files#download', as: 'download_job_figure', format: false, constraints: { filename: /[^\/]+/ }
+  get  '/rnaseq/upload', to: 'rna_seq#upload_form', as: :rnaseq_upload
+  post '/rnaseq/upload', to: 'rna_seq#upload'
+  get  '/rnaseq/configure', to: 'rna_seq#configure', as: :rnaseq_configure
+  post '/rnaseq/configure', to: 'rna_seq#save_configuration'
+  get  '/rnaseq/review', to: 'rna_seq#review', as: :rnaseq_review
+  post '/rnaseq/submit', to: 'rna_seq#submit', as: :rnaseq_submit
+  get  '/rnaseq/example/:file_name', to: 'rna_seq#example', as: :rnaseq_example, format: false, constraints: { file_name: /[^\/]+/ }
   get '/resources', to: 'resources#index'
   get "/help", to: "help#index"
   get "/admin", to: "admin#login"

@@ -1,5 +1,6 @@
 <% contrast = @manifest["contrast"] %>
 <% genes = @manifest["genes"] %>
+<% question = @manifest["time"].present? ? "It tested: #{@manifest["question"]}" : "It compared #{contrast["test_level"]} with #{contrast["reference_level"]} (the reference)." %>
 <div class="general-white-block-email">
   <body class="email">
 
@@ -9,8 +10,7 @@
 
     <p>
       Your differential expression analysis (Job #<%= @job.job_number %>) is complete.
-      It compared <strong><%= contrast["test_level"] %></strong> with
-      <strong><%= contrast["reference_level"] %></strong> (the reference).
+      <%= question %>
     </p>
 
     <h3>Summary</h3>
@@ -20,7 +20,9 @@
       <li>Genes tested: <%= genes["tested"] %> of <%= genes["in_input"] %> in your count matrix</li>
       <li>
         Significant genes: <strong><%= genes["significant"] %></strong>
-        (<%= genes["significant_up"] %> higher and <%= genes["significant_down"] %> lower in <%= contrast["test_level"] %>)
+        <% unless genes["significant_up"].nil? %>
+          (<%= genes["significant_up"] %> higher and <%= genes["significant_down"] %> lower in <%= contrast["test_level"] %>)
+        <% end %>
       </li>
     </ul>
 

@@ -1,34 +1,26 @@
+<%#
+  Locals: current_step (1-based) and optional steps, a list of [name, path].
+  A step links to its path once reached; a nil path is never a link.
+  Without steps, the growth analysis steps are shown.
+%>
+<% steps = local_assigns[:steps] || [
+     ["Upload Files", upload_path],
+     ["Select Analyses", selectanalyses_path],
+     ["Review", review_path],
+     ["Submit", nil]
+   ] %>
 <div class="stepper-wrapper">
-  <div class="stepper-item <%= 'active' if current_step == 1 %> <%= 'completed' if current_step > 1 %>">
-    <a href="<%= upload_path %>">
-      <div class="step-counter">1</div>
-      <div class="step-name">Upload Files</div>
-    </a>
-  </div>
-  <div class="stepper-item <%= 'active' if current_step == 2 %> <%= 'completed' if current_step > 2 %>">
-    <% if current_step >= 2 %>
-      <a href="<%= selectanalyses_path %>">
-        <div class="step-counter">2</div>
-        <div class="step-name">Select Analyses</div>
-      </a>
-    <% else %>
-      <div class="step-counter">2</div>
-      <div class="step-name">Select Analyses</div>
-    <% end %>
-  </div>
-  <div class="stepper-item <%= 'active' if current_step == 3 %> <%= 'completed' if current_step > 3 %>">
-    <% if current_step >= 3 %>
-      <a href="<%= review_path %>">
-        <div class="step-counter">3</div>
-        <div class="step-name">Review</div>
-      </a>
-    <% else %>
-      <div class="step-counter">3</div>
-      <div class="step-name">Review</div>
-    <% end %>
-  </div>
-  <div class="stepper-item <%= 'active' if current_step == 4 %>">
-    <div class="step-counter">4</div>
-    <div class="step-name">Submit</div>
-  </div>
+  <% steps.each.with_index(1) do |(name, path), number| %>
+    <div class="stepper-item <%= 'active' if current_step == number %> <%= 'completed' if current_step > number %>">
+      <% if path && (number == 1 || current_step >= number) %>
+        <a href="<%= path %>">
+          <div class="step-counter"><%= number %></div>
+          <div class="step-name"><%= name %></div>
+        </a>
+      <% else %>
+        <div class="step-counter"><%= number %></div>
+        <div class="step-name"><%= name %></div>
+      <% end %>
+    </div>
+  <% end %>
 </div>

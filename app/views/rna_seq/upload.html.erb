@@ -1,0 +1,58 @@
+<% content_for :title, "RNA-seq: Upload Files" %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "parameter", "rnaseq", "data-turbo-track": "reload" %>
+<% end %>
+
+<div class="parameterscreen rnaseq">
+  <%= render "layouts/header" %>
+
+  <div class="column skinny">
+    <%= render "layouts/stepper", current_step: 1, steps: rnaseq_steps %>
+
+    <h1>RNA-seq: Upload Files</h1>
+    <p>Upload a raw count matrix and a sample sheet describing each sample. Both files can be tab-separated (<code>.tsv</code>, <code>.txt</code>) or comma-separated (<code>.csv</code>).</p>
+
+    <% if flash[:alert].present? %>
+      <div class="rnaseq-alert" role="alert"><%= flash[:alert] %></div>
+    <% end %>
+
+    <%= form_with url: rnaseq_upload_path, method: :post, multipart: true, class: "rnaseq-form" do %>
+      <div class="general-white-block">
+        <h2>Count matrix</h2>
+        <p>One row per gene and one column per sample. The first column holds gene IDs, the header row holds sample names, and every other value is a raw whole-number read count (not normalized values such as TPM or FPKM).</p>
+        <pre class="rnaseq-example">gene_id    control_1  control_2  treated_1  treated_2
+gene00001  104        81         29         73
+gene00002  399        289        211        232</pre>
+        <% if @files["counts_file"].present? %>
+          <p class="rnaseq-current">Current file: <strong><%= @files.dig("original", "counts") %></strong>. Choose a new file below only to replace it.</p>
+        <% end %>
+        <label class="ds-label" for="counts_file">Count matrix file</label>
+        <%= file_field_tag :counts_file, accept: ".tsv,.txt,.csv", class: "rnaseq-file" %>
+        <p class="rnaseq-hint">Examples: <%= link_to "two-condition count matrix", rnaseq_example_path("counts.tsv") %> ·
+          <%= link_to "time-course count matrix", rnaseq_example_path("timecourse_counts.tsv") %></p>
+
+        <h2>Sample sheet</h2>
+        <p>One row per sample. It needs a <code>sample</code> column whose names match the count matrix header exactly, and at least one column describing the samples, such as <code>condition</code>. For a time course, add a <code>time</code> column with each sample's time point. Extra columns, for example <code>batch</code>, can be used as covariates.</p>
+        <pre class="rnaseq-example">sample        condition  time  batch
+control_0h_1  control    0     A
+control_6h_1  control    6     B
+treated_0h_1  treated    0     A
+treated_6h_1  treated    6     B</pre>
+        <% if @files["metadata_file"].present? %>
+          <p class="rnaseq-current">Current file: <strong><%= @files.dig("original", "metadata") %></strong>. Choose a new file below only to replace it.</p>
+        <% end %>
+        <label class="ds-label" for="metadata_file">Sample sheet file</label>
+        <%= file_field_tag :metadata_file, accept: ".tsv,.txt,.csv", class: "rnaseq-file" %>
+        <p class="rnaseq-hint">Examples: <%= link_to "two-condition sample sheet", rnaseq_example_path("sample_metadata.tsv") %> ·
+          <%= link_to "time-course sample sheet", rnaseq_example_path("timecourse_sample_metadata.tsv") %></p>
+      </div>
+
+      <div class="rnaseq-actions">
+        <%= link_to "Back", root_path, class: "ds-btn ds-btn-secondary ds-btn-back" %>
+        <%= submit_tag "Continue", class: "ds-btn ds-btn-accent ds-btn-next" %>
+      </div>
+    <% end %>
+  </div>
+
+  <%= render "layouts/footer" %>
+</div>

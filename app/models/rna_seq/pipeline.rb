@@ -93,7 +93,7 @@ module RnaSeq
 
     def plots
       succeeded = Python.exec(SCRIPTS.join("plot_results.py"), job.rnaseq_results_dir) { |*command| job.run_cancellable_command(*command) }
-      raise "The PCA, MA and volcano plots could not be drawn. The result tables are complete." unless succeeded
+      raise "The plots could not be drawn. The result tables are complete." unless succeeded
     end
 
     def package
@@ -122,7 +122,7 @@ module RnaSeq
                  "so only the significant genes, plots and README are attached. " \
                  "Contact schmidlabmodel@gmail.com for the complete files."
       }
-      %w[README.txt significant_genes.tsv pca.pdf ma_plot.pdf volcano_plot.pdf]
+      %w[README.txt significant_genes.tsv pca.pdf ma_plot.pdf volcano_plot.pdf top_gene_trajectories.pdf]
         .map { |name| job.rnaseq_results_dir.join(name) }.select(&:file?)
     end
 

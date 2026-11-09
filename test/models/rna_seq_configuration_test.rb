@@ -59,4 +59,18 @@ class RnaSeqConfigurationTest < ActiveSupport::TestCase
   ensure
     workspace&.clear_uploads!
   end
+
+  test "time courses need a time column but no reference unless conditions are compared" do
+    time_course = configuration(deseq2: { experiment_type: "time_course", time_column: "hours", condition_column: "strain", subset_level: "wt" })
+    assert time_course.time_course?
+    assert_equal "Change over time (column hours), samples with strain = wt", time_course.summary["Comparison"]
+
+    interaction = configuration(deseq2: { experiment_type: "condition_by_time", reference_level: "wt", test_level: "ko", time_column: "hours" })
+    assert_equal "How ko vs wt (reference) changes over time (columns condition and hours)", interaction.summary["Comparison"]
+    assert_equal "RNA-seq: Condition-by-time interaction (DESeq2)", interaction.summary["Analysis"]
+
+    assert_raises(RnaSeq::Configuration::Invalid) { configuration(deseq2: { experiment_type: "condition_by_time", time_column: "hours" }) }
+    assert_raises(RnaSeq::Configuration::Invalid) { configuration(deseq2: { experiment_type: "multi_condition", reference_level: "a", test_level: "b" }) }
+    assert_not configuration.time_course?
+  end
 end

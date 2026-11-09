@@ -7,6 +7,10 @@ DEFAULT_CONFIG <- list(
   condition_column = "condition",
   reference_level = NULL,
   test_level = NULL,
+  # Time-course designs: the metadata column holding each sample's time point.
+  time_column = "time",
+  # time_course only: analyze just the samples whose condition is this level.
+  subset_level = NULL,
   covariates = character(0),
   # "all" keeps every sample in the model so dispersion is estimated from all
   # groups; "contrast_only" drops samples outside the two compared levels.
@@ -59,10 +63,15 @@ normalize_config <- function(raw) {
   config$experiment_type <- scalar_string(config$experiment_type, "experiment_type")
   config$sample_column <- scalar_string(config$sample_column, "sample_column")
   config$condition_column <- scalar_string(config$condition_column, "condition_column")
-  if (is.null(config$reference_level)) stop_input("Configuration value 'reference_level' is required.")
-  if (is.null(config$test_level)) stop_input("Configuration value 'test_level' is required.")
-  config$reference_level <- scalar_string(config$reference_level, "reference_level")
-  config$test_level <- scalar_string(config$test_level, "test_level")
+  config$time_column <- scalar_string(config$time_column, "time_column")
+  # Two-condition and condition-by-time designs compare a test level with a reference.
+  if (config$experiment_type %in% c("two_condition", "condition_by_time")) {
+    if (is.null(config$reference_level)) stop_input("Configuration value 'reference_level' is required.")
+    if (is.null(config$test_level)) stop_input("Configuration value 'test_level' is required.")
+  }
+  if (!is.null(config$reference_level)) config$reference_level <- scalar_string(config$reference_level, "reference_level")
+  if (!is.null(config$test_level)) config$test_level <- scalar_string(config$test_level, "test_level")
+  if (!is.null(config$subset_level)) config$subset_level <- scalar_string(config$subset_level, "subset_level")
   config$covariates <- trimws(as.character(unlist(config$covariates)))
   config$samples_in_model <- choice(config$samples_in_model, "samples_in_model", c("all", "contrast_only"))
   config$min_replicates <- as.integer(scalar_number(config$min_replicates, "min_replicates", 2, integer = TRUE))

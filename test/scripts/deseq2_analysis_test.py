@@ -408,7 +408,7 @@ class InputValidationTest(unittest.TestCase):
         self.assert_input_error(analyze(self.experiment, {"test_level": "drug"}), "not found in column")
 
     def test_unsupported_experiment_type(self):
-        self.assert_input_error(analyze(self.experiment, {"experiment_type": "time_course"}), "not supported yet")
+        self.assert_input_error(analyze(self.experiment, {"experiment_type": "multi_condition"}), "not supported yet")
 
     def test_unknown_setting(self):
         self.assert_input_error(analyze(self.experiment, {"alhpa": 0.05}), "Unknown configuration")
@@ -429,6 +429,207 @@ class InputValidationTest(unittest.TestCase):
         self.assertTrue((first.out / "deseq2_results.tsv").exists())
         second = analyze(self.experiment, {"test_level": "drug"}, out=first.out)
         self.assert_input_error(second, "not found in column")
+
+
+
+# ---- Time-course designs ---------------------------------------------------
+
+LRT_REFERENCE = ROOT / "test/scripts/fixtures/rnaseq_reference_lrt.R"
+TIME_COURSE = {"schema_version": 1, "experiment_type": "time_course", "subset_level": "control"}
+CONDITION_BY_TIME = {"schema_version": 1, "experiment_type": "condition_by_time",
+                     "reference_level": "control", "test_level": "treated"}
+
+
+def run_lrt_reference(run, *arguments):
+    out = run.out.parent / "lrt_reference"
+    subprocess.run([RSCRIPT, str(LRT_REFERENCE), *arguments[:1], str(run.counts_path), str(run.metadata_path),
+                    str(out), *arguments[1:]], check=True, capture_output=True, text=True, timeout=900)
+    return read_table(out / "results.tsv")
+
+
+def effect_columns(results):
+    return [column for column in results.columns if column.startswith("log2FC_")]
+
+
+@unittest.skipUnless(RSCRIPT, NO_R)
+class TimeCourseReferenceTest(unittest.TestCase):
+    """A: the time-course designs agree with textbook DESeq2 likelihood ratio tests."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.experiment = simulation.simulate_time_course(seed=61)
+        cls.time_course = analyze_successfully(cls.experiment, config=TIME_COURSE)
+        cls.interaction = analyze_successfully(cls.experiment, config=CONDITION_BY_TIME)
+
+    def test_time_course_matches_plain_deseq2(self):
+        reference = run_lrt_reference(self.time_course, "time_course", "control")
+        results = self.time_course.results
+        columns = ["baseMean", "stat", "pvalue", "padj", *effect_columns(reference)]
+        self.assertEqual(effect_columns(results), ["log2FC_time_6_vs_0", "log2FC_time_24_vs_0"])
+        assert_close(results[columns], reference[columns], rtol=1e-6, atol=1e-8)
+
+    def test_condition_by_time_matches_plain_deseq2(self):
+        reference = run_lrt_reference(self.interaction, "condition_by_time", "control", "treated")
+        results = self.interaction.results
+        columns = ["baseMean", "stat", "pvalue", "padj", *effect_columns(reference)]
+        self.assertEqual(effect_columns(results), [f"log2FC_treated_vs_control_at_time_{time}" for time in (0, 6, 24)])
+        assert_close(results[columns], reference[columns], rtol=1e-6, atol=1e-8)
+
+    def test_only_the_chosen_samples_are_modeled(self):
+        manifest = self.time_course.manifest
+        self.assertEqual(manifest["samples"]["in_model"], 9)
+        self.assertEqual(manifest["samples"]["per_group"], {"time 0": 3, "time 6": 3, "time 24": 3})
+        self.assertTrue(all(sample.startswith("control_") for sample in self.time_course.size_factors.index))
+        self.assertEqual(self.interaction.manifest["samples"]["in_model"], 18)
+
+    def test_times_are_ordered_numerically_and_recorded(self):
+        time = self.interaction.manifest["time"]
+        self.assertEqual(time, {"column": "time", "levels": ["0", "6", "24"], "numeric_values": [0, 6, 24], "baseline": "0"})
+        self.assertEqual(self.interaction.manifest["test"], "likelihood_ratio")
+        self.assertIsNone(self.interaction.manifest["genes"]["significant_up"])
+
+    def test_group_means_are_the_mean_vst_of_each_group(self):
+        for run in (self.time_course, self.interaction):
+            vst = run.table("vst_all.tsv")
+            samples = run.table("size_factors.tsv")
+            means = pd.read_csv(run.out / "group_means_vst.tsv", sep="\t", keep_default_na=False, na_values=["NA"])
+            means["gene_id"] = means["gene_id"].astype(str)
+            self.assertEqual(len(means), len(vst) * len(run.manifest["samples"]["per_group"]))
+            for (condition, time), group in means.groupby(["condition", "time"]):
+                members = samples.index[(samples["time"] == time) &
+                                        ((samples["condition"] == condition) if condition else True)]
+                expected = vst[members].mean(axis=1)
+                np.testing.assert_allclose(group.set_index("gene_id").loc[vst.index, "mean_vst"], expected, rtol=1e-10)
+                self.assertTrue((group["n_samples"] == len(members)).all())
+                self.assertTrue((group["time_value"] == float(time)).all())
+
+    def test_vst_significant_is_the_significant_rows_of_vst_all(self):
+        run = self.interaction
+        vst_all = run.table("vst_all.tsv")
+        vst_significant = run.table("vst_significant.tsv")
+        self.assertEqual(list(vst_significant.index), [gene for gene in vst_all.index if gene in set(run.significant_genes)])
+        assert_close(vst_significant, vst_all.loc[vst_significant.index])
+
+
+@unittest.skipUnless(RSCRIPT, NO_R)
+class TimeCourseTruthRecoveryTest(unittest.TestCase):
+    """B: simulated time-varying and interaction genes are found; others mostly are not."""
+    SEEDS = (71, 72)
+
+    @classmethod
+    def setUpClass(cls):
+        cls.runs = []
+        for seed in cls.SEEDS:
+            experiment = simulation.simulate_time_course(seed=seed)
+            cls.runs.append((experiment.truth,
+                             analyze_successfully(experiment, config=TIME_COURSE).results,
+                             analyze_successfully(experiment, config=CONDITION_BY_TIME).results))
+
+    def rates(self, results, truth, true_kinds):
+        truth = truth.loc[results.index]
+        called = results["significant"].to_numpy()
+        positive = truth["kind"].isin(true_kinds).to_numpy()
+        return (called & positive).sum() / positive.sum(), (called & ~positive).sum() / max(called.sum(), 1)
+
+    def test_genes_that_change_over_time_are_found(self):
+        recalls, fdrs = zip(*(self.rates(time_course, truth, ["time"]) for truth, time_course, _ in self.runs))
+        self.assertGreaterEqual(min(recalls), 0.8)
+        # Three replicates per time point make dispersion estimates noisy, so
+        # allow some excess over the nominal 5%.
+        self.assertLessEqual(np.mean(fdrs), 0.12)
+
+    def test_condition_specific_time_changes_are_found(self):
+        recalls, fdrs = zip(*(self.rates(interaction, truth, ["interaction"]) for truth, _, interaction in self.runs))
+        self.assertGreaterEqual(min(recalls), 0.75)
+        self.assertLessEqual(np.mean(fdrs), 0.12)
+
+    def test_constant_differences_and_shared_trends_are_not_interactions(self):
+        for truth, _, interaction in self.runs:
+            kinds = truth.loc[interaction.index, "kind"]
+            for kind in ("condition", "time"):
+                called = interaction.loc[kinds == kind, "significant"].mean()
+                self.assertLessEqual(called, 0.05, kind)
+
+    def test_per_time_fold_changes_estimate_the_truth(self):
+        for truth, time_course, interaction in self.runs:
+            changing = truth.loc[time_course.index, "kind"].eq("time")
+            np.testing.assert_array_less(0.95, np.corrcoef(time_course.loc[changing, "log2FC_time_24_vs_0"],
+                                                             truth.loc[time_course.index[changing], "reference_lfc_at_24"])[0, 1])
+            responding = truth.loc[interaction.index, "kind"].eq("interaction")
+            np.testing.assert_array_less(0.95, np.corrcoef(interaction.loc[responding, "log2FC_treated_vs_control_at_time_24"],
+                                                             truth.loc[interaction.index[responding], "test_vs_reference_lfc_at_24"])[0, 1])
+
+    def test_posthoc_cutoff_uses_the_largest_change(self):
+        experiment = simulation.simulate_time_course(seed=self.SEEDS[0])
+        strict = analyze_successfully(experiment, config={**TIME_COURSE, "lfc_threshold": 1.5}).results
+        loose = self.runs[0][1]
+        self.assertTrue(set(strict.index[strict["significant"]]) <= set(loose.index[loose["significant"]]))
+        self.assertTrue((strict.loc[strict["significant"], "max_abs_log2FC"] >= 1.5).all())
+        expected = loose[effect_columns(loose)].abs().max(axis=1)
+        np.testing.assert_allclose(loose["max_abs_log2FC"], expected)
+
+
+@unittest.skipUnless(RSCRIPT, NO_R)
+class TimeCourseValidationTest(unittest.TestCase):
+    """D: time-course inputs that cannot be analyzed fail with a clear message."""
+
+    def setUp(self):
+        self.experiment = simulation.simulate_time_course(seed=81, n_genes=80, replicates=2)
+
+    def with_metadata(self, change):
+        metadata = self.experiment.metadata.copy()
+        change(metadata)
+        return dataclasses.replace(self.experiment, metadata=metadata)
+
+    def assert_input_error(self, run, fragment):
+        self.assertEqual(run.returncode, 1, run.manifest)
+        self.assertEqual(run.manifest["error_type"], "input_error", run.manifest["message"])
+        self.assertIn(fragment, run.manifest["message"])
+        self.assertFalse((run.out / "deseq2_results.tsv").exists())
+
+    def test_a_single_time_point(self):
+        def one_time(metadata):
+            metadata["time"] = 0
+        self.assert_input_error(analyze(self.with_metadata(one_time), config=TIME_COURSE), "at least two different time points")
+
+    def test_a_time_point_with_one_replicate(self):
+        def thin(metadata):
+            metadata.loc[metadata["sample"] == "control_t6_2", "time"] = 99
+        self.assert_input_error(analyze(self.with_metadata(thin), config=TIME_COURSE), "time 99 (1)")
+
+    def test_a_condition_missing_a_time_point(self):
+        def drop(metadata):
+            metadata.loc[metadata["sample"].str.startswith("treated_t24"), "condition"] = "other"
+        self.assert_input_error(analyze(self.with_metadata(drop), config=CONDITION_BY_TIME), "treated @ time 24")
+
+    def test_the_same_time_written_twice(self):
+        def respell(metadata):
+            metadata["time"] = metadata["time"].astype(str)
+            metadata.loc[metadata["sample"] == "control_t0_1", "time"] = "0.0"
+        self.assert_input_error(analyze(self.with_metadata(respell), config=TIME_COURSE), "same time in different ways")
+
+    def test_time_column_cannot_be_the_condition_column(self):
+        config = {**CONDITION_BY_TIME, "time_column": "condition"}
+        self.assert_input_error(analyze(self.experiment, config=config), "time column must be different")
+
+    def test_cutoff_cannot_be_tested_by_deseq2(self):
+        config = {**TIME_COURSE, "lfc_threshold": 1, "lfc_test": "deseq2"}
+        self.assert_input_error(analyze(self.experiment, config=config), "only be applied after testing")
+
+    def test_missing_time_column(self):
+        config = {**TIME_COURSE, "time_column": "hours"}
+        self.assert_input_error(analyze(self.experiment, config=config), "The time column 'hours' was not found")
+
+    def test_unknown_subset_level(self):
+        config = {**TIME_COURSE, "subset_level": "mutant"}
+        self.assert_input_error(analyze(self.experiment, config=config), "'mutant' was not found")
+
+    def test_text_time_points_keep_their_order(self):
+        def label(metadata):
+            metadata["time"] = metadata["time"].map({0: "early", 6: "middle", 24: "late"})
+        run = analyze_successfully(self.with_metadata(label), config=TIME_COURSE)
+        self.assertEqual(run.manifest["time"]["levels"], ["early", "middle", "late"])
+        self.assertIsNone(run.manifest["time"]["numeric_values"])
 
 
 if __name__ == "__main__":

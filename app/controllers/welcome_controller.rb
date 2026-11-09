@@ -1,8 +1,12 @@
 class WelcomeController < ApplicationController
+  ANALYSIS_TYPES = %w[growth rnaseq].freeze
+
   def index
+    @analysis_type = selected_analysis_type
   end
 
   def create
+    @analysis_type = selected_analysis_type
     @user = User.find_or_create_by(email: job_params[:email])
     if !@user.valid?
       flash.now.notice = "Invalid Email"
@@ -27,13 +31,18 @@ class WelcomeController < ApplicationController
     session[:email] = @user.email
     session[:user_id] = @user.id
     session[:upload_token] = @workspace.token
-    redirect_to upload_path
+    session[:analysis_type] = @analysis_type
+    redirect_to(@analysis_type == "rnaseq" ? rnaseq_upload_path : upload_path)
   end
 
   private
 
   def job_params
-    params.permit(:email)
+    params.permit(:email, :analysis_type)
+  end
+
+  def selected_analysis_type
+    params[:analysis_type].presence_in(ANALYSIS_TYPES) || "growth"
   end
 
 end

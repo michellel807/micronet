@@ -1,4 +1,5 @@
-# Submits RNA-seq jobs without the web wizard, which comes in a later milestone.
+# Submits the example RNA-seq dataset without the web pages (RnaSeqController),
+# for trying the pipeline from the command line.
 namespace :rnaseq do
   desc "Queue the example RNA-seq dataset (lib/examplefiles/rnaseq) for EMAIL; a jobs:work worker emails the results"
   task :submit_example, [:email] => :environment do |_task, args|

@@ -40,6 +40,28 @@ class WelcomeControllerTest < ActionController::TestCase
     assert_equal admins(:one).id, session[:admin_id]
   end
 
+  test "home offers growth and RNA-seq with growth selected by default" do
+    get :index
+    assert_response :success
+    assert_select "input[type=radio][name=analysis_type][value=growth][checked]"
+    assert_select "input[type=radio][name=analysis_type][value=rnaseq]:not([checked])"
+
+    get :index, params: { analysis_type: "rnaseq" }
+    assert_select "input[type=radio][name=analysis_type][value=rnaseq][checked]"
+  end
+
+  test "choosing RNA-seq starts the RNA-seq upload" do
+    post :create, params: { email: @user.email, analysis_type: "rnaseq" }
+    assert_redirected_to rnaseq_upload_path
+    assert_equal "rnaseq", session[:analysis_type]
+  end
+
+  test "growth is used when no or an unknown analysis is chosen" do
+    post :create, params: { email: @user.email, analysis_type: "unknown" }
+    assert_redirected_to upload_path
+    assert_equal "growth", session[:analysis_type]
+  end
+
   test "home has no resume option" do
     get :index, params: { email: @user.email }
     assert_response :success

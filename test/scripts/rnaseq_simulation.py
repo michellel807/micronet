@@ -7,6 +7,7 @@ dispersion trend, and true log2 fold changes beta_i for a known set of genes.
 
 Running this file writes example inputs:
     python test/scripts/rnaseq_simulation.py lib/examplefiles/rnaseq --seed 2026
+    python test/scripts/rnaseq_simulation.py lib/examplefiles/rnaseq --time-course --seed 2026
 """
 import argparse
 from dataclasses import dataclass
@@ -19,8 +20,8 @@ import pandas as pd
 @dataclass
 class SimulatedExperiment:
     counts: pd.DataFrame  # genes x samples, integer counts
-    metadata: pd.DataFrame  # one row per sample: sample, condition[, batch]
-    truth: pd.DataFrame  # per gene: base_mean, dispersion, true_lfc, is_de
+    metadata: pd.DataFrame  # one row per sample: sample, condition[, batch][, time]
+    truth: pd.DataFrame  # per gene: base_mean, dispersion, and the true effects
     size_factors: pd.Series  # per sample, geometric mean 1
 
 
@@ -66,6 +67,78 @@ def simulate(seed=1, n_genes=2000, replicates=(4, 4), levels=("control", "treate
     )
 
 
+def simulate_time_course(seed=1, n_genes=2000, times=(0, 6, 24), levels=("control", "treated"), replicates=3,
+                         time_fraction=0.15, interaction_fraction=0.1, condition_fraction=0.1,
+                         lfc_range=(1.0, 2.5), depth_range=(0.5, 2.0)):
+    """Counts over time points, with known truth for the time-course tests.
+
+    - Time genes share one random time profile in every condition (parallel change).
+    - Interaction genes change over time only in the second condition.
+    - Condition genes differ by a constant amount between conditions at every
+      time (no interaction), which the condition-by-time test must not call.
+    Gene sets are disjoint. Times are written as numbers.
+    """
+    rng = np.random.default_rng(seed)
+    base_mean = rng.lognormal(mean=np.log(200), sigma=1.5, size=n_genes)
+    dispersion = (0.04 + 1.0 / base_mean) * rng.lognormal(0.0, 0.3, size=n_genes)
+
+    order = rng.permutation(n_genes)
+    sizes = [int(round(fraction * n_genes)) for fraction in (time_fraction, interaction_fraction, condition_fraction)]
+    kinds = np.full(n_genes, "null", dtype=object)
+    start = 0
+    for kind, size in zip(("time", "interaction", "condition"), sizes):
+        kinds[order[start:start + size]] = kind
+        start += size
+
+    def profile():
+        # No change at the first time point; at least one later time changes strongly.
+        values = rng.uniform(*lfc_range, size=len(times) - 1) * rng.choice([-1.0, 1.0], size=len(times) - 1)
+        values[rng.random(len(times) - 1) < 0.3] = 0.0
+        if not np.any(values):
+            values[rng.integers(len(values))] = rng.uniform(*lfc_range) * rng.choice([-1.0, 1.0])
+        return np.concatenate([[0.0], values])
+
+    shared = np.zeros((n_genes, len(times)))
+    second_only = np.zeros((n_genes, len(times)))
+    offset = np.zeros(n_genes)
+    for gene in range(n_genes):
+        if kinds[gene] == "time":
+            shared[gene] = profile()
+        elif kinds[gene] == "interaction":
+            second_only[gene] = profile()
+        elif kinds[gene] == "condition":
+            offset[gene] = rng.uniform(*lfc_range) * rng.choice([-1.0, 1.0])
+
+    samples, sample_levels, sample_times = [], [], []
+    for level in levels:
+        for time in times:
+            for replicate in range(replicates):
+                samples.append(f"{level}_t{time}_{replicate + 1}")
+                sample_levels.append(level)
+                sample_times.append(time)
+    time_index = np.array([times.index(time) for time in sample_times])
+    is_second = np.array([level == levels[1] for level in sample_levels])
+    size_factors = np.exp(rng.uniform(np.log(depth_range[0]), np.log(depth_range[1]), size=len(samples)))
+    size_factors /= np.exp(np.mean(np.log(size_factors)))
+
+    log2_effect = shared[:, time_index] + second_only[:, time_index] * is_second + np.outer(offset, is_second)
+    mean = base_mean[:, None] * size_factors[None, :] * 2.0 ** log2_effect
+    shape = 1.0 / dispersion[:, None]
+    counts = rng.negative_binomial(shape, shape / (shape + mean))
+
+    genes = [f"gene{index + 1:05d}" for index in range(n_genes)]
+    truth = pd.DataFrame({"base_mean": base_mean, "dispersion": dispersion, "kind": kinds}, index=pd.Index(genes, name="gene_id"))
+    for column, time in enumerate(times):
+        truth[f"reference_lfc_at_{time}"] = shared[:, column]
+        truth[f"test_vs_reference_lfc_at_{time}"] = second_only[:, column] + offset
+    return SimulatedExperiment(
+        counts=pd.DataFrame(counts, index=pd.Index(genes, name="gene_id"), columns=samples),
+        metadata=pd.DataFrame({"sample": samples, "condition": sample_levels, "time": sample_times}),
+        truth=truth,
+        size_factors=pd.Series(size_factors, index=samples, name="size_factor"),
+    )
+
+
 def write_inputs(experiment, directory, counts_name="counts.tsv", metadata_name="sample_metadata.tsv"):
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
@@ -79,5 +152,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("output_dir")
     parser.add_argument("--seed", type=int, default=2026)
+    parser.add_argument("--time-course", action="store_true",
+                        help="write timecourse_counts.tsv and timecourse_sample_metadata.tsv (two conditions, times 0, 6, 24)")
     arguments = parser.parse_args()
-    write_inputs(simulate(seed=arguments.seed), arguments.output_dir)
+    if arguments.time_course:
+        write_inputs(simulate_time_course(seed=arguments.seed), arguments.output_dir,
+                     counts_name="timecourse_counts.tsv", metadata_name="timecourse_sample_metadata.tsv")
+    else:
+        write_inputs(simulate(seed=arguments.seed), arguments.output_dir)
