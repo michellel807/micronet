@@ -123,7 +123,7 @@
   min-width: 0;
 }
 
-.welcome-choices legend { float: left; width: 100%; padding: 0; }
+.welcome-choices legend { float: left; width: 100%; padding: 0; grid-column: 1 / -1; }
 
 .welcome-choice {
   position: relative;
@@ -211,7 +211,7 @@
 }
 
 /* Header link override on this page */
-.home_link { margin: 0; font-size: var(--text-small); font-weight: 700; }
+.home_link { margin: 0; }
 .home_link:hover { text-decoration: none; }
 .wel_nav:hover { color: #fff; }
 
