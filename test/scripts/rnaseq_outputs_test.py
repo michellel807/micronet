@@ -7,6 +7,7 @@ import csv
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -165,6 +166,25 @@ class PackageResultsTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("  - some genes did not converge", (directory / "README.txt").read_text())
 
+    def test_significant_genes_are_tested_for_enrichment_by_direction(self):
+        directory = fresh_copy("enrichment")
+        annotations = Path(WORK.name) / "two-annotations.tsv"
+        simulation.simulate_annotations(simulation.simulate(seed=41), seed=41).to_csv(annotations, sep="\t", index=False)
+        for script, *arguments in [("enrichment.py", "--annotations", annotations), ("plot_results.py",),
+                                   ("package_results.py", Path(WORK.name) / "enrichment.zip", "--job-number", 4)]:
+            result = run_script(script, directory, *arguments)
+            self.assertEqual(result.returncode, 0, result.stderr)
+        significant = pd.read_csv(directory / "enrichment_significant.tsv", sep="\t")
+        found = set(zip(significant["gene_set"], significant["term"]))
+        self.assertTrue({("higher in treated", "ko99001"), ("lower in treated", "ko99002")} <= found)
+        manifest = json.loads((directory / "manifest.json").read_text())
+        tested = [(name, source) for name in ("higher in treated", "lower in treated") for source in ("COG", "KEGG")]
+        pages = re.findall(rb"/Type\s*/Page\b(?!s)", (directory / "enrichment.pdf").read_bytes())
+        self.assertEqual(len(pages), len(tested) - len(manifest["enrichment"]["skipped"]))
+        readme = (directory / "README.txt").read_text()
+        self.assertIn("higher in treated (", readme)
+        self.assertIn("Simulated pathway induced in treated (ko99001)", readme)
+
     def test_a_failed_analysis_is_not_packaged(self):
         directory = Path(WORK.name) / "failed-package"
         directory.mkdir()
@@ -182,7 +202,10 @@ class TimeCourseOutputsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         inputs = Path(WORK.name) / "time-inputs"
-        counts, metadata = simulation.write_inputs(simulation.simulate_time_course(seed=91, n_genes=1200), inputs)
+        experiment = simulation.simulate_time_course(seed=91, n_genes=1200)
+        counts, metadata = simulation.write_inputs(experiment, inputs)
+        annotations = inputs / "annotations.tsv"
+        simulation.simulate_annotations(experiment, seed=91).to_csv(annotations, sep="\t", index=False)
         config = inputs / "config.json"
         config.write_text(json.dumps({"experiment_type": "condition_by_time", "reference_level": "control", "test_level": "treated"}))
         cls.directory = Path(WORK.name) / "time-analysis"
@@ -191,6 +214,8 @@ class TimeCourseOutputsTest(unittest.TestCase):
         result = run_script("cluster_genes.py", cls.directory)
         assert result.returncode == 0, result.stderr
         result = run_script("gp_trajectories.py", cls.directory)
+        assert result.returncode == 0, result.stderr
+        result = run_script("enrichment.py", cls.directory, "--annotations", annotations)
         assert result.returncode == 0, result.stderr
         result = run_script("plot_results.py", cls.directory)
         assert result.returncode == 0, result.stderr
@@ -271,7 +296,6 @@ class TimeCourseOutputsTest(unittest.TestCase):
         self.assertIn("Rasmussen CE", self.readme)
 
     def test_gp_plots_have_one_growth_style_page_per_cluster(self):
-        import re
         clusters = json.loads((self.directory / "manifest.json").read_text())["clustering"]["clusters"]
         for name in ["cluster_gp_curves.pdf", "cluster_gp_differences.pdf"]:
             pages = re.findall(rb"/Type\s*/Page\b(?!s)", (self.directory / name).read_bytes())
@@ -289,9 +313,10 @@ class TimeCourseOutputsTest(unittest.TestCase):
             def __exit__(self, *exception):
                 return False
 
-            def savefig(self, figure):
+            def savefig(self, figure, **options):
                 captured.append([(axes.get_title(), [line.get_label() for line in axes.get_lines()],
-                                  axes.xaxis._major_tick_kw.get("gridOn"), tuple(figure.get_size_inches()))
+                                  axes.xaxis._major_tick_kw.get("gridOn"), tuple(figure.get_size_inches()),
+                                  list(axes.get_xticks()))
                                  for axes in figure.axes][0])
 
         original = plots.PdfPages
@@ -302,14 +327,35 @@ class TimeCourseOutputsTest(unittest.TestCase):
             plots.main(directory)
         finally:
             plots.PdfPages = original
+        captured = [page for page in captured if page[0].startswith("Gaussian Process")]
         curves, differences = captured[:clusters], captured[clusters:]
-        title, labels, grid, size = curves[0]
+        title, labels, grid, size, ticks = curves[0]
+        # Regular ticks like the growth GP plot, not only the measured times 0, 6 and 24.
+        self.assertGreater(len(ticks), 3)
+        self.assertEqual(len(set(np.round(np.diff(ticks), 9))), 1)
         self.assertEqual(title.split(" (")[0], "Gaussian Process Plot: Cluster 1")
         self.assertEqual(labels, ["control Mean", "treated Mean"])
         self.assertTrue(grid)
         self.assertEqual(size, (10.0, 6.0))
         self.assertEqual(differences[0][0], "Gaussian Process Difference: Cluster 1")
         self.assertIn("treated minus control Mean", differences[0][1])
+
+    def test_clusters_are_tested_for_enrichment(self):
+        manifest = json.loads((self.directory / "manifest.json").read_text())
+        enrichment = manifest["enrichment"]
+        self.assertEqual(enrichment["status"], "completed")
+        clusters = manifest["clustering"]["clusters"]
+        self.assertEqual([entry["name"] for entry in enrichment["gene_sets"]],
+                         [f"cluster {number}" for number in range(1, clusters + 1)])
+        significant = pd.read_csv(self.directory / "enrichment_significant.tsv", sep="\t")
+        # Condition-by-time selects the genes that change only in the second condition.
+        self.assertIn("ko99002", set(significant["term"]))
+        self.assertNotIn("ko99001", set(significant["term"]))
+        with zipfile.ZipFile(self.zip_path) as archive:
+            names = {Path(name).name for name in archive.namelist()}
+        self.assertTrue({"enrichment_results.tsv", "enrichment_significant.tsv", "enrichment.pdf"} <= names)
+        self.assertIn("FUNCTIONAL ENRICHMENT", self.readme)
+        self.assertIn("Fisher RA (1922)", self.readme)
 
     def test_too_few_significant_genes_skips_clustering_and_says_why(self):
         directory = Path(WORK.name) / "time-few-significant"

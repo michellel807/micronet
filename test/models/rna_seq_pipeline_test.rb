@@ -74,6 +74,35 @@ class RnaSeqPipelineTest < ActiveSupport::TestCase
     assert_equal "user", clustering["chosen_by"]
   end
 
+  test "an annotation table adds functional enrichment to the results" do
+    require_rscript
+    use_annotations("annotations.tsv")
+    RnaSeq::Pipeline.new(@job).run
+
+    assert_equal "Completed", @job.reload.status
+    folder = "rnaseq_results_job#{@job.job_number}"
+    entries = zip_entries(ActionMailer::Base.deliveries.sole.attachments.first.decoded)
+    %w[enrichment_results.tsv enrichment_significant.tsv enrichment.pdf].each { |name| assert_includes entries, "#{folder}/#{name}" }
+    significant = @job.rnaseq_results_dir.join("enrichment_significant.tsv").read
+    assert_includes significant, "ko99001"
+    assert_includes @job.rnaseq_results_dir.join("README.txt").read, "FUNCTIONAL ENRICHMENT"
+  end
+
+  test "enrichment runs only with an annotation table, and a failure is a warning" do
+    assert_not_includes RnaSeq::Pipeline.new(@job).stages.map(&:name), "Functional enrichment"
+    use_annotations("annotations.tsv")
+    assert_includes RnaSeq::Pipeline.new(@job.reload).stages.map(&:name), "Functional enrichment"
+
+    require_rscript
+    run_command = @job.method(:run_cancellable_command)
+    fails = ->(*command) { command.any? { |part| part.to_s.end_with?("enrichment.py") } ? false : run_command.call(*command) }
+    @job.stub(:run_cancellable_command, fails) { RnaSeq::Pipeline.new(@job).run }
+    assert_equal "Completed with warnings", @job.reload.status
+    assert_includes ActionMailer::Base.deliveries.sole.text_part.body.decoded,
+                    "Functional enrichment: The functional enrichment could not be computed"
+    assert @job.rnaseq_results_dir.join("significant_genes.tsv").file?
+  end
+
   test "clustering runs only for time courses" do
     assert_not_includes RnaSeq::Pipeline.new(@job).stages.map(&:name), "Gene clustering"
     use_time_course
@@ -136,7 +165,9 @@ class RnaSeqPipelineTest < ActiveSupport::TestCase
     fake_r = lambda do |*command|
       out = Pathname(command[command.index("--out") + 1])
       out.join("manifest.json").write({ status: "failed", error_type: "input_error", message: "Duplicate gene IDs: gene7" }.to_json)
-      false
+      # Exit like the R script does on bad input, so $? is never left over from another test
+      # (a killed process there made this failure look like running out of memory).
+      system("sh", "-c", "exit 1")
     end
     @job.stub(:run_cancellable_command, fake_r) { RnaSeq::Pipeline.new(@job).run }
 
@@ -184,6 +215,12 @@ class RnaSeqPipelineTest < ActiveSupport::TestCase
   end
 
   private
+
+  def use_annotations(name)
+    configuration = RnaSeq::Configuration.from_h(@job.analysis_config.merge("annotation_file" => "annotations.tsv"))
+    @job.update!(analysis_config: configuration.to_h, submission_options: configuration.summary)
+    FileUtils.cp(EXAMPLES.join(name), @job.rnaseq_input_dir.join("annotations.tsv"))
+  end
 
   def use_time_course(clustering: nil)
     configuration = RnaSeq::Configuration.new(

@@ -93,4 +93,24 @@ class RnaSeqConfigurationTest < ActiveSupport::TestCase
     end
     assert_raises(RnaSeq::Configuration::Invalid) { configuration(clustering: { clusters: 4 }) }
   end
+
+  test "an optional annotation table is saved and summarized" do
+    without = configuration
+    assert_nil without.annotation_file
+    assert_not without.to_h.key?("annotation_file")
+    assert_equal "Not run (no annotation table uploaded)", without.summary["Functional enrichment"]
+    assert_not without.summary["Uploaded Files"].key?("Gene Annotations")
+
+    with = configuration(annotation_file: "annotations.tsv",
+                         original_filenames: { counts: "c.csv", metadata: "m.tsv", annotations: "KEGG genes.tsv" })
+    loaded = RnaSeq::Configuration.from_h(with.to_h.as_json)
+    assert_equal "annotations.tsv", loaded.annotation_file
+    assert_equal ["KEGG genes.tsv"], loaded.summary["Uploaded Files"]["Gene Annotations"]
+    assert_equal "Fisher's exact test against KEGG genes.tsv", loaded.summary["Functional enrichment"]
+    assert_equal %w[counts.csv samples.tsv annotations.tsv], loaded.input_files
+
+    assert_raises(RnaSeq::Configuration::Invalid) { configuration(annotation_file: "../annotations.tsv") }
+    assert_raises(RnaSeq::Configuration::Invalid) { configuration(annotation_file: "annotations.xlsx") }
+    assert_raises(RnaSeq::Configuration::Invalid) { configuration(annotation_file: "counts.csv") }
+  end
 end

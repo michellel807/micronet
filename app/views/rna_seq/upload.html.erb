@@ -45,6 +45,21 @@ treated_6h_1  treated    6     B</pre>
         <%= file_field_tag :metadata_file, accept: ".tsv,.txt,.csv", class: "rnaseq-file" %>
         <p class="rnaseq-hint">Examples: <%= link_to "two-condition sample sheet", rnaseq_example_path("sample_metadata.tsv") %> ·
           <%= link_to "time-course sample sheet", rnaseq_example_path("timecourse_sample_metadata.tsv") %></p>
+
+        <h2>Gene annotations <span class="rnaseq-optional">(optional)</span></h2>
+        <p>Upload a table of what each gene does to test which functions or pathways are over-represented among the significant genes (or each gene cluster, for a time course), using Fisher's exact test. It needs a <code>gene_id</code> column with the same IDs as the count matrix and a <code>term</code> column, such as a GO term, KEGG pathway or COG category. Optional columns: <code>description</code>, and <code>source</code> to test each annotation database separately. List several terms in one cell by separating them with <code>;</code>. Leave this empty to skip the enrichment analysis.</p>
+        <pre class="rnaseq-example">gene_id    source  term        description
+gene00001  KEGG    ko02010     ABC transporters
+gene00001  GO      GO:0006826  iron ion transport
+gene00002  COG     P;E         Inorganic ion / amino acid transport</pre>
+        <% if @files["annotations_file"].present? %>
+          <p class="rnaseq-current">Current file: <strong><%= @files.dig("original", "annotations") %></strong>. Choose a new file below only to replace it.</p>
+          <label class="rnaseq-remove"><%= check_box_tag :remove_annotations, "1", false %> Remove the annotation table (skip the enrichment analysis)</label>
+        <% end %>
+        <label class="ds-label" for="annotations_file">Annotation table file</label>
+        <%= file_field_tag :annotations_file, accept: ".tsv,.txt,.csv", class: "rnaseq-file" %>
+        <p class="rnaseq-hint">Examples: <%= link_to "annotations for the two-condition example", rnaseq_example_path("annotations.tsv") %> ·
+          <%= link_to "annotations for the time-course example", rnaseq_example_path("timecourse_annotations.tsv") %></p>
       </div>
 
       <div class="rnaseq-actions">

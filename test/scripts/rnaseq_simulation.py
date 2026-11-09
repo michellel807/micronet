@@ -5,9 +5,10 @@ Counts follow the model DESeq2 assumes:
 with per-sample size factors s_j, per-gene base means q_i, a mean-dependent
 dispersion trend, and true log2 fold changes beta_i for a known set of genes.
 
-Running this file writes example inputs:
-    python test/scripts/rnaseq_simulation.py lib/examplefiles/rnaseq --seed 2026
-    python test/scripts/rnaseq_simulation.py lib/examplefiles/rnaseq --time-course --seed 2026
+Running this file writes example inputs (add --annotations for a gene
+annotation table with known enrichment, for the functional enrichment stage):
+    python test/scripts/rnaseq_simulation.py lib/examplefiles/rnaseq --seed 2026 --annotations
+    python test/scripts/rnaseq_simulation.py lib/examplefiles/rnaseq --time-course --seed 2026 --annotations
 """
 import argparse
 from dataclasses import dataclass
@@ -139,6 +140,55 @@ def simulate_time_course(seed=1, n_genes=2000, times=(0, 6, 24), levels=("contro
     )
 
 
+def planted_groups(truth):
+    """{(term, description): genes that truly share a response}, used to plant enrichment."""
+    if "true_lfc" in truth.columns:
+        return {("ko99001", "Simulated pathway induced in treated"): truth.index[truth["true_lfc"] > 0],
+                ("ko99002", "Simulated pathway repressed in treated"): truth.index[truth["true_lfc"] < 0]}
+    times = [column.rsplit("_", 1)[1] for column in truth.columns if column.startswith("reference_lfc_at_")]
+    early, late = times[1], times[-1]
+    rises = (truth["kind"] == "time") & (truth[f"reference_lfc_at_{early}"] > 0)
+    falls = (truth["kind"] == "interaction") & (truth[f"test_vs_reference_lfc_at_{late}"] < 0)
+    return {("ko99001", f"Simulated pathway rising by {early} h"): truth.index[rises],
+            ("ko99002", f"Simulated pathway falling by {late} h in the second condition only"): truth.index[falls]}
+
+
+def simulate_annotations(experiment, seed=1, background_terms=40, coverage=0.85, planted_size=30, planted_share=0.7):
+    """A long gene annotation table (gene_id, source, term, description) with known enrichment.
+
+    Source "KEGG": random background pathways of 5 to 80 genes, plus planted
+    pathways made mostly (planted_share) of genes with one true response.
+    Source "COG": one functional category per annotated gene, with category X
+    over-represented among the genes of the first planted group. Some genes
+    have no annotation in each source.
+    """
+    rng = np.random.default_rng(seed)
+    genes = experiment.truth.index.to_numpy()
+    rows = []
+    annotated = genes[rng.random(len(genes)) < coverage]
+    for index in range(background_terms):
+        members = rng.choice(annotated, size=int(rng.integers(5, 81)), replace=False)
+        rows += [(gene, "KEGG", f"ko{90000 + index:05d}", f"Simulated pathway {index + 1}") for gene in members]
+    groups = planted_groups(experiment.truth)
+    for (term, description), group in groups.items():
+        group = np.intersect1d(group, annotated)
+        planted = rng.choice(group, size=min(len(group), int(round(planted_size * planted_share))), replace=False)
+        others = rng.choice(np.setdiff1d(annotated, group), size=planted_size - len(planted), replace=False)
+        rows += [(gene, "KEGG", term, description) for gene in np.concatenate([planted, others])]
+
+    categories = list("CEGJKLMOPT")
+    first_group = set(next(iter(groups.values())))
+    for gene in genes[rng.random(len(genes)) < 0.9]:
+        # X: half of the first planted group, plus 3% of all other genes as background.
+        if rng.random() < (0.5 if gene in first_group else 0.03):
+            rows.append((gene, "COG", "X", "Simulated stress response"))
+        else:
+            category = categories[rng.integers(len(categories))]
+            rows.append((gene, "COG", category, f"COG category {category}"))
+    table = pd.DataFrame(rows, columns=["gene_id", "source", "term", "description"])
+    return table.sort_values(["gene_id", "source", "term"], kind="stable").reset_index(drop=True)
+
+
 def write_inputs(experiment, directory, counts_name="counts.tsv", metadata_name="sample_metadata.tsv"):
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
@@ -154,9 +204,18 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--time-course", action="store_true",
                         help="write timecourse_counts.tsv and timecourse_sample_metadata.tsv (two conditions, times 0, 6, 24)")
+    parser.add_argument("--annotations", action="store_true",
+                        help="also write annotations.tsv (or timecourse_annotations.tsv) with known enrichment")
     arguments = parser.parse_args()
     if arguments.time_course:
-        write_inputs(simulate_time_course(seed=arguments.seed), arguments.output_dir,
+        experiment = simulate_time_course(seed=arguments.seed)
+        write_inputs(experiment, arguments.output_dir,
                      counts_name="timecourse_counts.tsv", metadata_name="timecourse_sample_metadata.tsv")
+        annotations_name = "timecourse_annotations.tsv"
     else:
-        write_inputs(simulate(seed=arguments.seed), arguments.output_dir)
+        experiment = simulate(seed=arguments.seed)
+        write_inputs(experiment, arguments.output_dir)
+        annotations_name = "annotations.tsv"
+    if arguments.annotations:
+        simulate_annotations(experiment, seed=arguments.seed).to_csv(
+            Path(arguments.output_dir) / annotations_name, sep="\t", index=False)

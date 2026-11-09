@@ -2,8 +2,10 @@
 # comparison, review, and submit. Submission reuses JobSubmission, which moves
 # the workspace into the job and queues RnaSeqAnalyzer.
 class RnaSeqController < ApplicationController
-  FILE_KINDS = { "counts" => "count matrix", "metadata" => "sample sheet" }.freeze
-  EXAMPLE_FILES = %w[counts.tsv sample_metadata.tsv timecourse_counts.tsv timecourse_sample_metadata.tsv].freeze
+  FILE_KINDS = { "counts" => "count matrix", "metadata" => "sample sheet", "annotations" => "annotation table" }.freeze
+  REQUIRED_KINDS = %w[counts metadata].freeze
+  EXAMPLE_FILES = %w[counts.tsv sample_metadata.tsv annotations.tsv
+                     timecourse_counts.tsv timecourse_sample_metadata.tsv timecourse_annotations.tsv].freeze
 
   before_action :require_upload_workspace, except: :example
   before_action :require_rnaseq_session, except: :example
@@ -44,6 +46,7 @@ class RnaSeqController < ApplicationController
       begin
         configuration = RnaSeq::Configuration.new(
           counts_file: stored_files["counts_file"], metadata_file: stored_files["metadata_file"],
+          annotation_file: stored_files["annotations_file"],
           original_filenames: stored_files["original"], deseq2: deseq2, clustering: clustering
         )
         session[:rnaseq_config] = configuration.to_h
@@ -123,7 +126,8 @@ class RnaSeqController < ApplicationController
     redirect_to root_path, alert: "Please choose RNA-seq on the home page to start an RNA-seq analysis."
   end
 
-  # Files saved so far: { "counts_file", "metadata_file", "original" => { "counts", "metadata" } }.
+  # Files saved so far: { "counts_file", "metadata_file", optional "annotations_file",
+  # "original" => { "counts", "metadata"[, "annotations"] } }.
   def stored_files
     files = (session[:rnaseq_files] || {}).to_h.deep_stringify_keys
     files["original"] ||= {}
@@ -135,10 +139,16 @@ class RnaSeqController < ApplicationController
   end
 
   def inputs_saved?(files = stored_files)
-    FILE_KINDS.keys.all? do |kind|
-      name = files["#{kind}_file"]
-      name.present? && name == File.basename(name) && input_dir.join(name).file?
-    end
+    REQUIRED_KINDS.all? { |kind| file_saved?(files["#{kind}_file"]) } &&
+      (files["annotations_file"].blank? || file_saved?(files["annotations_file"]))
+  end
+
+  def file_saved?(name)
+    name.present? && name == File.basename(name) && input_dir.join(name).file?
+  end
+
+  def annotations_path(files)
+    files["annotations_file"].present? ? input_dir.join(files["annotations_file"]) : nil
   end
 
   def load_inputs
@@ -147,18 +157,22 @@ class RnaSeqController < ApplicationController
       return
     end
     @files = stored_files
-    @inputs = RnaSeq::Inputs.new(input_dir.join(@files["counts_file"]), input_dir.join(@files["metadata_file"]))
+    @inputs = RnaSeq::Inputs.new(input_dir.join(@files["counts_file"]), input_dir.join(@files["metadata_file"]),
+                                 annotations_path(@files))
   rescue RnaSeq::Inputs::Invalid => e
     redirect_to rnaseq_upload_path, alert: e.message
   end
 
   # Stages new uploads, checks them together with any file already saved, and
   # only then replaces the saved files, so a bad upload never loses a good one.
-  # Returns an error message, or nil on success.
+  # The annotation table is optional and can be removed. Changing only the
+  # annotation table keeps the chosen comparison. Returns an error message, or
+  # nil on success.
   def save_uploads
     files = stored_files
     uploads = FILE_KINDS.keys.index_with { |kind| params["#{kind}_file"] }.select { |_kind, file| file.respond_to?(:original_filename) }
-    if uploads.empty?
+    remove_annotations = params[:remove_annotations] == "1" && !uploads.key?("annotations") && files["annotations_file"].present?
+    if uploads.empty? && !remove_annotations
       return inputs_saved?(files) ? nil : "Please choose a count matrix and a sample sheet to upload."
     end
 
@@ -174,16 +188,21 @@ class RnaSeqController < ApplicationController
       FileUtils.cp(file.path, staged[kind])
     end
 
-    paths = FILE_KINDS.keys.index_with { |kind| staged[kind] || (files["#{kind}_file"].present? && input_dir.join(files["#{kind}_file"])) }
+    paths = REQUIRED_KINDS.index_with { |kind| staged[kind] || (files["#{kind}_file"].present? && input_dir.join(files["#{kind}_file"])) }
     missing = paths.select { |_kind, path| !path || !path.file? }.keys
     return "Please also upload a #{missing.map { |kind| FILE_KINDS[kind] }.join(' and ')}." if missing.any?
 
+    annotations = staged["annotations"] || (remove_annotations ? nil : annotations_path(files))
     begin
-      RnaSeq::Inputs.new(paths["counts"], paths["metadata"])
+      RnaSeq::Inputs.new(paths["counts"], paths["metadata"], annotations)
     rescue RnaSeq::Inputs::Invalid => e
       return e.message
     end
 
+    if remove_annotations
+      FileUtils.rm_f(input_dir.join(files.delete("annotations_file")))
+      files["original"].delete("annotations")
+    end
     staged.each do |kind, path|
       FileUtils.rm_f(input_dir.join(files["#{kind}_file"])) if files["#{kind}_file"].present?
       final = "#{kind}#{path.extname}"
@@ -192,7 +211,14 @@ class RnaSeqController < ApplicationController
       files["original"][kind] = File.basename(uploads[kind].original_filename.to_s)
     end
     session[:rnaseq_files] = files
-    session.delete(:rnaseq_config)
+    if (staged.keys - ["annotations"]).empty? && session[:rnaseq_config].present?
+      config = session[:rnaseq_config].to_h.deep_stringify_keys
+      config["annotation_file"] = files["annotations_file"]
+      config["original_filenames"] = files["original"]
+      session[:rnaseq_config] = config.compact
+    else
+      session.delete(:rnaseq_config)
+    end
     nil
   ensure
     staged&.each_value { |path| FileUtils.rm_f(path) }
@@ -203,7 +229,8 @@ class RnaSeqController < ApplicationController
 
     configuration = RnaSeq::Configuration.from_h(session[:rnaseq_config])
     files = stored_files
-    configuration if configuration.counts_file == files["counts_file"] && configuration.metadata_file == files["metadata_file"]
+    configuration if configuration.counts_file == files["counts_file"] && configuration.metadata_file == files["metadata_file"] &&
+                     configuration.annotation_file == files["annotations_file"].presence
   rescue RnaSeq::Configuration::Invalid
     nil
   end

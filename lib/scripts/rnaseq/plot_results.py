@@ -11,7 +11,8 @@ cluster_genes.py has clustered a time course, also cluster_trajectories.pdf and
 cluster_selection.pdf, and when gp_trajectories.py has fitted curves,
 cluster_gp_curves.pdf (plus cluster_gp_differences.pdf comparing conditions),
 one page per cluster drawn with the growth Gaussian Process Plot's helpers
-(lib/scripts/otherscripts/gpplot.py) so both look the same.
+(lib/scripts/otherscripts/gpplot.py) so both look the same. When
+enrichment.py has run, also enrichment.pdf (one page per gene set and source).
 """
 import importlib.util
 import json
@@ -45,7 +46,9 @@ OUTPUTS = {"pca": "pca.pdf", "pca_coordinates": "pca_coordinates.tsv",
            "ma": "ma_plot.pdf", "volcano": "volcano_plot.pdf",
            "trajectories": "top_gene_trajectories.pdf",
            "cluster_trajectories": "cluster_trajectories.pdf", "cluster_selection": "cluster_selection.pdf",
-           "gp_curves": "cluster_gp_curves.pdf", "gp_differences": "cluster_gp_differences.pdf"}
+           "gp_curves": "cluster_gp_curves.pdf", "gp_differences": "cluster_gp_differences.pdf",
+           "enrichment": "enrichment.pdf"}
+ENRICHMENT_TERMS = 15
 
 
 def read_table(path):
@@ -197,9 +200,8 @@ def gp_pages(path, numbers, draw):
 
 
 def gp_time_axis(axes, manifest):
-    levels, position = time_positions(manifest["time"])
-    axes.set_xticks([position[time] for time in levels])
-    axes.set_xticklabels(levels)
+    """The x label. Time is drawn to scale with matplotlib's regular ticks, as in the growth GP plot;
+    the sample dots show where the measurements are."""
     return f"Time ({manifest['time']['column']})"
 
 
@@ -238,6 +240,35 @@ def plot_gp_differences(differences, manifest, directory):
         gpplot.finish_gp_plot(axes, f"Gaussian Process Difference: Cluster {number}", f"{label} (z-score)", xlabel)
 
     gp_pages(directory / OUTPUTS["gp_differences"], range(1, manifest["clustering"]["clusters"] + 1), draw)
+
+
+def plot_enrichment(table, manifest, directory):
+    """Top terms per gene set and source as bars of -log10 adjusted p-value; significant terms highlighted."""
+    alpha = manifest["enrichment"]["alpha"]
+    with plt.rc_context(gpplot.STYLE), PdfPages(directory / OUTPUTS["enrichment"]) as pdf:
+        for (gene_set, source), rows in table.groupby(["gene_set", "source"], sort=False):
+            top = rows.nsmallest(ENRICHMENT_TERMS, ["padj", "pvalue"]).iloc[::-1]
+            labels = [f"{description} ({term})" if description else term
+                      for term, description in zip(top["term"], top["description"].fillna(""))]
+            labels = [label if len(label) <= 60 else label[:57] + "..." for label in labels]
+            height = -np.log10(np.maximum(top["padj"].to_numpy(dtype=float), 1e-300))
+            significant = top["significant"].astype(str).str.upper().eq("TRUE").to_numpy()
+            figure, axes = plt.subplots(figsize=(gpplot.FIGURE_SIZE[0], max(3.5, 0.38 * len(top) + 1.8)))
+            positions = np.arange(len(top))
+            axes.barh(positions, height, color=np.where(significant, HIGHER, NOT_SIGNIFICANT))
+            for position, value, k, n in zip(positions, height, top["set_genes_with_term"], top["set_genes"]):
+                axes.text(value, position, f" {k}/{n}", va="center", fontsize=9)
+            axes.axvline(-np.log10(alpha), color="black", linewidth=0.8, linestyle="--", label=f"padj = {alpha:g}")
+            axes.set_yticks(positions)
+            axes.set_yticklabels(labels, fontsize=9)
+            axes.set_xlim(0, max(height.max(), -np.log10(alpha)) * 1.15)
+            axes.set_xlabel("-log10 adjusted p-value (Fisher's exact test)")
+            axes.set_title(f"Functional enrichment: {gene_set} ({source})")
+            axes.legend(loc="lower right")
+            axes.grid(True, axis="x")
+            # Long term names: size the page to fit them rather than clip them.
+            pdf.savefig(figure, bbox_inches="tight")
+            plt.close(figure)
 
 
 def plot_trajectories(results, vst, samples, means, manifest, directory):
@@ -335,6 +366,12 @@ def main(results_dir):
     results["significant"] = results["significant"].astype(str).str.upper().eq("TRUE")
     vst = read_table(directory / manifest["outputs"]["vst_all"])
     samples = read_table(directory / manifest["outputs"]["size_factors"])
+
+    (directory / OUTPUTS["enrichment"]).unlink(missing_ok=True)
+    if (manifest.get("enrichment") or {}).get("status") == "completed":
+        table = pd.read_csv(directory / manifest["outputs"]["enrichment_results"], sep="\t", keep_default_na=False,
+                            na_values=["NA"], dtype={"term": str, "description": str})
+        plot_enrichment(table, manifest, directory)
 
     if manifest.get("time"):
         levels = [str(level) for level in manifest["time"]["levels"]]

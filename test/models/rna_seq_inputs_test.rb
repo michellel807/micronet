@@ -7,12 +7,14 @@ class RnaSeqInputsTest < ActiveSupport::TestCase
   setup { @directory = Pathname.new(Dir.mktmpdir) }
   teardown { FileUtils.rm_rf(@directory) }
 
-  def inputs(counts: COUNTS, metadata: METADATA, counts_name: "counts.tsv", metadata_name: "metadata.tsv")
+  def inputs(counts: COUNTS, metadata: METADATA, counts_name: "counts.tsv", metadata_name: "metadata.tsv",
+             annotations: nil, annotations_name: "annotations.tsv")
     counts_path = @directory.join(counts_name)
     metadata_path = @directory.join(metadata_name)
     File.write(counts_path, counts)
     File.write(metadata_path, metadata)
-    RnaSeq::Inputs.new(counts_path, metadata_path)
+    annotations_path = annotations && @directory.join(annotations_name).tap { |path| File.write(path, annotations) }
+    RnaSeq::Inputs.new(counts_path, metadata_path, annotations_path)
   end
 
   def assert_invalid(pattern, **files)
@@ -73,5 +75,33 @@ class RnaSeqInputsTest < ActiveSupport::TestCase
     assert_invalid(/header row but no genes/, counts: "gene_id\ta1\ta2\tb1\tb2\n")
     error = assert_raises(RnaSeq::Inputs::Invalid) { RnaSeq::Inputs.new(@directory.join("none.tsv"), @directory.join("none2.tsv")) }
     assert_match(/upload a count matrix/, error.message)
+  end
+
+  test "an optional annotation table is summarized" do
+    assert_nil inputs.annotation_summary
+    result = inputs(annotations: "Gene_ID\tTerm\tSource\ng1\tA;B\tKEGG\ng2\tC\t\nother\tD\tCOG\n")
+    assert_equal({ "rows" => 3, "genes_matched" => 2, "genes_in_counts" => 2, "sources" => %w[KEGG annotation COG] },
+                 result.annotation_summary)
+    csv = inputs(annotations: "gene_id,term\ng1,A\n", annotations_name: "annotations.csv")
+    assert_equal 1, csv.annotation_summary["genes_matched"]
+  end
+
+  test "the example annotation tables match the example count matrices" do
+    examples = Rails.root.join("lib/examplefiles/rnaseq")
+    { "counts.tsv" => ["sample_metadata.tsv", "annotations.tsv"],
+      "timecourse_counts.tsv" => ["timecourse_sample_metadata.tsv", "timecourse_annotations.tsv"] }.each do |counts, (metadata, annotations)|
+      summary = RnaSeq::Inputs.new(examples.join(counts), examples.join(metadata), examples.join(annotations)).annotation_summary
+      assert_equal 2000, summary["genes_in_counts"]
+      assert_operator summary["genes_matched"], :>, 1500
+      assert_equal %w[COG KEGG], summary["sources"].sort
+    end
+  end
+
+  test "annotation tables need gene_id and term columns and IDs from the count matrix" do
+    assert_invalid(/needs columns named "gene_id" and "term" \(missing: term\)/, annotations: "gene_id\tpathway\ng1\tA\n")
+    assert_invalid(/no rows with both a gene_id and a term/, annotations: "gene_id\tterm\ng1\t\n")
+    assert_invalid(/None of the annotation table's gene IDs appear in the count matrix \(for example "G1"/,
+                   annotations: "gene_id\tterm\nG1\tA\n")
+    assert_invalid(/annotation table is empty/, annotations: "")
   end
 end

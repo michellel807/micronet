@@ -193,6 +193,14 @@ class RnaSeqFlowTest < ActionDispatch::IntegrationTest
     assert_nil session[:rnaseq_config]
   end
 
+  test "example annotation tables can be downloaded" do
+    %w[annotations.tsv timecourse_annotations.tsv].each do |name|
+      get rnaseq_example_path(name)
+      assert_response :success
+      assert response.body.start_with?("gene_id\tsource\tterm\tdescription"), name
+    end
+  end
+
   test "example files can be downloaded and other names cannot" do
     get rnaseq_example_path("counts.tsv")
     assert_response :success
@@ -298,6 +306,49 @@ class RnaSeqFlowTest < ActionDispatch::IntegrationTest
     assert_not session[:rnaseq_config].key?("clustering")
     follow_redirect!
     assert_not_includes response.body, "Gene clusters"
+  end
+
+  test "an optional annotation table is uploaded, reviewed, kept with the comparison, removed and submitted" do
+    start
+    upload_examples
+    post rnaseq_configure_path, params: TIME_DEFAULTS.merge(condition_column: "condition", reference_level: "control", test_level: "treated")
+    follow_redirect!
+    assert_includes response.body, "not run (no annotation table uploaded)"
+
+    # Adding annotations keeps the chosen comparison.
+    post rnaseq_upload_path, params: { annotations_file: upload_file("annotations.tsv") }
+    assert_redirected_to rnaseq_configure_path
+    assert_equal "annotations.tsv", session[:rnaseq_config]["annotation_file"]
+    get rnaseq_review_path
+    assert_response :success
+    assert_includes response.body, "genes annotated; COG, KEGG"
+    assert_includes response.body, "functional enrichment results"
+    assert_includes response.body, "group of significant genes (higher and lower)"
+    get rnaseq_upload_path
+    assert_includes response.body, "Current file: <strong>annotations.tsv</strong>"
+
+    # A bad annotation table is rejected and the good one is kept.
+    Dir.mktmpdir do |directory|
+      directory = Pathname.new(directory)
+      File.write(directory.join("bad.tsv"), "gene\tpathway\ng1\tA\n")
+      post rnaseq_upload_path, params: { annotations_file: upload_file("bad.tsv", directory) }
+    end
+    assert_response :unprocessable_content
+    assert_includes response.body, ERB::Util.html_escape("needs columns named \"gene_id\" and \"term\"")
+    assert workspace.rnaseq_input_dir.join("annotations.tsv").file?
+
+    post rnaseq_upload_path, params: { remove_annotations: "1" }
+    assert_redirected_to rnaseq_configure_path
+    assert_not workspace.rnaseq_input_dir.join("annotations.tsv").exist?
+    assert_not session[:rnaseq_config].key?("annotation_file")
+
+    post rnaseq_upload_path, params: { annotations_file: upload_file("annotations.tsv") }
+    token = session[:upload_token]
+    post rnaseq_submit_path
+    job = Job.find_by!(upload_token: token)
+    assert_equal "annotations.tsv", job.analysis_config["annotation_file"]
+    assert job.rnaseq_input_dir.join("annotations.tsv").file?
+    assert_equal ["annotations.tsv"], job.submission_options["Uploaded Files"]["Gene Annotations"]
   end
 
   test "time-course settings that cannot be analyzed are explained" do

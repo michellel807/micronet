@@ -25,6 +25,13 @@
         <h2>Uploaded files</h2>
         <p><strong>Count matrix:</strong> <%= @files.dig("original", "counts") %> (<%= @inputs.sample_ids.length %> samples)</p>
         <p><strong>Sample sheet:</strong> <%= @files.dig("original", "metadata") %></p>
+        <% if (annotations = @inputs.annotation_summary) %>
+          <p><strong>Gene annotations:</strong> <%= @files.dig("original", "annotations") %>
+            (<%= annotations["genes_matched"] %> of <%= annotations["genes_in_counts"] %> genes annotated; <%= annotations["sources"].join(", ") %>)</p>
+          <p><strong>Functional enrichment:</strong> Fisher's exact test of each <%= @configuration.time_course? ? "gene cluster" : "group of significant genes (higher and lower)" %> against these annotations</p>
+        <% else %>
+          <p><strong>Functional enrichment:</strong> not run (no annotation table uploaded)</p>
+        <% end %>
         <%= link_to "Edit", rnaseq_upload_path, class: "edit-button" %>
 
         <h2>Analysis</h2>
@@ -61,9 +68,12 @@
 
         <h2>Results</h2>
         <% if @configuration.time_course? %>
-          <p>You will receive a zip file with the full DESeq2 results table (with log2 fold changes at each time point), the significant genes, normalized and variance-stabilized counts, group means over time, a PCA plot and a plot of the top genes over time.</p>
+          <p>You will receive a zip file with the full DESeq2 results table (with log2 fold changes at each time point), the significant genes, normalized and variance-stabilized counts, group means over time, a PCA plot, a plot of the top genes over time, the significant genes grouped into clusters by their pattern over time, and a Gaussian process curve for each cluster.</p>
         <% else %>
           <p>You will receive a zip file with the full DESeq2 results table, the significant genes, normalized and variance-stabilized counts, and PCA, MA and volcano plots.</p>
+        <% end %>
+        <% if @configuration.annotation_file %>
+          <p>It will also include the functional enrichment results: every annotation term tested, the significant terms, and a plot of the top terms for each <%= @configuration.time_course? ? "cluster" : "group of significant genes" %>.</p>
         <% end %>
 
         <%= submit_tag "Start My Job", class: "analysis-button" %>

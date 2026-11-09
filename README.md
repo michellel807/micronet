@@ -109,7 +109,17 @@ cluster's genes is fitted with an RBF-plus-noise GP at the numeric times
 drawn with the growth GP plot's helpers in `lib/scripts/otherscripts/gpplot.py`
 so both look the same. Non-numeric time points skip the
 curves with a note. Clustering and curves are optional stages: if either fails,
-the job still delivers the DESeq2 results with a warning. On the website, choose "RNA-seq differential expression" on the
+the job still delivers the DESeq2 results with a warning.
+An optional third upload, a gene annotation table (`gene_id` and `term`
+columns, optional `description` and `source`; `;` separates several terms),
+adds functional enrichment (`lib/scripts/rnaseq/enrichment.py`): a one-sided
+Fisher's exact test of each term in the significant genes higher and lower in
+the test condition, or in each gene cluster for time courses, against the
+tested genes annotated in the same source, with Benjamini-Hochberg correction
+per gene set and source. It writes `enrichment_results.tsv`,
+`enrichment_significant.tsv` and `enrichment.pdf`. Example tables with known
+enrichment are `lib/examplefiles/rnaseq/annotations.tsv` and
+`timecourse_annotations.tsv` (written by `rnaseq_simulation.py --annotations`). On the website, choose "RNA-seq differential expression" on the
 home page, then upload a count matrix and sample sheet (`RnaSeqController`,
 pages under `/rnaseq`); the example files are linked from the upload page.
 To queue the example dataset without the website, run

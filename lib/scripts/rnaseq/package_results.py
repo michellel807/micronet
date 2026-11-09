@@ -46,6 +46,13 @@ DESCRIPTIONS = {
     "cluster_gp_differences.tsv": "The difference between the two conditions' curves per cluster, with its 95% band.",
     "cluster_gp_curves.pdf": "One page per cluster, drawn like MicroNet's growth Gaussian Process Plot: the curve and 95% band "
                              "per condition, with each sample as a faint dot.",
+    "enrichment_results.tsv": "Fisher's exact test for every gene set and annotation term tested: genes in the set with the term "
+                              "(set_genes_with_term) out of the set's annotated genes (set_genes), the term's genes among all tested "
+                              "annotated genes (term_genes of universe_genes), expected count, fold enrichment, p-value, adjusted "
+                              "p-value, and the genes.",
+    "enrichment_significant.tsv": "The significant rows of enrichment_results.tsv.",
+    "enrichment.pdf": "One page per gene set and annotation source: the 15 terms with the lowest adjusted p-values; "
+                      "significant terms in red, with genes in the set / annotated genes in the set at each bar.",
     "cluster_gp_differences.pdf": "One page per cluster: how the test condition's curve differs from the reference's over time, "
                                   "with its 95% band; shaded where the band excludes 0.",
 }
@@ -186,7 +193,47 @@ def gaussian_process_lines(gp, time_column):
     return lines
 
 
-def readme(manifest, job_number, files):
+def enrichment_lines(enrichment, directory):
+    """The FUNCTIONAL ENRICHMENT section of the README, or nothing when no annotation table was given."""
+    if not enrichment:
+        return []
+    lines = ["", "FUNCTIONAL ENRICHMENT"]
+    if enrichment.get("status") != "completed":
+        return lines + [f"  Not tested: {enrichment.get('reason', 'enrichment could not be computed')}"]
+    low, high = enrichment["term_size_limits"]
+    lines += [
+        f"  Annotation table: {enrichment.get('annotation_file', '')}",
+        "  For each gene set and annotation term, a one-sided Fisher's exact test asked whether",
+        "  the set has more genes with the term than expected by chance. The comparison genes",
+        "  (universe) are the genes DESeq2 tested that have at least one annotation in that source.",
+        f"  Terms with {low} to {high} such genes were tested. P-values were adjusted (Benjamini-Hochberg)",
+        f"  within each gene set and source; terms with adjusted p < {enrichment['alpha']:g} are significant.",
+        "  Results depend on the annotations' quality, and gene sets were chosen from the same data,",
+        "  so read the terms as leads to follow up.",
+        "  Annotated genes among the tested genes: " + "; ".join(
+            f"{source} {info['annotated_tested_genes']} of {info['tested_genes']} ({info['coverage']:.0%})"
+            for source, info in enrichment["sources"].items()),
+    ]
+    significant = directory / "enrichment_significant.tsv"
+    table = []
+    if significant.is_file():
+        with open(significant, newline="") as handle:
+            table = list(csv.DictReader(handle, delimiter="\t"))
+    for gene_set in [entry["name"] for entry in enrichment["gene_sets"]]:
+        rows = [row for row in table if row["gene_set"] == gene_set]
+        lines.append(f"  {gene_set} ({len(rows)} significant term{'' if len(rows) == 1 else 's'})" + (":" if rows else ""))
+        for row in rows[:5]:
+            name = f"{row['description']} ({row['term']})" if row["description"] else row["term"]
+            lines.append(f"    {row['source']} {name}: {row['set_genes_with_term']} of {row['set_genes']} genes, "
+                         f"padj {float(row['padj']):.2g}")
+        if len(rows) > 5:
+            lines.append(f"    ... {len(rows) - 5} more in enrichment_significant.tsv")
+    for skipped in enrichment.get("skipped", []):
+        lines.append(f"  Not tested: {skipped['gene_set']} against {skipped['source']}: {skipped['reason']}.")
+    return lines
+
+
+def readme(manifest, job_number, files, directory=None):
     parameters, genes, samples = manifest["parameters"], manifest["genes"], manifest["samples"]
     time_course = bool(manifest.get("time"))
     significance = f"adjusted p-value (padj) < {parameters['alpha']}"
@@ -238,6 +285,7 @@ def readme(manifest, job_number, files):
     ]
     lines += clustering_lines(manifest.get("clustering"))
     lines += gaussian_process_lines(manifest.get("gaussian_process"), (manifest.get("time") or {}).get("column", "time"))
+    lines += enrichment_lines(manifest.get("enrichment"), Path(directory) if directory else Path("."))
     lines += [
         "",
         "FILES",
@@ -260,6 +308,11 @@ def readme(manifest, job_number, files):
         lines += ["  Rasmussen CE, Williams CKI (2006). Gaussian Processes for Machine Learning. MIT Press.",
                   "  Midani FS, Collins J, Britton RA (2021). AMiGA: software for automated analysis of",
                   "  microbial growth assays. mSystems 6:e00508-21."]
+    if (manifest.get("enrichment") or {}).get("status") == "completed":
+        lines += ["  Fisher RA (1922). On the interpretation of chi-squared from contingency tables, and the",
+                  "  calculation of P. Journal of the Royal Statistical Society 85:87-94.",
+                  "  Benjamini Y, Hochberg Y (1995). Controlling the false discovery rate. Journal of the",
+                  "  Royal Statistical Society B 57:289-300."]
     lines += [
         "",
     ]
@@ -275,7 +328,7 @@ def main(results_dir, zip_path, job_number):
     write_significant_genes(directory, manifest["outputs"]["results"])
     files = sorted({path.name for path in directory.iterdir() if path.is_file()} | {README},
                    key=lambda name: (list(DESCRIPTIONS).index(name) if name in DESCRIPTIONS else len(DESCRIPTIONS), name))
-    (directory / README).write_text(readme(manifest, job_number, files))
+    (directory / README).write_text(readme(manifest, job_number, files, directory))
 
     folder = f"rnaseq_results_job{job_number}"
     zip_path = Path(zip_path)

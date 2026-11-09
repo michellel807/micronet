@@ -37,17 +37,18 @@ module RnaSeq
     CLUSTER_COUNTS = (2..10).freeze
     CLUSTERING_SETTINGS = %w[clusters].freeze
 
-    attr_reader :counts_file, :metadata_file, :original_filenames, :deseq2, :clustering
+    attr_reader :counts_file, :metadata_file, :annotation_file, :original_filenames, :deseq2, :clustering
 
     def self.from_h(hash)
       hash = hash.to_h.deep_stringify_keys
-      new(counts_file: hash["counts_file"], metadata_file: hash["metadata_file"],
+      new(counts_file: hash["counts_file"], metadata_file: hash["metadata_file"], annotation_file: hash["annotation_file"],
           deseq2: hash["deseq2"], original_filenames: hash["original_filenames"], clustering: hash["clustering"])
     end
 
-    def initialize(counts_file:, metadata_file:, deseq2:, original_filenames: nil, clustering: nil)
+    def initialize(counts_file:, metadata_file:, deseq2:, original_filenames: nil, clustering: nil, annotation_file: nil)
       @counts_file = counts_file.to_s
       @metadata_file = metadata_file.to_s
+      @annotation_file = annotation_file.presence&.to_s
       @deseq2 = deseq2.to_h.deep_stringify_keys
       @original_filenames = (original_filenames || {}).to_h.stringify_keys
       @clustering = clustering.to_h.stringify_keys.compact
@@ -58,7 +59,12 @@ module RnaSeq
       hash = { "counts_file" => counts_file, "metadata_file" => metadata_file,
                "original_filenames" => original_filenames, "deseq2" => deseq2 }
       hash["clustering"] = clustering if clustering.present?
+      hash["annotation_file"] = annotation_file if annotation_file
       hash
+    end
+
+    def input_files
+      [counts_file, metadata_file, annotation_file].compact
     end
 
     # The number of gene clusters the user chose, or nil to choose it from the data.
@@ -67,7 +73,7 @@ module RnaSeq
     end
 
     def inputs_present?(directories)
-      [counts_file, metadata_file].all? do |name|
+      input_files.all? do |name|
         path = directories.rnaseq_input_dir.join(name)
         path.file? && !path.symlink?
       end
@@ -99,11 +105,19 @@ module RnaSeq
         "Covariates" => Array(settings["covariates"]).presence&.join(", ") || "None",
         "Significance" => significance,
         **(time_course? ? { "Gene clusters" => cluster_description } : {}),
+        "Functional enrichment" => enrichment_description,
         "Uploaded Files" => {
           "Count Matrix" => [original_filenames.fetch("counts", counts_file)],
-          "Sample Metadata" => [original_filenames.fetch("metadata", metadata_file)]
+          "Sample Metadata" => [original_filenames.fetch("metadata", metadata_file)],
+          **(annotation_file ? { "Gene Annotations" => [original_filenames.fetch("annotations", annotation_file)] } : {})
         }
       }
+    end
+
+    def enrichment_description
+      return "Not run (no annotation table uploaded)" unless annotation_file
+
+      "Fisher's exact test against #{original_filenames.fetch('annotations', annotation_file)}"
     end
 
     def cluster_description
@@ -126,12 +140,12 @@ module RnaSeq
     end
 
     def validate!
-      [counts_file, metadata_file].each do |name|
+      input_files.each do |name|
         unless name == File.basename(name) && INPUT_EXTENSIONS.include?(File.extname(name).downcase)
           raise Invalid, "Input files must be stored as .csv, .tsv or .txt names without directories: #{name.inspect}"
         end
       end
-      raise Invalid, "The count matrix and sample metadata must be different files" if counts_file == metadata_file
+      raise Invalid, "The count matrix, sample metadata and annotations must be different files" if input_files.uniq.length < input_files.length
 
       unknown = deseq2.keys - DESEQ2_SETTINGS
       raise Invalid, "Unknown RNA-seq settings: #{unknown.join(', ')}" if unknown.any?

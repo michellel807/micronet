@@ -149,3 +149,14 @@
   .rnaseq-types { grid-template-columns: 1fr; }
   .rnaseq-actions .ds-btn { flex: 1; }
 }
+
+.rnaseq-optional {
+  font-weight: normal;
+  font-size: 0.8em;
+  color: var(--tx-3);
+}
+
+.general-white-block .rnaseq-remove {
+  display: block;
+  margin: 0.25rem 0 0.75rem;
+}

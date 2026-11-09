@@ -15,14 +15,20 @@ module RnaSeq
     COUNT_ROWS_CHECKED = 1000
     LIST_LIMIT = 5
 
-    attr_reader :sample_ids, :metadata_columns, :metadata_rows
+    # Matches lib/scripts/rnaseq/enrichment.py: required and optional columns.
+    ANNOTATION_COLUMNS = %w[gene_id term].freeze
+    ANNOTATION_DEFAULT_SOURCE = "annotation".freeze
 
-    def initialize(counts_path, metadata_path)
+    attr_reader :sample_ids, :metadata_columns, :metadata_rows, :annotation_summary
+
+    # annotations_path is optional: a gene annotation table for functional enrichment.
+    def initialize(counts_path, metadata_path, annotations_path = nil)
       @counts_path = Pathname.new(counts_path)
       @metadata_path = Pathname.new(metadata_path)
       inspect_counts
       inspect_metadata
       check_samples_match
+      inspect_annotations(Pathname.new(annotations_path)) if annotations_path
     end
 
     # Columns a user can compare on or use as covariates.
@@ -129,6 +135,50 @@ module RnaSeq
       raise Invalid, "The sample sheet could not be read: #{e.message}"
     rescue ArgumentError, Encoding::InvalidByteSequenceError
       raise Invalid, "The sample sheet is not a readable text file. Please upload a tab-separated (.tsv/.txt) or comma-separated (.csv) file."
+    end
+
+    # Every gene ID in the count matrix (the first column), read in full.
+    def count_gene_ids
+      delimiter = self.class.delimiter_for(@counts_path)
+      ids = Set.new
+      File.foreach(@counts_path, encoding: "bom|utf-8").with_index do |line, index|
+        next if index.zero? || line.strip.empty?
+
+        ids << unquote(line.chomp.delete_suffix("\r").split(delimiter, 2).first.to_s)
+      end
+      ids
+    end
+
+    def inspect_annotations(path)
+      check_size(path, "annotation table")
+      table = CSV.read(path, col_sep: self.class.delimiter_for(path), headers: true, encoding: "bom|utf-8", skip_blanks: true)
+      columns = table.headers.map { |header| header.to_s.strip.downcase }
+      missing = ANNOTATION_COLUMNS - columns
+      if missing.any?
+        raise Invalid, "The annotation table needs columns named #{ANNOTATION_COLUMNS.map(&:inspect).join(' and ')} " \
+                       "(missing: #{missing.join(', ')}). Its columns are: #{preview(columns)}."
+      end
+
+      gene_index, term_index, source_index = columns.index("gene_id"), columns.index("term"), columns.index("source")
+      rows = table.map(&:fields).map { |fields| fields.map { |value| value.to_s.strip } }
+        .select { |fields| fields[gene_index].present? && fields[term_index].present? }
+      raise Invalid, "The annotation table has no rows with both a gene_id and a term." if rows.empty?
+
+      annotated = rows.map { |fields| fields[gene_index] }.uniq
+      counted = count_gene_ids
+      matched = annotated.count { |gene| counted.include?(gene) }
+      if matched.zero?
+        raise Invalid, "None of the annotation table's gene IDs appear in the count matrix (for example #{preview(annotated)}; " \
+                       "the count matrix has #{preview(counted.first(LIST_LIMIT))}). The IDs must match exactly."
+      end
+
+      sources = rows.map { |fields| source_index && fields[source_index].presence || ANNOTATION_DEFAULT_SOURCE }.uniq
+      @annotation_summary = { "rows" => rows.length, "genes_matched" => matched, "genes_in_counts" => counted.size,
+                              "sources" => sources }
+    rescue CSV::MalformedCSVError => e
+      raise Invalid, "The annotation table could not be read: #{e.message}"
+    rescue ArgumentError, Encoding::InvalidByteSequenceError
+      raise Invalid, "The annotation table is not a readable text file. Please upload a tab-separated (.tsv/.txt) or comma-separated (.csv) file."
     end
 
     def check_samples_match

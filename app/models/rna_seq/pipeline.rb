@@ -2,7 +2,8 @@ module RnaSeq
   # Runs one RNA-seq job. Each stage reads only files written by earlier stages
   # in Job#rnaseq_results_dir. A failed required stage fails the job; a failed
   # optional stage is reported as a warning beside the completed results.
-  # Time courses add gene clustering and Gaussian process curves per cluster.
+  # Time courses add gene clustering and Gaussian process curves per cluster;
+  # an uploaded annotation table adds functional enrichment.
   class Pipeline
     SCRIPTS = Rails.root.join("lib", "scripts", "rnaseq")
     Stage = Struct.new(:name, :required, :action)
@@ -39,6 +40,7 @@ module RnaSeq
         Stage.new("Differential expression", true, :differential_expression),
         (Stage.new("Gene clustering", false, :clustering) if configuration.time_course?),
         (Stage.new("Cluster curves", false, :gaussian_process) if configuration.time_course?),
+        (Stage.new("Functional enrichment", false, :enrichment) if configuration.annotation_file),
         Stage.new("Plots", false, :plots),
         Stage.new("Packaging", true, :package)
       ].compact
@@ -110,6 +112,14 @@ module RnaSeq
       raise "The cluster curves could not be fitted. The other results are complete." unless succeeded
     end
 
+    def enrichment
+      succeeded = Python.exec(
+        SCRIPTS.join("enrichment.py"), job.rnaseq_results_dir,
+        "--annotations", job.rnaseq_input_dir.join(configuration.annotation_file)
+      ) { |*command| job.run_cancellable_command(*command) }
+      raise "The functional enrichment could not be computed. The other results are complete." unless succeeded
+    end
+
     def plots
       succeeded = Python.exec(SCRIPTS.join("plot_results.py"), job.rnaseq_results_dir) { |*command| job.run_cancellable_command(*command) }
       raise "The plots could not be drawn. The result tables are complete." unless succeeded
@@ -142,7 +152,7 @@ module RnaSeq
                  "Contact schmidlabmodel@gmail.com for the complete files."
       }
       %w[README.txt significant_genes.tsv pca.pdf ma_plot.pdf volcano_plot.pdf top_gene_trajectories.pdf
-         gene_clusters.tsv cluster_trajectories.pdf cluster_gp_curves.pdf]
+         gene_clusters.tsv cluster_trajectories.pdf cluster_gp_curves.pdf enrichment_significant.tsv enrichment.pdf]
         .map { |name| job.rnaseq_results_dir.join(name) }.select(&:file?)
     end
 
