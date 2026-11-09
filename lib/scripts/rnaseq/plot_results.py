@@ -8,7 +8,8 @@ RESULTS_DIR and writes pca.pdf and pca_coordinates.tsv beside them, plus
 ma_plot.pdf and volcano_plot.pdf for a two-condition comparison, or
 top_gene_trajectories.pdf (from group_means_vst.tsv) for a time course. When
 cluster_genes.py has clustered a time course, also cluster_trajectories.pdf and
-cluster_selection.pdf.
+cluster_selection.pdf, and when gp_trajectories.py has fitted curves,
+cluster_gp_curves.pdf (plus cluster_gp_differences.pdf comparing conditions).
 """
 import json
 import sys
@@ -34,7 +35,8 @@ TRAJECTORY_GENES = 12
 OUTPUTS = {"pca": "pca.pdf", "pca_coordinates": "pca_coordinates.tsv",
            "ma": "ma_plot.pdf", "volcano": "volcano_plot.pdf",
            "trajectories": "top_gene_trajectories.pdf",
-           "cluster_trajectories": "cluster_trajectories.pdf", "cluster_selection": "cluster_selection.pdf"}
+           "cluster_trajectories": "cluster_trajectories.pdf", "cluster_selection": "cluster_selection.pdf",
+           "gp_curves": "cluster_gp_curves.pdf", "gp_differences": "cluster_gp_differences.pdf"}
 
 
 def read_table(path):
@@ -174,6 +176,70 @@ def plot_cluster_selection(selection, manifest, directory):
     save(figure, directory / OUTPUTS["cluster_selection"])
 
 
+def cluster_grid(count):
+    columns = min(4, count)
+    rows = int(np.ceil(count / columns))
+    return plt.subplots(rows, columns, figsize=(2.9 * columns + 0.6, 2.5 * rows + 0.9), squeeze=False,
+                        sharex=True, sharey=True)
+
+
+def plot_gp_curves(curves, points, manifest, directory):
+    """Each cluster's GP mean curve and 95% band per condition, over each sample's mean z-score."""
+    levels, position = time_positions(manifest["time"])
+    gp = manifest["gaussian_process"]
+    curves = curves.assign(condition=curves["condition"].fillna("").astype(str))
+    points = points.assign(condition=points["condition"].fillna("").astype(str))
+    sizes = dict(zip(range(1, len(manifest["clustering"]["cluster_sizes"]) + 1), manifest["clustering"]["cluster_sizes"]))
+    count = manifest["clustering"]["clusters"]
+    figure, grid = cluster_grid(count)
+    for number, axes in zip(range(1, count + 1), grid.flat):
+        for color, condition in zip(CONDITION_COLORS * 10, gp["conditions"]):
+            dots = points[(points["cluster"] == number) & (points["condition"] == condition)]
+            axes.scatter(dots["time"], dots["mean_z"], color=color, s=12, alpha=0.7, linewidth=0, zorder=3)
+            curve = curves[(curves["cluster"] == number) & (curves["condition"] == condition)]
+            axes.fill_between(curve["time"], curve["lower"], curve["upper"], color=color, alpha=0.25, linewidth=0)
+            axes.plot(curve["time"], curve["mean"], color=color, linewidth=2, label=condition or None)
+        axes.axhline(0, color=NOT_SIGNIFICANT, linewidth=0.5, zorder=0)
+        axes.set_title(f"Cluster {number}: {sizes.get(number, 0)} genes", fontsize=9)
+        axes.set_xticks([position[time] for time in levels])
+        axes.set_xticklabels(levels, fontsize=7)
+        axes.tick_params(axis="y", labelsize=7)
+    for axes in list(grid.flat)[count:]:
+        axes.axis("off")
+    if gp["conditions"] != [""]:
+        grid.flat[0].legend(fontsize=7)
+    figure.supxlabel(f"Time ({manifest['time']['column']})", fontsize=9)
+    figure.supylabel("Cluster mean expression (z-score)", fontsize=9)
+    figure.suptitle("Gaussian process curve per cluster (line: mean pattern; band: 95% interval; dots: samples)", fontsize=10)
+    save(figure, directory / OUTPUTS["gp_curves"])
+
+
+def plot_gp_differences(differences, manifest, directory):
+    """Test minus reference curve per cluster; shaded where the 95% band excludes 0."""
+    levels, position = time_positions(manifest["time"])
+    difference = manifest["gaussian_process"]["difference"]
+    count = manifest["clustering"]["clusters"]
+    figure, grid = cluster_grid(count)
+    for number, axes in zip(range(1, count + 1), grid.flat):
+        curve = differences[differences["cluster"] == number]
+        axes.axhline(0, color="black", linewidth=0.8)
+        axes.fill_between(curve["time"], curve["lower"], curve["upper"], color=LOWER, alpha=0.25, linewidth=0)
+        axes.plot(curve["time"], curve["difference"], color=LOWER, linewidth=2)
+        for interval in difference["intervals"].get(str(number), []):
+            axes.axvspan(interval["start"], interval["end"], color=HIGHER, alpha=0.08, linewidth=0)
+        axes.set_title(f"Cluster {number}", fontsize=9)
+        axes.set_xticks([position[time] for time in levels])
+        axes.set_xticklabels(levels, fontsize=7)
+        axes.tick_params(axis="y", labelsize=7)
+    for axes in list(grid.flat)[count:]:
+        axes.axis("off")
+    figure.supxlabel(f"Time ({manifest['time']['column']})", fontsize=9)
+    figure.supylabel(f"{difference['test_level']} minus {difference['reference_level']} (z-score)", fontsize=9)
+    figure.suptitle(f"How {difference['test_level']} differs from {difference['reference_level']} over time "
+                    "(band: 95% interval; shaded: band excludes 0)", fontsize=10)
+    save(figure, directory / OUTPUTS["gp_differences"])
+
+
 def plot_trajectories(results, vst, samples, means, manifest, directory):
     """Mean VST over time for the most significant genes, with each sample as a dot."""
     time_info = manifest["time"]
@@ -278,6 +344,9 @@ def main(results_dir):
         means = pd.read_csv(directory / manifest["outputs"]["group_means"], sep="\t", keep_default_na=False, na_values=["NA"])
         means["gene_id"] = means["gene_id"].astype(str)
         plot_trajectories(results, vst, samples, means, manifest, directory)
+        # Plots that only some runs draw: never leave one from an earlier run.
+        for key in ("cluster_trajectories", "cluster_selection", "gp_curves", "gp_differences"):
+            (directory / OUTPUTS[key]).unlink(missing_ok=True)
         if (manifest.get("clustering") or {}).get("status") == "completed":
             clusters = pd.read_csv(directory / manifest["outputs"]["gene_clusters"], sep="\t", dtype={"gene_id": str})
             profiles = pd.read_csv(directory / manifest["outputs"]["cluster_profiles"], sep="\t",
@@ -285,6 +354,12 @@ def main(results_dir):
             selection = pd.read_csv(directory / manifest["outputs"]["cluster_selection"], sep="\t")
             plot_clusters(clusters, profiles, means, manifest, directory)
             plot_cluster_selection(selection, manifest, directory)
+            if (manifest.get("gaussian_process") or {}).get("status") == "completed":
+                read_gp = lambda key: pd.read_csv(directory / manifest["outputs"][key], sep="\t",
+                                                  keep_default_na=False, na_values=["NA"])
+                plot_gp_curves(read_gp("gp_curves"), read_gp("gp_points"), manifest, directory)
+                if "gp_differences" in manifest["outputs"]:
+                    plot_gp_differences(pd.read_csv(directory / manifest["outputs"]["gp_differences"], sep="\t"), manifest, directory)
         return
 
     contrast = f"log2 fold change, {manifest['contrast']['log2_fold_change']}"

@@ -101,8 +101,13 @@ the highest silhouette score unless the user sets one under Advanced settings.
 This writes `gene_clusters.tsv`, `cluster_profiles.tsv` (each cluster's mean
 pattern, the input for Gaussian process trajectories) and
 `cluster_selection.tsv`, plotted as `cluster_trajectories.pdf` and
-`cluster_selection.pdf`. Clustering is optional: if it fails, the job still
-delivers the DESeq2 results with a warning. On the website, choose "RNA-seq differential expression" on the
+`cluster_selection.pdf`. Each cluster then gets a smooth Gaussian process curve
+(`lib/scripts/rnaseq/gp_trajectories.py`): each sample's mean z-score over the
+cluster's genes is fitted with an RBF-plus-noise GP at the numeric times
+(`cluster_gp_curves.tsv` and `.pdf`; condition-by-time runs also get
+`cluster_gp_differences.tsv` and `.pdf`). Non-numeric time points skip the
+curves with a note. Clustering and curves are optional stages: if either fails,
+the job still delivers the DESeq2 results with a warning. On the website, choose "RNA-seq differential expression" on the
 home page, then upload a count matrix and sample sheet (`RnaSeqController`,
 pages under `/rnaseq`); the example files are linked from the upload page.
 To queue the example dataset without the website, run

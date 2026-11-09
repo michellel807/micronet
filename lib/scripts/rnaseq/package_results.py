@@ -38,6 +38,15 @@ DESCRIPTIONS = {
     "cluster_selection.tsv": "The silhouette score and within-cluster spread for each number of clusters tried; chosen marks the one used.",
     "cluster_trajectories.pdf": "One panel per cluster: each gene's z-scored pattern over time as a thin line, the cluster average in bold.",
     "cluster_selection.pdf": "Silhouette score against the number of clusters, with the number used circled.",
+    "cluster_gp_points.tsv": "The values the curves were fitted to: each sample's mean z-score over its cluster's genes.",
+    "cluster_gp_curves.tsv": "Each cluster's Gaussian process curve: mean, standard deviation and 95% band at 100 times "
+                             "across the measured range, per condition.",
+    "cluster_gp_fits.tsv": "The fitted curve settings per cluster and condition: lengthscale (how quickly the curve can bend, "
+                           "in time units), signal and noise variance, and log-likelihood.",
+    "cluster_gp_differences.tsv": "The difference between the two conditions' curves per cluster, with its 95% band.",
+    "cluster_gp_curves.pdf": "One panel per cluster: the Gaussian process curve and 95% band per condition, with each sample as a dot.",
+    "cluster_gp_differences.pdf": "One panel per cluster: how the test condition's curve differs from the reference's over time; "
+                                  "shaded where the 95% band excludes 0.",
 }
 TIME_COURSE_RESULTS = ("Every tested gene: baseMean, the likelihood ratio test statistic (stat), pvalue, padj, significant, "
                        "why padj is missing (padj_na_reason), and log2 fold changes at each time point (log2FC_* columns; "
@@ -130,6 +139,52 @@ def clustering_lines(clustering):
     return lines
 
 
+def format_time(value):
+    """Times from the curve grid, to one decimal place (0.484848 -> 0.5, 24.0 -> 24)."""
+    return f"{round(float(value), 1):g}"
+
+
+def gaussian_process_lines(gp, time_column):
+    """The GAUSSIAN PROCESS CURVES section of the README, or nothing when the stage did not run."""
+    if not gp:
+        return []
+    lines = ["", "GAUSSIAN PROCESS CURVES"]
+    if gp.get("status") != "completed":
+        return lines + [f"  No curves: {gp.get('reason', 'the curves could not be fitted')}"]
+    lines += [
+        "  Each cluster's pattern was drawn as a smooth curve over time (cluster_gp_curves.pdf).",
+        "  1. For every sample, the z-scores of the cluster's genes were averaged, giving one value",
+        "     per sample. Each sample counts once, because genes measured in the same sample share",
+        "     that sample's errors.",
+        "  2. A Gaussian process (RBF kernel plus noise, the model AMiGA uses for growth curves) was",
+        "     fitted to those values at the actual times, by maximum likelihood. The curve may not",
+        f"     bend faster than over {format_time(gp['min_lengthscale'])} {time_column} units (half the largest gap between",
+        "     time points), so it does not sag back to zero inside a long gap.",
+        "  The band is the 95% interval of the cluster's mean curve: narrow where replicates agree,",
+        "  wide between time points. Between time points the curve is an interpolation, not a",
+        "  measurement: a smooth curve can rise above the highest measured value (or dip below the",
+        "  lowest) between time points, so where a peak falls between measurements is a guess. Trust",
+        "  the curve at the measured times, and use the band's width between them as the uncertainty.",
+    ]
+    difference = gp.get("difference")
+    if difference:
+        test, reference = difference["test_level"], difference["reference_level"]
+        lines += [
+            f"  cluster_gp_differences.pdf shows {test} minus {reference} for each cluster. Where the band",
+            "  excludes 0, the curves differ beyond replicate variation. This describes the clusters; it",
+            "  is not a new significance test (the genes were already selected and grouped using the same",
+            "  data), so treat small differences with caution:",
+        ]
+        for number, intervals in difference["intervals"].items():
+            if intervals:
+                ranges = "; ".join(f"{interval['direction']} in {test} from {format_time(interval['start'])} to "
+                                   f"{format_time(interval['end'])}" for interval in intervals)
+            else:
+                ranges = "no clear difference"
+            lines.append(f"    Cluster {number}: {ranges}")
+    return lines
+
+
 def readme(manifest, job_number, files):
     parameters, genes, samples = manifest["parameters"], manifest["genes"], manifest["samples"]
     time_course = bool(manifest.get("time"))
@@ -181,6 +236,7 @@ def readme(manifest, job_number, files):
         "",
     ]
     lines += clustering_lines(manifest.get("clustering"))
+    lines += gaussian_process_lines(manifest.get("gaussian_process"), (manifest.get("time") or {}).get("column", "time"))
     lines += [
         "",
         "FILES",
@@ -198,6 +254,12 @@ def readme(manifest, job_number, files):
         "CITATION",
         "  Love MI, Huber W, Anders S (2014). Moderated estimation of fold change and",
         "  dispersion for RNA-seq data with DESeq2. Genome Biology 15:550.",
+    ]
+    if (manifest.get("gaussian_process") or {}).get("status") == "completed":
+        lines += ["  Rasmussen CE, Williams CKI (2006). Gaussian Processes for Machine Learning. MIT Press.",
+                  "  Midani FS, Collins J, Britton RA (2021). AMiGA: software for automated analysis of",
+                  "  microbial growth assays. mSystems 6:e00508-21."]
+    lines += [
         "",
     ]
     return "\n".join(lines)

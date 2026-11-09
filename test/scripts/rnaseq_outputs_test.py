@@ -190,6 +190,8 @@ class TimeCourseOutputsTest(unittest.TestCase):
                         "--config", str(config), "--out", str(cls.directory)], check=True, capture_output=True)
         result = run_script("cluster_genes.py", cls.directory)
         assert result.returncode == 0, result.stderr
+        result = run_script("gp_trajectories.py", cls.directory)
+        assert result.returncode == 0, result.stderr
         result = run_script("plot_results.py", cls.directory)
         assert result.returncode == 0, result.stderr
         cls.zip_path = Path(WORK.name) / "time-results.zip"
@@ -246,13 +248,35 @@ class TimeCourseOutputsTest(unittest.TestCase):
         self.assertIn("CLUSTERS", self.readme)
         self.assertIn("highest\n  silhouette score", self.readme)
 
+    def test_each_cluster_gets_a_curve_per_condition_and_a_difference(self):
+        manifest = json.loads((self.directory / "manifest.json").read_text())
+        gp, clusters = manifest["gaussian_process"], manifest["clustering"]["clusters"]
+        self.assertEqual(gp["status"], "completed")
+        self.assertEqual(gp["conditions"], ["control", "treated"])
+        curves = pd.read_csv(self.directory / "cluster_gp_curves.tsv", sep="\t")
+        self.assertEqual(len(curves), clusters * 2 * 100)
+        self.assertTrue((curves["lower"] <= curves["mean"]).all() and (curves["mean"] <= curves["upper"]).all())
+        self.assertEqual((curves["time"].min(), curves["time"].max()), (0, 24))
+        points = pd.read_csv(self.directory / "cluster_gp_points.tsv", sep="\t")
+        self.assertEqual(len(points), clusters * 18, "one point per sample per cluster")
+        differences = pd.read_csv(self.directory / "cluster_gp_differences.tsv", sep="\t")
+        self.assertEqual(len(differences), clusters * 100)
+        self.assertEqual(sorted(gp["difference"]["intervals"]), sorted(str(number) for number in range(1, clusters + 1)))
+        with zipfile.ZipFile(self.zip_path) as archive:
+            names = {Path(name).name for name in archive.namelist()}
+        self.assertTrue({"cluster_gp_points.tsv", "cluster_gp_curves.tsv", "cluster_gp_fits.tsv", "cluster_gp_differences.tsv",
+                         "cluster_gp_curves.pdf", "cluster_gp_differences.pdf"} <= names)
+        self.assertIn("GAUSSIAN PROCESS CURVES", self.readme)
+        self.assertIn("treated minus control", self.readme)
+        self.assertIn("Rasmussen CE", self.readme)
+
     def test_too_few_significant_genes_skips_clustering_and_says_why(self):
         directory = Path(WORK.name) / "time-few-significant"
         shutil.copytree(self.directory, directory)
         results = pd.read_csv(directory / "deseq2_results.tsv", sep="\t")
         results["significant"] = results.index < 5
         results.to_csv(directory / "deseq2_results.tsv", sep="\t", index=False)
-        for script, *arguments in [("cluster_genes.py",), ("plot_results.py",),
+        for script, *arguments in [("cluster_genes.py",), ("gp_trajectories.py",), ("plot_results.py",),
                                    ("package_results.py", Path(WORK.name) / "few.zip", "--job-number", 3)]:
             result = run_script(script, directory, *arguments)
             self.assertEqual(result.returncode, 0, result.stderr)
@@ -260,13 +284,19 @@ class TimeCourseOutputsTest(unittest.TestCase):
         self.assertEqual(manifest["clustering"]["status"], "skipped")
         self.assertNotIn("gene_clusters", manifest["outputs"])
         self.assertFalse((directory / "gene_clusters.tsv").exists())
-        self.assertIn("Not clustered: Clustering needs at least 20 significant genes", (directory / "README.txt").read_text())
+        readme = (directory / "README.txt").read_text()
+        self.assertIn("Not clustered: Clustering needs at least 20 significant genes", readme)
+        self.assertEqual(manifest["gaussian_process"]["status"], "skipped")
+        self.assertFalse((directory / "cluster_gp_curves.tsv").exists())
+        self.assertFalse((directory / "cluster_gp_curves.pdf").exists())
+        self.assertIn("No curves: The genes were not clustered", readme)
 
     def test_two_condition_results_are_not_clustered(self):
         directory = fresh_copy("two-condition-clustering")
         before = (directory / "manifest.json").read_text()
-        result = run_script("cluster_genes.py", directory)
-        self.assertEqual(result.returncode, 0, result.stderr)
+        for script in ["cluster_genes.py", "gp_trajectories.py"]:
+            result = run_script(script, directory)
+            self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual((directory / "manifest.json").read_text(), before)
         self.assertFalse((directory / "gene_clusters.tsv").exists())
 

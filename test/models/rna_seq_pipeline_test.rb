@@ -55,11 +55,13 @@ class RnaSeqPipelineTest < ActiveSupport::TestCase
     folder = "rnaseq_results_job#{@job.job_number}"
     entries = zip_entries(ActionMailer::Base.deliveries.sole.attachments.first.decoded)
     %w[gene_clusters.tsv cluster_profiles.tsv cluster_selection.tsv cluster_trajectories.pdf cluster_selection.pdf
-       top_gene_trajectories.pdf group_means_vst.tsv].each { |name| assert_includes entries, "#{folder}/#{name}" }
+       top_gene_trajectories.pdf group_means_vst.tsv cluster_gp_points.tsv cluster_gp_curves.tsv cluster_gp_fits.tsv
+       cluster_gp_curves.pdf].each { |name| assert_includes entries, "#{folder}/#{name}" }
     clustering = JSON.parse(@job.rnaseq_results_dir.join("manifest.json").read)["clustering"]
     assert_equal "silhouette", clustering["chosen_by"]
     assert_includes 2..10, clustering["clusters"]
     assert_includes @job.rnaseq_results_dir.join("README.txt").read, "CLUSTERS"
+    assert_includes @job.rnaseq_results_dir.join("README.txt").read, "GAUSSIAN PROCESS CURVES"
   end
 
   test "a chosen number of clusters is passed to the clustering script" do
@@ -75,7 +77,7 @@ class RnaSeqPipelineTest < ActiveSupport::TestCase
   test "clustering runs only for time courses" do
     assert_not_includes RnaSeq::Pipeline.new(@job).stages.map(&:name), "Gene clustering"
     use_time_course
-    assert_equal ["Differential expression", "Gene clustering", "Plots", "Packaging"],
+    assert_equal ["Differential expression", "Gene clustering", "Cluster curves", "Plots", "Packaging"],
                  RnaSeq::Pipeline.new(@job).stages.map(&:name)
   end
 
@@ -90,6 +92,19 @@ class RnaSeqPipelineTest < ActiveSupport::TestCase
     assert_includes ActionMailer::Base.deliveries.sole.text_part.body.decoded, "Gene clustering: The genes could not be clustered"
     assert @job.rnaseq_results_dir.join("top_gene_trajectories.pdf").file?
     assert_not @job.rnaseq_results_dir.join("cluster_trajectories.pdf").exist?
+  end
+
+  test "failed cluster curves still deliver the results, with a warning" do
+    require_rscript
+    use_time_course
+    run_command = @job.method(:run_cancellable_command)
+    fails = ->(*command) { command.any? { |part| part.to_s.end_with?("gp_trajectories.py") } ? false : run_command.call(*command) }
+    @job.stub(:run_cancellable_command, fails) { RnaSeq::Pipeline.new(@job).run }
+
+    assert_equal "Completed with warnings", @job.reload.status
+    assert_includes ActionMailer::Base.deliveries.sole.text_part.body.decoded, "Cluster curves: The cluster curves could not be fitted"
+    assert @job.rnaseq_results_dir.join("cluster_trajectories.pdf").file?
+    assert_not @job.rnaseq_results_dir.join("cluster_gp_curves.pdf").exist?
   end
 
   test "failed plots still deliver the tables, with a warning" do
