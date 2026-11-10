@@ -35,7 +35,7 @@ module RnaSeq
     SAMPLES_IN_MODEL = { "all" => "All samples", "contrast_only" => "Only the two compared groups" }.freeze
     # Matches MIN_CLUSTERS and MAX_CLUSTERS in lib/scripts/rnaseq/cluster_genes.py.
     CLUSTER_COUNTS = (2..10).freeze
-    CLUSTERING_SETTINGS = %w[clusters silhouette_baseline].freeze
+    CLUSTERING_SETTINGS = %w[cluster_genes clusters silhouette_baseline].freeze
 
     attr_reader :counts_file, :metadata_file, :annotation_file, :original_filenames, :deseq2, :clustering
 
@@ -70,6 +70,12 @@ module RnaSeq
     # The number of gene clusters the user chose, or nil to choose it from the data.
     def cluster_count
       clustering["clusters"]
+    end
+
+    # Time courses cluster their significant genes unless the user turned it off
+    # (stored as "cluster_genes" => false).
+    def cluster_genes?
+      time_course? && clustering["cluster_genes"] != false
     end
 
     # Whether to compare the clustering's silhouette with a shuffled-data baseline.
@@ -126,6 +132,8 @@ module RnaSeq
     end
 
     def cluster_description
+      return "Not clustered (turned off)" unless cluster_genes?
+
       description = cluster_count ? "#{cluster_count} (set by you)" : "Number chosen automatically from the data"
       silhouette_baseline? ? "#{description}; silhouette checked against a shuffled baseline" : description
     end
@@ -167,6 +175,11 @@ module RnaSeq
     def validate_clustering!
       unknown = clustering.keys - CLUSTERING_SETTINGS
       raise Invalid, "Unknown gene clustering settings: #{unknown.join(', ')}" if unknown.any?
+      if clustering.key?("cluster_genes")
+        raise Invalid, "The cluster genes setting must be false when present" unless clustering["cluster_genes"] == false
+        raise Invalid, "Gene clustering applies only to time-course analyses" unless time_course?
+        raise Invalid, "Clustering settings cannot be combined with turning clustering off" if clustering.size > 1
+      end
       if clustering.key?("silhouette_baseline")
         raise Invalid, "The silhouette baseline setting must be true when present" unless clustering["silhouette_baseline"] == true
         raise Invalid, "Gene clustering applies only to time-course analyses" unless time_course?

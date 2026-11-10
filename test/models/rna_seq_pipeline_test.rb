@@ -75,6 +75,11 @@ class RnaSeqPipelineTest < ActiveSupport::TestCase
     assert_not clustering.key?("silhouette_baseline")
   end
 
+  test "a time course with clustering turned off skips the clusters and their curves" do
+    use_time_course(clustering: { cluster_genes: false })
+    assert_equal ["Differential expression", "Plots", "Packaging"], RnaSeq::Pipeline.new(@job).stages.map(&:name)
+  end
+
   test "the silhouette baseline option reaches the clustering script and the README" do
     require_rscript
     use_time_course(clustering: { silhouette_baseline: true })

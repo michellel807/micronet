@@ -290,7 +290,7 @@ class RnaSeqFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "5 (set by you)"
     get rnaseq_configure_path
     assert_select "select#clusters option[selected]", "5"
-    assert_select "details.rnaseq-advanced[open]"
+    assert_select "details.rnaseq-advanced[open]", false, "clustering is not an advanced setting"
 
     token = session[:upload_token]
     post rnaseq_submit_path
@@ -311,7 +311,6 @@ class RnaSeqFlowTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "silhouette checked against a shuffled baseline"
     get rnaseq_configure_path
     assert_select "input#silhouette_baseline[checked]"
-    assert_select "details.rnaseq-advanced[open]"
 
     post rnaseq_configure_path, params: base.merge(clusters: "4", silhouette_baseline: "1")
     assert_equal({ "clusters" => 4, "silhouette_baseline" => true }, session[:rnaseq_config]["clustering"])
@@ -321,6 +320,28 @@ class RnaSeqFlowTest < ActionDispatch::IntegrationTest
     post rnaseq_configure_path, params: TIME_DEFAULTS.merge(condition_column: "condition", reference_level: "control",
                                                             test_level: "treated", silhouette_baseline: "1")
     assert_not session[:rnaseq_config].key?("clustering"), "two-condition analyses are not clustered"
+  end
+
+  test "gene clustering is on by default, outside advanced settings, and can be turned off" do
+    start
+    upload_time_course
+    get rnaseq_configure_path
+    assert_select "input#cluster_genes[type=checkbox][checked]"
+    assert_select "details.rnaseq-advanced select#clusters", false
+    assert_select "details.rnaseq-advanced input#cluster_genes", false
+
+    base = TIME_DEFAULTS.merge(experiment_type: "time_course", time_column: "time")
+    post rnaseq_configure_path, params: base.merge(cluster_genes: "0", clusters: "4", silhouette_baseline: "1")
+    assert_redirected_to rnaseq_review_path
+    assert_equal({ "cluster_genes" => false }, session[:rnaseq_config]["clustering"], "the other clustering choices are dropped")
+    follow_redirect!
+    assert_includes response.body, "Not clustered (turned off)"
+    assert_not_includes response.body, "Gaussian process curve for each cluster"
+    get rnaseq_configure_path
+    assert_select "input#cluster_genes[checked]", false
+
+    post rnaseq_configure_path, params: base.merge(cluster_genes: "1")
+    assert_not session[:rnaseq_config].key?("clustering")
   end
 
   test "a two-condition analysis ignores a number of gene clusters" do

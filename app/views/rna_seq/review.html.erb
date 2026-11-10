@@ -68,12 +68,12 @@
 
         <h2>Results</h2>
         <% if @configuration.time_course? %>
-          <p>You will receive a zip file with the full DESeq2 results table (with log2 fold changes at each time point), the significant genes, normalized and variance-stabilized counts, group means over time, a PCA plot, a plot of the top genes over time, the significant genes grouped into clusters by their pattern over time, and a Gaussian process curve for each cluster.</p>
+          <p>You will receive a zip file with the full DESeq2 results table (with log2 fold changes at each time point), the significant genes, normalized and variance-stabilized counts, group means over time, a PCA plot, a plot of the top genes over time<% if @configuration.cluster_genes? %>, the significant genes grouped into clusters by their pattern over time, and a Gaussian process curve for each cluster<% end %>.</p>
         <% else %>
           <p>You will receive a zip file with the full DESeq2 results table, the significant genes, normalized and variance-stabilized counts, and PCA, MA and volcano plots.</p>
         <% end %>
         <% if @configuration.annotation_file %>
-          <p>It will also include the functional enrichment results: every annotation term tested, the significant terms, and a plot of the top terms for each <%= @configuration.time_course? ? "cluster" : "group of significant genes" %>.</p>
+          <p>It will also include the functional enrichment results: every annotation term tested, the significant terms, and a plot of the top terms for each <%= @configuration.cluster_genes? ? "cluster" : "group of significant genes" %>.</p>
         <% end %>
 
         <%= submit_tag "Start My Job", class: "analysis-button" %>

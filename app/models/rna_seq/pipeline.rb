@@ -38,8 +38,8 @@ module RnaSeq
     def stages
       [
         Stage.new("Differential expression", true, :differential_expression),
-        (Stage.new("Gene clustering", false, :clustering) if configuration.time_course?),
-        (Stage.new("Cluster curves", false, :gaussian_process) if configuration.time_course?),
+        (Stage.new("Gene clustering", false, :clustering) if configuration.cluster_genes?),
+        (Stage.new("Cluster curves", false, :gaussian_process) if configuration.cluster_genes?),
         (Stage.new("Functional enrichment", false, :enrichment) if configuration.annotation_file),
         Stage.new("Plots", false, :plots),
         Stage.new("Packaging", true, :package)

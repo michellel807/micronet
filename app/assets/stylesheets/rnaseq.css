@@ -147,6 +147,8 @@
 
 .rnaseq-checkbox input { accent-color: var(--accent); margin-right: 6px; }
 
+[data-cluster-options] { margin-top: 16px; }
+
 .rnaseq-actions {
   display: flex;
   justify-content: space-between;

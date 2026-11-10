@@ -94,6 +94,20 @@ class RnaSeqConfigurationTest < ActiveSupport::TestCase
     assert_raises(RnaSeq::Configuration::Invalid) { configuration(clustering: { clusters: 4 }) }
   end
 
+  test "a time course can turn gene clustering off" do
+    time = { experiment_type: "time_course", time_column: "time" }
+    assert configuration(deseq2: time).cluster_genes?
+    assert_not configuration.cluster_genes?, "two-condition analyses are never clustered"
+
+    off = RnaSeq::Configuration.from_h(configuration(deseq2: time, clustering: { cluster_genes: false }).to_h.as_json)
+    assert_not off.cluster_genes?
+    assert_equal "Not clustered (turned off)", off.summary["Gene clusters"]
+    [{ cluster_genes: true }, { cluster_genes: false, clusters: 4 }, { cluster_genes: false, silhouette_baseline: true }].each do |clustering|
+      assert_raises(RnaSeq::Configuration::Invalid, clustering.inspect) { configuration(deseq2: time, clustering: clustering) }
+    end
+    assert_raises(RnaSeq::Configuration::Invalid) { configuration(clustering: { cluster_genes: false }) }
+  end
+
   test "a time course can ask for a shuffled silhouette baseline" do
     time = { experiment_type: "time_course", time_column: "time" }
     assert_not configuration(deseq2: time).silhouette_baseline?

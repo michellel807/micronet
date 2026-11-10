@@ -77,6 +77,20 @@
         <p class="rnaseq-hint" data-show-for="two_condition">Each condition needs at least <%= RnaSeq::Inputs::MIN_REPLICATES %> replicate samples; 3 or more are recommended.</p>
         <p class="rnaseq-hint" data-show-for="condition_by_time">Only the two chosen conditions are analyzed, and both need samples at every time point.</p>
 
+        <fieldset class="ds-field rnaseq-radios" data-show-for="time_course condition_by_time">
+          <legend class="ds-label">Gene clustering</legend>
+          <%= hidden_field_tag :cluster_genes, "0", id: nil %>
+          <label class="rnaseq-checkbox" for="cluster_genes"><%= check_box_tag :cluster_genes, "1", @form["cluster_genes"] == "1" %> Group the significant genes into clusters by their pattern over time</label>
+          <p class="rnaseq-hint">Clustering also draws a Gaussian process curve for each cluster. Turn it off to get only the differential expression results and plots.</p>
+          <div data-cluster-options>
+            <label class="ds-label" for="clusters">Number of gene clusters</label>
+            <%= select_tag :clusters, options_for_select([["Automatic (recommended)", ""]] + RnaSeq::Configuration::CLUSTER_COUNTS.map { |count| [count, count.to_s] }, @form["clusters"]), class: "ds-select" %>
+            <p class="rnaseq-hint">Automatic tries 2 to 10 groups and keeps the number that separates the patterns best (highest silhouette score).</p>
+            <label class="rnaseq-checkbox" for="silhouette_baseline"><%= check_box_tag :silhouette_baseline, "1", @form["silhouette_baseline"] == "1" %> Check silhouette reliability against a random baseline</label>
+            <p class="rnaseq-hint">Also clusters 5 shuffled copies of your data, which have no real groups, and reports their average silhouette, your actual silhouette, and the difference. A difference near 0 means the clusters are no better separated than random patterns. Adds a little run time.</p>
+          </div>
+        </fieldset>
+
         <details class="rnaseq-advanced" <%= "open" if @advanced_open %>>
           <summary>Advanced settings</summary>
           <p class="rnaseq-hint">The defaults suit most experiments.</p>
@@ -123,13 +137,6 @@
             <% end %>
           </fieldset>
 
-          <div class="ds-field" data-show-for="time_course condition_by_time">
-            <label class="ds-label" for="clusters">Number of gene clusters</label>
-            <%= select_tag :clusters, options_for_select([["Automatic (recommended)", ""]] + RnaSeq::Configuration::CLUSTER_COUNTS.map { |count| [count, count.to_s] }, @form["clusters"]), class: "ds-select" %>
-            <p class="rnaseq-hint">Significant genes are grouped by the shape of their change over time. Automatic tries 2 to 10 groups and keeps the number that separates the patterns best (highest silhouette score).</p>
-            <label class="rnaseq-checkbox" for="silhouette_baseline"><%= check_box_tag :silhouette_baseline, "1", @form["silhouette_baseline"] == "1" %> Check silhouette reliability against a random baseline</label>
-            <p class="rnaseq-hint">Also clusters 5 shuffled copies of your data, which have no real groups, and reports their average silhouette, your actual silhouette, and the difference. A difference near 0 means the clusters are no better separated than random patterns. Adds a little run time.</p>
-          </div>
         </details>
       </div>
 
@@ -178,6 +185,14 @@
         element.hidden = !shown;
         element.querySelectorAll("select, input").forEach(function (input) { input.disabled = !shown; });
       });
+      // The cluster count and reliability check only apply when clustering is on.
+      var clusterBox = document.getElementById("cluster_genes");
+      var clusterOptions = form.querySelector("[data-cluster-options]");
+      if (clusterBox && clusterOptions) {
+        var clustering = clusterBox.checked && !clusterBox.disabled;
+        clusterOptions.hidden = !clustering;
+        clusterOptions.querySelectorAll("select, input").forEach(function (input) { input.disabled = !clustering; });
+      }
       // In a time course the condition column only matters when one condition is chosen.
       var usesCondition = current !== "time_course" || (subset && subset.value !== "");
       var usesTime = current !== "two_condition";
