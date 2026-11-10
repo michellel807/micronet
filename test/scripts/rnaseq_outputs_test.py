@@ -69,6 +69,25 @@ def run_script(script, *arguments):
 
 
 @unittest.skipUnless(RSCRIPT, "Rscript is not installed; run these tests inside the MicroNet Docker image.")
+class TimeAxisTest(unittest.TestCase):
+    def test_uneven_times_are_evenly_spaced_in_order(self):
+        levels, position = plots.time_positions({"levels": ["3", "4", "5", "6", "8", "24", "48", "168", "336"],
+                                                 "numeric_values": [3, 4, 5, 6, 8, 24, 48, 168, 336]})
+        self.assertEqual(levels, ["3", "4", "5", "6", "8", "24", "48", "168", "336"])
+        self.assertEqual([position[level] for level in levels], list(range(9)))
+
+    def test_long_time_lists_label_every_other_point_and_the_last(self):
+        self.assertEqual(plots.time_tick_labels(["0", "6", "24"]), ["0", "6", "24"])
+        labels = plots.time_tick_labels([str(time) for time in range(11)])
+        self.assertEqual(labels, ["0", "", "2", "", "4", "", "6", "", "8", "", "10"])
+        self.assertEqual(plots.time_tick_labels([str(time) for time in range(10)])[-1], "9")
+
+    def test_adjusted_p_values_in_the_corner(self):
+        self.assertEqual(plots.format_padj(6.04e-142), "6e-142")
+        self.assertEqual(plots.format_padj(0.0), "<1e-300")
+        self.assertEqual(plots.format_padj(float("nan")), "NA")
+
+
 class PlotResultsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

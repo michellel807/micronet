@@ -30,7 +30,7 @@ DESCRIPTIONS = {
     "volcano_plot.pdf": "Fold change against -log10 p-value; significant genes colored.",
     "group_means_vst.tsv": "Mean VST value of every gene in each group (condition and time point), one row per gene and group, "
                            "with the numeric time (time_value) when the times are numbers. Use these for trajectory plots and modeling.",
-    "top_gene_trajectories.pdf": "The most significant genes over time: group means as lines, each sample as a dot.",
+    "top_gene_trajectories.pdf": "The 24 most significant genes over time, as z-scores on an evenly spaced time axis: group means as lines, each sample as a dot, adjusted p-value in the corner.",
     "gene_clusters.tsv": "The cluster of each clustered gene, with its padj, largest fold change, and distance from its cluster's "
                          "average pattern (small = typical member). Sorted by cluster, most typical genes first.",
     "cluster_profiles.tsv": "Each cluster's average pattern: mean and standard deviation of the genes' z-scores in every group "

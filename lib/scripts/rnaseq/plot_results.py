@@ -41,7 +41,13 @@ LOWER = "#2e6da4"
 CONDITION_COLORS = ["#2e6da4", "#c0392b", "#27ae60", "#8e44ad", "#d68910", "#17a589"]
 TIME_COLORS = "viridis"
 MARKERS = ["o", "s", "^", "D", "v", "P"]
-TRAJECTORY_GENES = 12
+# The top-gene grid, styled like the growth Raw Data Plot (tiny shared-axis panels).
+TRAJECTORY_ROWS, TRAJECTORY_COLUMNS = 4, 6
+TRAJECTORY_GENES = TRAJECTORY_ROWS * TRAJECTORY_COLUMNS
+PANEL_FRAME = "#BBBBBB"
+PANEL_NAME = "#C0392B"
+PANEL_FILL = "#D9D9D9"
+MAX_TIME_LABELS = 8
 OUTPUTS = {"pca": "pca.pdf", "pca_coordinates": "pca_coordinates.tsv",
            "ma": "ma_plot.pdf", "volcano": "volcano_plot.pdf",
            "trajectories": "top_gene_trajectories.pdf",
@@ -122,10 +128,25 @@ def plot_time_pca(vst, samples, time_levels, condition_name, directory):
 
 
 def time_positions(time_info):
-    """Time levels and their x positions: the real times when they are numbers, otherwise evenly spaced."""
+    """Time levels (in the manifest's order, numeric when the times are numbers) and evenly spaced x
+    positions. DESeq2 treats each time point as a category, so these plots do too; the Gaussian
+    process plots are the ones drawn to scale."""
     levels = [str(level) for level in time_info["levels"]]
-    numeric = time_info.get("numeric_values")
-    return levels, dict(zip(levels, numeric if numeric else range(len(levels))))
+    return levels, {level: index for index, level in enumerate(levels)}
+
+
+def format_padj(value):
+    """Two significant figures; a p-value too small to store as a number is shown as below 1e-300."""
+    if pd.isna(value):
+        return "NA"
+    return "<1e-300" if value == 0 else f"{value:.2g}"
+
+
+def time_tick_labels(levels):
+    """Every label, or every other one (keeping the last) when there are too many to read."""
+    if len(levels) <= MAX_TIME_LABELS:
+        return list(levels)
+    return [level if index % 2 == 0 or index == len(levels) - 1 else "" for index, level in enumerate(levels)]
 
 
 def plot_clusters(clusters, profiles, means, manifest, directory):
@@ -160,13 +181,13 @@ def plot_clusters(clusters, profiles, means, manifest, directory):
         axes.axhline(0, color=NOT_SIGNIFICANT, linewidth=0.5, zorder=0)
         axes.set_title(f"Cluster {number}: {len(members)} genes", fontsize=9)
         axes.set_xticks([position[time] for time in levels])
-        axes.set_xticklabels(levels, fontsize=7)
+        axes.set_xticklabels(time_tick_labels(levels), fontsize=7)
         axes.tick_params(axis="y", labelsize=7)
     for axes in list(grid.flat)[count:]:
         axes.axis("off")
     if conditions != [""]:
         grid.flat[0].legend(fontsize=7)
-    figure.supxlabel(f"Time ({manifest['time']['column']})", fontsize=9)
+    figure.supxlabel(f"Time ({manifest['time']['column']}), evenly spaced, not to scale", fontsize=9)
     figure.supylabel("Expression, z-score within each gene", fontsize=9)
     how = "number set by you" if clustering["chosen_by"] == "user" else "number chosen by silhouette score"
     figure.suptitle(f"Gene clusters by pattern over time ({how}; thin lines: genes, bold: cluster mean)", fontsize=10)
@@ -283,42 +304,81 @@ def plot_enrichment(table, manifest, directory):
 
 
 def plot_trajectories(results, vst, samples, means, manifest, directory):
-    """Mean VST over time for the most significant genes, with each sample as a dot."""
+    """The most significant genes over time as a grid of small shared-axis panels, like the growth
+    Raw Data Plot: each gene's group means as a line and each sample as a dot, z-scored within the
+    gene so every panel shares one y-axis, on an evenly spaced time axis."""
     time_info = manifest["time"]
     levels, position = time_positions(time_info)
     significant = results[results["significant"]]
     chosen = significant if len(significant) else results[results["pvalue"].notna()]
     genes = list(chosen.sort_values(["padj", "pvalue"], kind="stable").index[:TRAJECTORY_GENES])
 
-    columns = 4
-    rows = max(1, int(np.ceil(len(genes) / columns)))
-    figure, grid = plt.subplots(rows, columns, figsize=(11, 2.6 * rows + 0.8), squeeze=False)
     means = means.assign(time=means["time"].astype(str), condition=means["condition"].fillna("").astype(str))
     sample_conditions = samples["condition"].astype(str) if "condition" in samples.columns else pd.Series("", index=samples.index)
     conditions = list(dict.fromkeys(means["condition"]))
-    for axes, gene in zip(grid.flat, genes):
-        for color, condition in zip(CONDITION_COLORS * 10, conditions):
-            line = means[(means["gene_id"] == gene) & (means["condition"] == condition)]
-            line = line.set_index("time").loc[[time for time in levels if time in set(line["time"])]]
-            axes.plot([position[time] for time in line.index], line["mean_vst"], color=color, marker="o",
-                      linewidth=1.5, markersize=4, label=condition or None)
+    single = conditions == [""]
+
+    # Per gene: each condition's (x, z of group means) and (x, z of samples), scaled by the gene's
+    # mean and population SD over all its group means (as in the cluster plot).
+    panels = []
+    for gene in genes:
+        rows = means[means["gene_id"] == gene]
+        centre, spread = rows["mean_vst"].mean(), rows["mean_vst"].std(ddof=0)
+        scale = (lambda values: (np.asarray(values, dtype=float) - centre) / spread) if spread > 0 else (lambda values: np.zeros(len(values)))
+        series = []
+        for condition in conditions:
+            line = rows[rows["condition"] == condition].set_index("time")
+            times = [time for time in levels if time in line.index]
             members = sample_conditions.index[sample_conditions == condition] if condition else samples.index
             members = [sample for sample in members if sample in vst.columns]
-            axes.scatter([position[str(samples.loc[sample, "time"])] for sample in members],
-                         vst.loc[gene, members], color=color, s=10, alpha=0.5, linewidth=0)
-        axes.set_title(f"{gene} (padj {results.loc[gene, 'padj']:.2g})", fontsize=8)
-        axes.set_xticks([position[time] for time in levels])
-        axes.set_xticklabels(levels, fontsize=7)
-        axes.tick_params(axis="y", labelsize=7)
-    for axes in list(grid.flat)[len(genes):]:
+            series.append((condition, [position[time] for time in times], scale(line.loc[times, "mean_vst"]),
+                           [position[str(samples.loc[sample, "time"])] for sample in members], scale(vst.loc[gene, members])))
+        panels.append((gene, series))
+
+    values = np.concatenate([np.concatenate([z, dots]) for _, series in panels for _, _, z, _, dots in series]) if panels else np.zeros(1)
+    values = values[np.isfinite(values)]
+    low, high = (min(values.min(), -1.0), max(values.max(), 1.0)) if len(values) else (-2.0, 2.0)
+    margin = 0.08 * (high - low)
+    bottom, top = low - margin, high + margin * 2.5  # extra room for the corner labels
+
+    figure, grid = plt.subplots(TRAJECTORY_ROWS, TRAJECTORY_COLUMNS, figsize=(12, 8.5), squeeze=False,
+                                sharex=True, sharey=True)
+    for axes, (gene, series) in zip(grid.flat, panels):
+        for color, (condition, x, z, dot_x, dots) in zip(CONDITION_COLORS * 10, series):
+            line_color = "black" if single else color
+            axes.scatter(dot_x, dots, color=NOT_SIGNIFICANT if single else color, s=6, alpha=0.5, linewidth=0, zorder=2)
+            axes.plot(x, z, color=line_color, linewidth=1.2, zorder=3, label=condition or None)
+            if single:
+                axes.fill_between(x, z, bottom, color=PANEL_FILL, zorder=1)
+        axes.axhline(0, color=PANEL_FRAME, linewidth=0.5, zorder=0)
+        for spine in axes.spines.values():
+            spine.set_color(PANEL_FRAME)
+        axes.text(0.04, 0.95, str(gene), transform=axes.transAxes, color=PANEL_NAME, fontsize=7, va="top", ha="left")
+        axes.text(0.96, 0.95, format_padj(results.loc[gene, "padj"]), transform=axes.transAxes, fontsize=7, va="top", ha="right")
+        axes.tick_params(length=2, labelsize=6, colors="#444444")
+    for axes in list(grid.flat)[len(panels):]:
         axes.axis("off")
-    if conditions != [""]:
-        grid.flat[0].legend(fontsize=7)
-    figure.supxlabel(f"Time ({time_info['column']})", fontsize=9)
-    figure.supylabel("VST expression", fontsize=9)
+    axes = grid[0, 0]
+    axes.set_ylim(bottom, top)
+    axes.set_xlim(-0.5, len(levels) - 0.5)
+    axes.set_xticks(range(len(levels)))
+    labels = time_tick_labels(levels)
+    for column in range(TRAJECTORY_COLUMNS):
+        # The bottom-most drawn panel in each column carries the time labels.
+        drawn = [row for row in range(TRAJECTORY_ROWS) if row * TRAJECTORY_COLUMNS + column < len(panels)]
+        if drawn:
+            grid[drawn[-1], column].xaxis.set_tick_params(labelbottom=True)
+            grid[drawn[-1], column].set_xticklabels(labels)
+    if not single:
+        handles, names = grid.flat[0].get_legend_handles_labels()
+        figure.legend(handles, names, loc="upper right", fontsize=8, frameon=False)
+    figure.supxlabel(f"Time ({time_info['column']}), evenly spaced, not to scale", fontsize=9)
+    figure.supylabel("Expression (z-score within each gene)", fontsize=9)
     title = "Most significant genes over time" if len(significant) else "No significant genes: lowest p-values shown"
-    figure.suptitle(f"{title} (lines: group means; dots: samples)", fontsize=10)
-    save(figure, directory / OUTPUTS["trajectories"])
+    figure.suptitle(f"{title} (lines: group means; dots: samples; corner: adjusted p-value)", fontsize=10)
+    figure.subplots_adjust(left=0.06, right=0.98, bottom=0.08, top=0.92, wspace=0.06, hspace=0.08)
+    figure.savefig(directory / OUTPUTS["trajectories"])
+    plt.close(figure)
 
 
 def plot_ma(results, contrast, directory):
