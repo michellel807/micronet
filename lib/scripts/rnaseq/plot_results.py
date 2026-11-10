@@ -180,6 +180,17 @@ def plot_cluster_selection(selection, manifest, directory):
     chosen = selection[selection["chosen"].astype(str).str.upper().eq("TRUE")]
     axes.scatter(chosen["k"], chosen["silhouette"], s=120, facecolors="none", edgecolors=HIGHER, linewidths=2,
                  label=f"Used: {int(chosen['k'].iloc[0])} clusters", zorder=3)
+    baseline = manifest.get("clustering", {}).get("silhouette_baseline")
+    if baseline:
+        axes.scatter([baseline["k"]], [baseline["shuffled_mean"]], s=60, facecolors="none", edgecolors="#888888",
+                     linewidths=1.5, marker="s", label=f"Shuffled baseline: {baseline['shuffled_mean']:.2f}", zorder=3)
+        axes.plot([baseline["k"]] * 2, [baseline["shuffled_mean"], baseline["actual"]], color="#888888",
+                  linestyle="--", linewidth=1, zorder=2)
+        # Below the axes, so it never hides a point.
+        axes.text(0.5, -0.2, f"Reliability check (k = {baseline['k']}): actual {baseline['actual']:.2f}, "
+                  f"shuffled baseline {baseline['shuffled_mean']:.2f}, difference {baseline['difference']:+.2f}",
+                  transform=axes.transAxes, fontsize=8, va="top", ha="center",
+                  bbox={"boxstyle": "round", "facecolor": "white", "edgecolor": "#BBBBBB"})
     axes.set_xticks(selection["k"])
     axes.set_xlabel("Number of clusters")
     axes.set_ylabel("Mean silhouette (higher = better separated)")

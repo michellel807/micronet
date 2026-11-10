@@ -94,6 +94,24 @@ class RnaSeqConfigurationTest < ActiveSupport::TestCase
     assert_raises(RnaSeq::Configuration::Invalid) { configuration(clustering: { clusters: 4 }) }
   end
 
+  test "a time course can ask for a shuffled silhouette baseline" do
+    time = { experiment_type: "time_course", time_column: "time" }
+    assert_not configuration(deseq2: time).silhouette_baseline?
+
+    checked = RnaSeq::Configuration.from_h(configuration(deseq2: time, clustering: { silhouette_baseline: true }).to_h.as_json)
+    assert checked.silhouette_baseline?
+    assert_nil checked.cluster_count
+    assert_equal "Number chosen automatically from the data; silhouette checked against a shuffled baseline",
+                 checked.summary["Gene clusters"]
+    both = configuration(deseq2: time, clustering: { clusters: 4, silhouette_baseline: true })
+    assert_equal "4 (set by you); silhouette checked against a shuffled baseline", both.summary["Gene clusters"]
+
+    [false, "true", 1].each do |value|
+      assert_raises(RnaSeq::Configuration::Invalid, value.inspect) { configuration(deseq2: time, clustering: { silhouette_baseline: value }) }
+    end
+    assert_raises(RnaSeq::Configuration::Invalid) { configuration(clustering: { silhouette_baseline: true }) }
+  end
+
   test "an optional annotation table is saved and summarized" do
     without = configuration
     assert_nil without.annotation_file

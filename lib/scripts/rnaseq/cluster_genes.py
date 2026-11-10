@@ -1,7 +1,7 @@
 """Group the significant genes of a time-course run by the shape of their change.
 
 Usage:
-    python cluster_genes.py RESULTS_DIR [--clusters N]
+    python cluster_genes.py RESULTS_DIR [--clusters N] [--silhouette-baseline]
 
 Reads manifest.json, deseq2_results.tsv and group_means_vst.tsv from a
 completed time-course deseq2_analysis.R run. Each significant gene becomes one
@@ -10,6 +10,13 @@ condition-by-time run both conditions' series are joined). Each vector is
 z-scored, so genes are grouped by shape rather than expression level, and
 clustered with k-means. Without --clusters the number of clusters is the k
 from 2 to 10 with the highest mean silhouette.
+
+With --silhouette-baseline the silhouette is also compared with a random
+baseline: each gene's values are shuffled across its groups (which keeps the
+gene's z-scores but removes any pattern genes share), the shuffled data is
+clustered with the same k, and the silhouettes of several shuffles are
+averaged. A difference near 0 means the clusters are no better separated than
+random patterns.
 
 Writes gene_clusters.tsv, cluster_profiles.tsv and cluster_selection.tsv and
 adds a "clustering" section to manifest.json. Too few genes is not an error:
@@ -35,6 +42,7 @@ SEED = 20261108
 # Silhouette needs every pairwise distance; above this many genes it is
 # computed on a fixed random sample (3000^2 doubles is about 72 MB).
 SILHOUETTE_SAMPLE = 3000
+BASELINE_SHUFFLES = 5
 FLAT_SD = 1e-8
 OUTPUTS = {"gene_clusters": "gene_clusters.tsv", "cluster_profiles": "cluster_profiles.tsv",
            "cluster_selection": "cluster_selection.tsv"}
@@ -136,6 +144,25 @@ def silhouette(data, labels):
     return float(scores.mean())
 
 
+def silhouette_sample(n, seed=SEED):
+    """Indices the silhouette is computed on: all of them, or a fixed random sample."""
+    if n <= SILHOUETTE_SAMPLE:
+        return np.arange(n)
+    return np.sort(np.random.default_rng(seed).choice(n, SILHOUETTE_SAMPLE, replace=False))
+
+
+def shuffled_silhouette(data, k, seed=SEED, shuffles=BASELINE_SHUFFLES):
+    """Mean silhouette of k-means with k clusters on copies of data whose rows are shuffled."""
+    rng = np.random.default_rng([seed, k, 1])
+    sample = silhouette_sample(len(data), seed)
+    scores = []
+    for index in range(shuffles):
+        shuffled = rng.permuted(data, axis=1)
+        labels = kmeans_best(shuffled, k, seed=seed + 1 + index)[0]
+        scores.append(silhouette(shuffled[sample], labels[sample]))
+    return float(np.mean(scores))
+
+
 def choose_k(data, requested=None, seed=SEED):
     """Cluster for each candidate k and pick one.
 
@@ -144,10 +171,8 @@ def choose_k(data, requested=None, seed=SEED):
     candidates = range(MIN_CLUSTERS, min(MAX_CLUSTERS, len(data) - 1) + 1)
     if requested is not None and requested not in candidates:
         candidates = sorted(set(candidates) | {requested})
-    sample = np.arange(len(data))
+    sample = silhouette_sample(len(data), seed)
     sampled = len(data) > SILHOUETTE_SAMPLE
-    if sampled:
-        sample = np.sort(np.random.default_rng(seed).choice(len(data), SILHOUETTE_SAMPLE, replace=False))
     fits, rows = {}, []
     for k in candidates:
         fits[k] = kmeans_best(data, k, seed)
@@ -169,7 +194,7 @@ def relabel_by_size(labels):
     return np.array([mapping[label] for label in labels]), mapping
 
 
-def cluster(means, genes, time_levels, requested=None, seed=SEED):
+def cluster(means, genes, time_levels, requested=None, seed=SEED, baseline=False):
     """Cluster genes; returns a dict describing the result (see write_outputs)."""
     matrix, columns = gene_matrix(means, genes, time_levels)
     if len(columns) < MIN_GROUPS:
@@ -188,7 +213,8 @@ def cluster(means, genes, time_levels, requested=None, seed=SEED):
         ordered_centers[number - 1] = centers[raw]
     return {"status": "completed", "genes": list(matrix.index[keep]), "scaled": scaled, "labels": labels,
             "centers": ordered_centers, "columns": columns, "selection": selection, "chosen": chosen,
-            "requested": requested, "sampled": sampled, "excluded": excluded}
+            "requested": requested, "sampled": sampled, "excluded": excluded,
+            "shuffled_silhouette": shuffled_silhouette(scaled, chosen, seed) if baseline else None}
 
 
 def write_outputs(result, results, means, directory):
@@ -219,6 +245,13 @@ def summary(result):
         return {key: result[key] for key in ("status", "reason", "excluded") if key in result}
     chosen = result["selection"].set_index("k").loc[result["chosen"]]
     sizes = np.bincount(result["labels"], minlength=result["chosen"] + 1)[1:]
+    baseline = {}
+    if result.get("shuffled_silhouette") is not None:
+        actual, shuffled = float(chosen["silhouette"]), result["shuffled_silhouette"]
+        baseline = {"silhouette_baseline": {"k": int(result["chosen"]), "actual": round(actual, 4),
+                                            "shuffled_mean": round(shuffled, 4),
+                                            "difference": round(actual - shuffled, 4),
+                                            "shuffles": BASELINE_SHUFFLES}}
     return {
         "status": "completed",
         "method": "k-means on z-scored mean VST per group (condition and time point)",
@@ -231,6 +264,7 @@ def summary(result):
         "silhouette_sampled_genes": SILHOUETTE_SAMPLE if result["sampled"] else None,
         "cluster_sizes": [int(size) for size in sizes],
         "seed": SEED,
+        **baseline,
     }
 
 
@@ -240,7 +274,7 @@ def write_json_atomically(data, path):
     os.replace(partial, path)
 
 
-def main(results_dir, requested=None):
+def main(results_dir, requested=None, baseline=False):
     directory = Path(results_dir)
     manifest_path = directory / "manifest.json"
     manifest = json.loads(manifest_path.read_text())
@@ -255,7 +289,8 @@ def main(results_dir, requested=None):
     results.index = results.index.astype(str)
     significant = results.index[results["significant"].astype(str).str.upper().eq("TRUE")]
     means = pd.read_csv(directory / manifest["outputs"]["group_means"], sep="\t", keep_default_na=False, na_values=["NA"])
-    result = cluster(means, list(significant), [str(level) for level in manifest["time"]["levels"]], requested)
+    result = cluster(means, list(significant), [str(level) for level in manifest["time"]["levels"]], requested,
+                     baseline=baseline)
     if result["status"] == "completed":
         write_outputs(result, results, means, directory)
         manifest["outputs"].update(OUTPUTS)
@@ -272,5 +307,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("results_dir")
     parser.add_argument("--clusters", type=int)
+    parser.add_argument("--silhouette-baseline", action="store_true",
+                        help="also compare the silhouette with that of shuffled copies of the data")
     arguments = parser.parse_args()
-    main(arguments.results_dir, arguments.clusters)
+    main(arguments.results_dir, arguments.clusters, arguments.silhouette_baseline)

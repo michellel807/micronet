@@ -137,6 +137,16 @@
 .rnaseq-radios input { accent-color: var(--accent); margin-right: 6px; }
 .rnaseq-radios label.is-disabled { color: var(--tx-3); cursor: not-allowed; }
 
+.rnaseq-checkbox {
+  display: block;
+  margin: 14px 0 0;
+  color: var(--tx-1);
+  font-size: var(--text-body);
+  cursor: pointer;
+}
+
+.rnaseq-checkbox input { accent-color: var(--accent); margin-right: 6px; }
+
 .rnaseq-actions {
   display: flex;
   justify-content: space-between;

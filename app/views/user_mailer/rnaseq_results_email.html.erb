@@ -1,3 +1,5 @@
+<% clustering = @manifest["clustering"] if @manifest["clustering"].is_a?(Hash) && @manifest["clustering"]["status"] == "completed" %>
+<% baseline = clustering && clustering["silhouette_baseline"] %>
 <% contrast = @manifest["contrast"] %>
 <% genes = @manifest["genes"] %>
 <% question = @manifest["time"].present? ? "It tested: #{@manifest["question"]}" : "It compared #{contrast["test_level"]} with #{contrast["reference_level"]} (the reference)." %>
@@ -24,6 +26,12 @@
           (<%= genes["significant_up"] %> higher and <%= genes["significant_down"] %> lower in <%= contrast["test_level"] %>)
         <% end %>
       </li>
+      <% if clustering %>
+        <li>Gene clusters: <%= clustering["clusters"] %> (silhouette <%= format("%.2f", clustering["silhouette"]) %>)</li>
+      <% end %>
+      <% if baseline %>
+        <li>Silhouette reliability check: actual <%= format("%.2f", baseline["actual"]) %>, shuffled baseline <%= format("%.2f", baseline["shuffled_mean"]) %>, difference <strong><%= format("%+.2f", baseline["difference"]) %></strong> (near 0 would mean no better than random patterns)</li>
+      <% end %>
     </ul>
 
     <h3>Attached</h3>

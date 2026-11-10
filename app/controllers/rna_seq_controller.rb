@@ -237,7 +237,7 @@ class RnaSeqController < ApplicationController
 
   def configuration_params
     params.permit(:experiment_type, :condition_column, :reference_level, :test_level, :time_column, :subset_level,
-                  :alpha, :lfc_threshold, :lfc_test, :samples_in_model, :clusters, covariates: [])
+                  :alpha, :lfc_threshold, :lfc_test, :samples_in_model, :clusters, :silhouette_baseline, covariates: [])
   end
 
   # Values to show on the form: the user's choices on top of the defaults.
@@ -249,7 +249,8 @@ class RnaSeqController < ApplicationController
     time = values["time_column"].presence || (columns.include?("time") ? "time" : (columns - [condition]).first || condition)
     # Show the advanced section open whenever it holds a non-default choice.
     @advanced_open = defaults.except("covariates").any? { |key, default| values.key?(key) && values[key].to_s != default.to_s && number(values[key]) != default } ||
-      Array(values["covariates"]).compact_blank.any? || values["clusters"].present?
+      Array(values["covariates"]).compact_blank.any? || values["clusters"].present? ||
+      values["silhouette_baseline"].to_s.in?(%w[1 true])
     {
       "experiment_type" => values["experiment_type"].presence || "two_condition",
       "condition_column" => condition,
@@ -262,7 +263,9 @@ class RnaSeqController < ApplicationController
       "lfc_test" => values["lfc_test"].presence || defaults["lfc_test"],
       "samples_in_model" => values["samples_in_model"].presence || defaults["samples_in_model"],
       "covariates" => Array(values["covariates"]).compact_blank,
-      "clusters" => values["clusters"].to_s
+      "clusters" => values["clusters"].to_s,
+      # "1" from the form, true from a saved configuration.
+      "silhouette_baseline" => values["silhouette_baseline"].to_s.in?(%w[1 true]) ? "1" : ""
     }
   end
 
@@ -401,15 +404,20 @@ class RnaSeqController < ApplicationController
     [settings, nil]
   end
 
-  # Returns [clustering settings, error message]. Blank means choose from the data.
+  # Returns [clustering settings, error message]. A blank cluster count means choose it from the data.
   def clustering_settings(form)
-    return [nil, nil] unless RnaSeq::Configuration::TIME_TYPES.include?(form["experiment_type"]) && form["clusters"].present?
+    return [nil, nil] unless RnaSeq::Configuration::TIME_TYPES.include?(form["experiment_type"])
 
-    range = RnaSeq::Configuration::CLUSTER_COUNTS
-    count = Integer(form["clusters"].strip, 10, exception: false)
-    return [nil, "The number of gene clusters must be a whole number from #{range.min} to #{range.max}, or Automatic."] unless count && range.cover?(count)
+    settings = {}
+    if form["clusters"].present?
+      range = RnaSeq::Configuration::CLUSTER_COUNTS
+      count = Integer(form["clusters"].strip, 10, exception: false)
+      return [nil, "The number of gene clusters must be a whole number from #{range.min} to #{range.max}, or Automatic."] unless count && range.cover?(count)
 
-    [{ "clusters" => count }, nil]
+      settings["clusters"] = count
+    end
+    settings["silhouette_baseline"] = true if form["silhouette_baseline"] == "1"
+    [settings.presence, nil]
   end
 
   def number(value)

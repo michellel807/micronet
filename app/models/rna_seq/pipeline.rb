@@ -102,7 +102,8 @@ module RnaSeq
     def clustering
       count = configuration.cluster_count
       succeeded = Python.exec(
-        SCRIPTS.join("cluster_genes.py"), job.rnaseq_results_dir, *(["--clusters", count] if count)
+        SCRIPTS.join("cluster_genes.py"), job.rnaseq_results_dir, *(["--clusters", count] if count),
+        *(["--silhouette-baseline"] if configuration.silhouette_baseline?)
       ) { |*command| job.run_cancellable_command(*command) }
       raise "The genes could not be clustered. The differential expression results are complete." unless succeeded
     end

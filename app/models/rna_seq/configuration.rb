@@ -35,7 +35,7 @@ module RnaSeq
     SAMPLES_IN_MODEL = { "all" => "All samples", "contrast_only" => "Only the two compared groups" }.freeze
     # Matches MIN_CLUSTERS and MAX_CLUSTERS in lib/scripts/rnaseq/cluster_genes.py.
     CLUSTER_COUNTS = (2..10).freeze
-    CLUSTERING_SETTINGS = %w[clusters].freeze
+    CLUSTERING_SETTINGS = %w[clusters silhouette_baseline].freeze
 
     attr_reader :counts_file, :metadata_file, :annotation_file, :original_filenames, :deseq2, :clustering
 
@@ -70,6 +70,11 @@ module RnaSeq
     # The number of gene clusters the user chose, or nil to choose it from the data.
     def cluster_count
       clustering["clusters"]
+    end
+
+    # Whether to compare the clustering's silhouette with a shuffled-data baseline.
+    def silhouette_baseline?
+      clustering["silhouette_baseline"] == true
     end
 
     def inputs_present?(directories)
@@ -121,7 +126,8 @@ module RnaSeq
     end
 
     def cluster_description
-      cluster_count ? "#{cluster_count} (set by you)" : "Number chosen automatically from the data"
+      description = cluster_count ? "#{cluster_count} (set by you)" : "Number chosen automatically from the data"
+      silhouette_baseline? ? "#{description}; silhouette checked against a shuffled baseline" : description
     end
 
     private
@@ -161,6 +167,10 @@ module RnaSeq
     def validate_clustering!
       unknown = clustering.keys - CLUSTERING_SETTINGS
       raise Invalid, "Unknown gene clustering settings: #{unknown.join(', ')}" if unknown.any?
+      if clustering.key?("silhouette_baseline")
+        raise Invalid, "The silhouette baseline setting must be true when present" unless clustering["silhouette_baseline"] == true
+        raise Invalid, "Gene clustering applies only to time-course analyses" unless time_course?
+      end
       return if cluster_count.nil?
 
       raise Invalid, "Gene clustering applies only to time-course analyses" unless time_course?

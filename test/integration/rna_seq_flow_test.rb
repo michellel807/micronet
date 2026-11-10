@@ -297,6 +297,32 @@ class RnaSeqFlowTest < ActionDispatch::IntegrationTest
     assert_equal({ "clusters" => 5 }, Job.find_by!(upload_token: token).analysis_config["clustering"])
   end
 
+  test "the silhouette baseline is off unless ticked under advanced settings" do
+    start
+    upload_time_course
+    get rnaseq_configure_path
+    assert_select "input#silhouette_baseline[type=checkbox]:not([checked])"
+
+    base = TIME_DEFAULTS.merge(experiment_type: "time_course", time_column: "time")
+    post rnaseq_configure_path, params: base.merge(silhouette_baseline: "1")
+    assert_redirected_to rnaseq_review_path
+    assert_equal({ "silhouette_baseline" => true }, session[:rnaseq_config]["clustering"])
+    follow_redirect!
+    assert_includes response.body, "silhouette checked against a shuffled baseline"
+    get rnaseq_configure_path
+    assert_select "input#silhouette_baseline[checked]"
+    assert_select "details.rnaseq-advanced[open]"
+
+    post rnaseq_configure_path, params: base.merge(clusters: "4", silhouette_baseline: "1")
+    assert_equal({ "clusters" => 4, "silhouette_baseline" => true }, session[:rnaseq_config]["clustering"])
+    post rnaseq_configure_path, params: base
+    assert_not session[:rnaseq_config].key?("clustering")
+
+    post rnaseq_configure_path, params: TIME_DEFAULTS.merge(condition_column: "condition", reference_level: "control",
+                                                            test_level: "treated", silhouette_baseline: "1")
+    assert_not session[:rnaseq_config].key?("clustering"), "two-condition analyses are not clustered"
+  end
+
   test "a two-condition analysis ignores a number of gene clusters" do
     start
     upload_examples

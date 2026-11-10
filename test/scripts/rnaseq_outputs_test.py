@@ -117,6 +117,24 @@ class PlotResultsTest(unittest.TestCase):
 
 
 @unittest.skipUnless(RSCRIPT, "Rscript is not installed; run these tests inside the MicroNet Docker image.")
+class SilhouetteBaselineReadmeTest(unittest.TestCase):
+    CLUSTERING = {"status": "completed", "chosen_by": "silhouette", "clusters": 3, "genes_clustered": 100,
+                  "genes_excluded": 0, "cluster_sizes": [40, 35, 25], "silhouette": 0.35}
+
+    def setUp(self):
+        self.package = load("rnaseq_package_results", SCRIPTS / "package_results.py")
+
+    def test_the_baseline_appears_only_when_it_was_run(self):
+        self.assertNotIn("reliability", "\n".join(self.package.clustering_lines(self.CLUSTERING)))
+        checked = {**self.CLUSTERING, "silhouette_baseline": {"k": 3, "actual": 0.35, "shuffled_mean": 0.19,
+                                                              "difference": 0.16, "shuffles": 5}}
+        text = "\n".join(self.package.clustering_lines(checked))
+        self.assertIn("Silhouette reliability check (k = 3):", text)
+        self.assertIn("Actual silhouette: 0.35", text)
+        self.assertIn("Shuffled baseline (average of 5): 0.19", text)
+        self.assertIn("Difference: +0.16", text)
+
+
 class PackageResultsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

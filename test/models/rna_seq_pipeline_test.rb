@@ -72,6 +72,18 @@ class RnaSeqPipelineTest < ActiveSupport::TestCase
     clustering = JSON.parse(@job.rnaseq_results_dir.join("manifest.json").read)["clustering"]
     assert_equal 3, clustering["clusters"]
     assert_equal "user", clustering["chosen_by"]
+    assert_not clustering.key?("silhouette_baseline")
+  end
+
+  test "the silhouette baseline option reaches the clustering script and the README" do
+    require_rscript
+    use_time_course(clustering: { silhouette_baseline: true })
+    RnaSeq::Pipeline.new(@job).run
+
+    baseline = JSON.parse(@job.rnaseq_results_dir.join("manifest.json").read)["clustering"]["silhouette_baseline"]
+    assert_equal %w[actual difference k shuffled_mean shuffles], baseline.keys.sort
+    assert_in_delta baseline["actual"] - baseline["shuffled_mean"], baseline["difference"], 1e-3
+    assert_includes @job.rnaseq_results_dir.join("README.txt").read, "Silhouette reliability check"
   end
 
   test "an annotation table adds functional enrichment to the results" do

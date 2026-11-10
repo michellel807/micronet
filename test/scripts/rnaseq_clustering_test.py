@@ -69,6 +69,40 @@ class ClusteringMethodTest(unittest.TestCase):
         self.assertEqual(selection.loc[selection["chosen"], "k"].tolist(), [4])
         self.assertEqual(selection["k"].tolist(), list(range(2, 11)))
 
+    def test_no_silhouette_baseline_unless_asked(self):
+        means, truth = planted()
+        result = cluster_genes.cluster(means, list(truth), TIMES)
+        self.assertIsNone(result["shuffled_silhouette"])
+        self.assertNotIn("silhouette_baseline", cluster_genes.summary(result))
+
+    def test_planted_patterns_beat_the_shuffled_baseline(self):
+        means, truth = planted()
+        result = cluster_genes.cluster(means, list(truth), TIMES, baseline=True)
+        baseline = cluster_genes.summary(result)["silhouette_baseline"]
+        self.assertEqual(baseline["k"], 4)
+        self.assertEqual(baseline["shuffles"], cluster_genes.BASELINE_SHUFFLES)
+        self.assertAlmostEqual(baseline["difference"], baseline["actual"] - baseline["shuffled_mean"], places=3)
+        self.assertGreater(baseline["difference"], 0.3)
+
+    def test_random_patterns_do_not_beat_the_shuffled_baseline(self):
+        # With 3 time points every z-scored pattern lies on a circle, so random
+        # patterns get a high silhouette; the shuffled baseline is just as high.
+        rng = np.random.default_rng(11)
+        times = ["0", "6", "24"]
+        means = pd.DataFrame([{"gene_id": f"g{gene:03d}", "condition": "", "time": time, "time_value": float(time),
+                               "n_samples": 3, "mean_vst": value}
+                              for gene in range(300) for time, value in zip(times, rng.normal(size=3))])
+        result = cluster_genes.cluster(means, [f"g{gene:03d}" for gene in range(300)], times, baseline=True)
+        baseline = cluster_genes.summary(result)["silhouette_baseline"]
+        self.assertGreater(baseline["actual"], 0.5)
+        self.assertLess(abs(baseline["difference"]), 0.05)
+
+    def test_the_shuffled_baseline_is_reproducible(self):
+        means, truth = planted(noise=1.0)
+        first = cluster_genes.cluster(means, list(truth), TIMES, requested=3, baseline=True)
+        second = cluster_genes.cluster(means, list(truth), TIMES, requested=3, baseline=True)
+        self.assertEqual(first["shuffled_silhouette"], second["shuffled_silhouette"])
+
     def test_expression_level_does_not_decide_the_cluster(self):
         means, truth = planted(noise=0.1)
         # Make half of every pattern's genes 100 times more highly expressed.
@@ -221,6 +255,13 @@ class ClusterScriptTest(unittest.TestCase):
         profiles = pd.read_csv(self.directory / "cluster_profiles.tsv", sep="\t")
         self.assertEqual(len(profiles), 4 * len(TIMES))
         self.assertFalse(list(self.directory.glob("*.partial")))
+
+    def test_the_baseline_flag_adds_the_comparison_to_the_manifest(self):
+        result = self.run_script("--silhouette-baseline")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        clustering = json.loads((self.directory / "manifest.json").read_text())["clustering"]
+        self.assertEqual(sorted(clustering["silhouette_baseline"]), ["actual", "difference", "k", "shuffled_mean", "shuffles"])
+        self.assertEqual(clustering["silhouette_baseline"]["actual"], clustering["silhouette"])
 
     def test_a_chosen_number_outside_two_to_ten_is_refused(self):
         for value in ["1", "11"]:

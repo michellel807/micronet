@@ -144,6 +144,18 @@ def clustering_lines(clustering):
     ]
     if clustering.get("silhouette_sampled_genes"):
         lines.append(f"    The score was computed on a fixed random sample of {clustering['silhouette_sampled_genes']} genes.")
+    baseline = clustering.get("silhouette_baseline")
+    if baseline:
+        lines += [
+            f"  Silhouette reliability check (k = {baseline['k']}):",
+            f"    Actual silhouette: {baseline['actual']:.2f}",
+            f"    Shuffled baseline (average of {baseline['shuffles']}): {baseline['shuffled_mean']:.2f}",
+            f"    Difference: {baseline['difference']:+.2f}",
+            "    For the baseline, each gene's values were shuffled across its groups, which keeps the",
+            "    gene's z-scores but removes any pattern genes share, and the shuffled data was clustered",
+            "    with the same k. The shuffled copies have no real groups, so a difference near 0 means the",
+            "    clusters are no better separated than random patterns.",
+        ]
     return lines
 
 

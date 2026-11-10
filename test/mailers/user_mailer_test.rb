@@ -154,6 +154,28 @@ class UserMailerTest < ActionMailer::TestCase
       assert_includes body, "It tested: Which genes change differently over time in treated than in control (the reference)?"
       assert_includes body, "Significant genes: 190"
       assert_not_includes body, "higher and"
+      assert_not_includes body, "Gene clusters"
+      assert_not_includes body, "reliability"
+    end
+  end
+
+  test "time-course results summarize the clusters and the silhouette reliability check" do
+    rnaseq = Job.create!(user: @user, status: "Completed", analysis_type: "rnaseq")
+    manifest = {
+      "design" => "full: ~ time; reduced: ~ 1 (likelihood ratio test)", "question" => "Which genes change over time?",
+      "time" => { "column" => "time", "levels" => %w[0 6 24] }, "samples" => { "in_model" => 9 },
+      "genes" => { "in_input" => 2000, "tested" => 1980, "significant" => 190, "significant_up" => nil, "significant_down" => nil },
+      "clustering" => { "status" => "completed", "clusters" => 4, "silhouette" => 0.4411 }
+    }
+    plain = UserMailer.rnaseq_results_email(rnaseq, [], manifest, []).text_part.body.decoded.squish
+    assert_includes plain, "Gene clusters: 4 (silhouette 0.44)"
+    assert_not_includes plain, "reliability"
+
+    manifest["clustering"]["silhouette_baseline"] = { "k" => 4, "actual" => 0.4411, "shuffled_mean" => 0.0328,
+                                                      "difference" => 0.4082, "shuffles" => 5 }
+    message = UserMailer.rnaseq_results_email(rnaseq, [], manifest, [])
+    [Nokogiri::HTML(message.html_part.body.decoded).text, message.text_part.body.decoded].each do |text|
+      assert_includes text.squish, "Silhouette reliability check: actual 0.44, shuffled baseline 0.03, difference +0.41"
     end
   end
 end
