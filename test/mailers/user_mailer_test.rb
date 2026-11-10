@@ -108,6 +108,17 @@ class UserMailerTest < ActionMailer::TestCase
     end
   end
 
+  test "RNA-seq submissions list inputs and selections as two titled blocks" do
+    rnaseq = Job.create!(user: @user, status: "Job submitted", analysis_type: "rnaseq",
+                         submission_options: { "Analysis" => "RNA-seq: Time course (DESeq2)", "Covariates" => "None",
+                                               "Uploaded Files" => { "Count Matrix" => ["counts.tsv"], "Sample Metadata" => ["samples.tsv"] } })
+    message = UserMailer.with(job: rnaseq).confirm_email
+    blocks = Nokogiri::HTML(message.html_part.body.decoded).css("p").map { |paragraph| paragraph.text.squish }
+    assert_includes blocks, "Inputs Count Matrix: counts.tsv Sample Metadata: samples.tsv"
+    assert_includes blocks, "Selections Analysis: RNA-seq: Time course (DESeq2) Covariates: None"
+    assert_includes message.text_part.body.decoded, "Inputs\nCount Matrix: counts.tsv\nSample Metadata: samples.tsv\n\nSelections\nAnalysis:"
+  end
+
   test "RNA-seq results summarize the comparison, list attachments and explain warnings" do
     rnaseq = Job.create!(user: @user, status: "Completed", analysis_type: "rnaseq")
     manifest = {
@@ -127,10 +138,14 @@ class UserMailerTest < ActionMailer::TestCase
       assert_includes message.html_part.body.decoded, "Could not draw &lt;plots&gt;"
       [Nokogiri::HTML(message.html_part.body.decoded).text, message.text_part.body.decoded].each do |text|
         body = text.squish
-        assert_includes body, "compared treated with control (the reference)"
-        assert_includes body, "Design: ~ batch + condition"
-        assert_includes body, "Genes tested: 1951 of 2000"
+        assert_includes body, "Your RNA-seq analysis (Job ##{rnaseq.job_number}) is complete."
+        assert_includes body, "Analysis: Which genes differ between treated and control samples?"
+        assert_includes body, "Genes tested: 1,951 of 2,000"
         assert_includes body, "Significant genes: 209 (109 higher and 100 lower in treated)"
+        assert_includes body, "Statistical method: Wald test of the difference between treated and control (the reference)."
+        assert_includes body, "Attached: #{File.basename(zip)}"
+        assert_includes body, "Best, The MicroNet Team"
+        assert_equal 1, body.scan("schmidlabmodel@gmail.com").length, "one sign-off, not the layout's as well"
         assert_includes body, "Plots: Could not draw <plots>"
         assert_not_includes body, "Submission Details"
         assert_not_includes body, "time step"
@@ -142,6 +157,7 @@ class UserMailerTest < ActionMailer::TestCase
     rnaseq = Job.create!(user: @user, status: "Completed", analysis_type: "rnaseq")
     manifest = {
       "design" => "full: ~ condition + time + condition:time; reduced: ~ condition + time (likelihood ratio test)",
+      "test" => "likelihood_ratio",
       "question" => "Which genes change differently over time in treated than in control (the reference)?",
       "contrast" => { "test_level" => "treated", "reference_level" => "control" },
       "time" => { "column" => "time", "levels" => %w[0 6 24] },
@@ -151,7 +167,8 @@ class UserMailerTest < ActionMailer::TestCase
     message = UserMailer.rnaseq_results_email(rnaseq, [], manifest, [])
     [Nokogiri::HTML(message.html_part.body.decoded).text, message.text_part.body.decoded].each do |text|
       body = text.squish
-      assert_includes body, "It tested: Which genes change differently over time in treated than in control (the reference)?"
+      assert_includes body, "Analysis: Which genes change differently over time in treated samples compared with control samples?"
+      assert_includes body, "Statistical method: Likelihood ratio test comparing models with and without a condition-by-time interaction."
       assert_includes body, "Significant genes: 190"
       assert_not_includes body, "higher and"
       assert_not_includes body, "Gene clusters"
@@ -163,11 +180,14 @@ class UserMailerTest < ActionMailer::TestCase
     rnaseq = Job.create!(user: @user, status: "Completed", analysis_type: "rnaseq")
     manifest = {
       "design" => "full: ~ time; reduced: ~ 1 (likelihood ratio test)", "question" => "Which genes change over time?",
+      "test" => "likelihood_ratio",
       "time" => { "column" => "time", "levels" => %w[0 6 24] }, "samples" => { "in_model" => 9 },
       "genes" => { "in_input" => 2000, "tested" => 1980, "significant" => 190, "significant_up" => nil, "significant_down" => nil },
       "clustering" => { "status" => "completed", "clusters" => 4, "silhouette" => 0.4411 }
     }
     plain = UserMailer.rnaseq_results_email(rnaseq, [], manifest, []).text_part.body.decoded.squish
+    assert_includes plain, "Analysis: Which genes change over time?"
+    assert_includes plain, "Statistical method: Likelihood ratio test comparing a model that includes time with an intercept-only model."
     assert_includes plain, "Gene clusters: 4 (silhouette 0.44)"
     assert_not_includes plain, "reliability"
 

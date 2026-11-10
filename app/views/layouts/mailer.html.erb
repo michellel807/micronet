@@ -11,9 +11,11 @@
     <%= yield %>
     <%= render "user_mailer/submission_summary" if @job && !@hide_submission_summary %>
 
-    Regards, <br>
-    The MicroNet Team
-    <br>
-    schmidlabmodel@gmail.com
+    <% unless @own_footer %>
+      Regards, <br>
+      The MicroNet Team
+      <br>
+      schmidlabmodel@gmail.com
+    <% end %>
   </body>
 </html>

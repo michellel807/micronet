@@ -65,7 +65,11 @@ class UserMailer < ApplicationMailer
   def rnaseq_results_email(job, file_paths, manifest, warnings = [])
     @job = job
     @hide_submission_summary = true
+    @own_footer = true # the template ends with its own sign-off
     @manifest = manifest
+    @question = rnaseq_question(manifest)
+    @method = rnaseq_method(manifest)
+    @clustering = manifest["clustering"] if manifest["clustering"].is_a?(Hash) && manifest["clustering"]["status"] == "completed"
     @warnings = warnings
     @file_names = file_paths.map { |path| File.basename(path) }
 
@@ -81,6 +85,26 @@ class UserMailer < ApplicationMailer
   end
 
   private
+
+  def rnaseq_question(manifest)
+    contrast = manifest["contrast"]
+    case manifest["experiment_type"] || (manifest["time"].present? ? (contrast ? "condition_by_time" : "time_course") : "two_condition")
+    when "condition_by_time"
+      "Which genes change differently over time in #{contrast['test_level']} samples compared with #{contrast['reference_level']} samples?"
+    when "two_condition"
+      "Which genes differ between #{contrast['test_level']} and #{contrast['reference_level']} samples?"
+    else
+      manifest["question"]
+    end
+  end
+
+  def rnaseq_method(manifest)
+    return "Wald test of the difference between #{manifest.dig('contrast', 'test_level')} and #{manifest.dig('contrast', 'reference_level')} (the reference)." unless manifest["test"] == "likelihood_ratio"
+    return "Likelihood ratio test comparing models with and without a condition-by-time interaction." if manifest["contrast"]
+    return "Likelihood ratio test comparing a model that includes time with an intercept-only model." if manifest["design"].to_s.match?(/reduced: ~ 1\b/)
+
+    "Likelihood ratio test comparing models with and without time."
+  end
 
   def job_subject(event)
     prefix = SUBJECT_PREFIXES.fetch(@job.analysis_type, "Schmid Lab Microbial Growth Model")

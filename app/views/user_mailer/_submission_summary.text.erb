@@ -2,7 +2,22 @@
 Submission Details
 Job ID: <%= @job.job_number %>
 <% summary = @job.submission_options %>
+<% if summary.present? && !summary.key?("Analyses To Run") %>
 <% if summary["Uploaded Files"].present? %>
+
+Inputs
+<% summary["Uploaded Files"].each do |label, filenames| %>
+<%= label %>: <%= filenames.join(", ") %>
+<% end %>
+<% end %>
+<% if summary.except("Uploaded Files").present? %>
+
+Selections
+<% summary.except("Uploaded Files").each do |label, value| %>
+<%= label %>: <%= value %>
+<% end %>
+<% end %>
+<% elsif summary["Uploaded Files"].present? %>
 
 Uploaded Files
 <% summary["Uploaded Files"].each do |label, filenames| %>
@@ -17,8 +32,4 @@ Analyses To Run
 
 <% end %>
 Gaussian Process time step size: <%= summary["Gaussian Process time step size"] %>
-<% else %>
-<% summary.except("Uploaded Files").each do |label, value| %>
-<%= label %>: <%= value %>
-<% end %>
 <% end %>

@@ -1,7 +1,26 @@
 <h3>Submission Details</h3>
 <p><strong>Job ID:</strong> <%= @job.job_number %></p>
 <% summary = @job.submission_options %>
-<% if summary["Uploaded Files"].present? %>
+<% if summary.present? && !summary.key?("Analyses To Run") %>
+  <%# RNA-seq: two compact blocks, inputs then selections, with one gap between. %>
+  <% if summary["Uploaded Files"].present? %>
+    <p>
+      <strong>Inputs</strong><br>
+      <% summary["Uploaded Files"].each do |label, filenames| %>
+        <%= label %>: <%= filenames.join(", ") %><br>
+      <% end %>
+    </p>
+  <% end %>
+  <% selections = summary.except("Uploaded Files") %>
+  <% if selections.present? %>
+    <p>
+      <strong>Selections</strong><br>
+      <% selections.each do |label, value| %>
+        <%= label %>: <%= value %><br>
+      <% end %>
+    </p>
+  <% end %>
+<% elsif summary["Uploaded Files"].present? %>
   <h3>Uploaded Files</h3>
   <% summary["Uploaded Files"].each do |label, filenames| %>
     <p><strong><%= label %>:</strong> <%= filenames.join(", ") %></p>
@@ -13,10 +32,4 @@
     <p><%= analysis %></p>
   <% end %>
   <p><strong>Gaussian Process time step size:</strong> <%= summary["Gaussian Process time step size"] %></p>
-<% elsif summary.present? %>
-  <ul>
-    <% summary.except("Uploaded Files").each do |label, value| %>
-      <li><strong><%= label %>:</strong> <%= value %></li>
-    <% end %>
-  </ul>
 <% end %>

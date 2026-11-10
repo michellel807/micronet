@@ -1,66 +1,41 @@
-<% clustering = @manifest["clustering"] if @manifest["clustering"].is_a?(Hash) && @manifest["clustering"]["status"] == "completed" %>
-<% baseline = clustering && clustering["silhouette_baseline"] %>
-<% contrast = @manifest["contrast"] %>
 <% genes = @manifest["genes"] %>
-<% question = @manifest["time"].present? ? "It tested: #{@manifest["question"]}" : "It compared #{contrast["test_level"]} with #{contrast["reference_level"]} (the reference)." %>
-<div class="general-white-block-email">
-  <body class="email">
+<% baseline = @clustering && @clustering["silhouette_baseline"] %>
+<p>Hello,</p>
 
-    <h1>MicroNet RNA-seq Results</h1>
+<p>Your RNA-seq analysis (Job #<%= @job.job_number %>) is complete.</p>
 
-    <p>Hello,</p>
+<p><strong>Analysis:</strong> <%= @question %></p>
 
-    <p>
-      Your differential expression analysis (Job #<%= @job.job_number %>) is complete.
-      <%= question %>
-    </p>
+<p style="margin-bottom:0;"><strong>Results</strong></p>
+<ul style="margin-top:0;">
+  <li>Samples analyzed: <%= number_with_delimiter(@manifest["samples"]["in_model"]) %></li>
+  <li>Genes tested: <%= number_with_delimiter(genes["tested"]) %> of <%= number_with_delimiter(genes["in_input"]) %></li>
+  <li>Significant genes: <strong><%= number_with_delimiter(genes["significant"]) %></strong><% unless genes["significant_up"].nil? %> (<%= number_with_delimiter(genes["significant_up"]) %> higher and <%= number_with_delimiter(genes["significant_down"]) %> lower in <%= @manifest.dig("contrast", "test_level") %>)<% end %></li>
+  <% if @clustering %>
+    <li>Gene clusters: <%= @clustering["clusters"] %> (silhouette <%= format("%.2f", @clustering["silhouette"]) %>)</li>
+  <% end %>
+  <% if baseline %>
+    <li>Silhouette reliability check: actual <%= format("%.2f", baseline["actual"]) %>, shuffled baseline <%= format("%.2f", baseline["shuffled_mean"]) %>, difference <%= format("%+.2f", baseline["difference"]) %> (near 0 would mean no better than random patterns)</li>
+  <% end %>
+</ul>
 
-    <h3>Summary</h3>
-    <ul>
-      <li>Design: <%= @manifest["design"] %></li>
-      <li>Samples analyzed: <%= @manifest["samples"]["in_model"] %></li>
-      <li>Genes tested: <%= genes["tested"] %> of <%= genes["in_input"] %> in your count matrix</li>
-      <li>
-        Significant genes: <strong><%= genes["significant"] %></strong>
-        <% unless genes["significant_up"].nil? %>
-          (<%= genes["significant_up"] %> higher and <%= genes["significant_down"] %> lower in <%= contrast["test_level"] %>)
-        <% end %>
-      </li>
-      <% if clustering %>
-        <li>Gene clusters: <%= clustering["clusters"] %> (silhouette <%= format("%.2f", clustering["silhouette"]) %>)</li>
-      <% end %>
-      <% if baseline %>
-        <li>Silhouette reliability check: actual <%= format("%.2f", baseline["actual"]) %>, shuffled baseline <%= format("%.2f", baseline["shuffled_mean"]) %>, difference <strong><%= format("%+.2f", baseline["difference"]) %></strong> (near 0 would mean no better than random patterns)</li>
-      <% end %>
-    </ul>
+<p>Statistical method: <%= @method %></p>
 
-    <h3>Attached</h3>
-    <ul>
-      <% @file_names.each do |name| %>
-        <li><%= name %></li>
-      <% end %>
-    </ul>
-    <p>
-      README.txt explains every file, the settings used, and how the results were computed.
-    </p>
+<p><strong>Attached:</strong> <%= @file_names.join(", ") %></p>
 
-    <% if @warnings.present? %>
-      <h3>Please Note</h3>
-      <ul>
-        <% @warnings.each do |warning| %>
-          <li><strong><%= warning[:analysis] %>:</strong> <%= warning[:message] %></li>
-        <% end %>
-      </ul>
+<% if @warnings.present? %>
+  <p><strong>Please note</strong></p>
+  <ul>
+    <% @warnings.each do |warning| %>
+      <li><%= warning[:analysis] %>: <%= warning[:message] %></li>
     <% end %>
+  </ul>
+<% end %>
 
-    <p>
-      For more information, check out the papers under the Resources page
-      of MicroNet.
-    </p>
+<p>The ZIP contains your results and plots. See README.txt for file descriptions, analysis settings, and statistical methods. Related papers are available on MicroNet’s Resources page.</p>
 
-    <p>
-      Thank you for using MicroNet!
-    </p>
-
-  </body>
-</div>
+<p>
+  Best,<br>
+  The MicroNet Team<br>
+  schmidlabmodel@gmail.com
+</p>
