@@ -153,6 +153,30 @@ class SilhouetteBaselineReadmeTest(unittest.TestCase):
         self.assertIn("Shuffled baseline (average of 5): 0.19", text)
         self.assertIn("Difference: +0.16", text)
 
+    def test_a_high_score_alone_is_not_called_separated(self):
+        # Random patterns over a few groups score high (rnaseq_clustering_test.py), so without a
+        # baseline the README must not read a verdict into the raw score.
+        groups = [{"condition": "", "time": time} for time in ("0", "6", "24")]
+        text = "\n".join(self.package.clustering_lines({**self.CLUSTERING, "silhouette": 0.6, "groups": groups}))
+        self.assertNotIn("clearly separated", text)
+        self.assertNotIn("reasonably separated", text)
+        self.assertIn("Silhouette score: 0.60", text)
+        self.assertIn("with only 3 groups per gene,", text)
+        self.assertIn("random-baseline check turned on", text)
+
+    def test_the_reading_follows_the_difference_from_the_baseline(self):
+        for difference, reading in [(0.02, "no better separated than random patterns"),
+                                    (0.09, "only slightly better separated than random patterns"),
+                                    (0.16, "clearly better separated than random patterns")]:
+            checked = {**self.CLUSTERING, "silhouette_baseline": {"k": 3, "actual": 0.35, "shuffled_mean": 0.35 - difference,
+                                                                  "difference": difference, "shuffles": 5}}
+            text = "\n".join(self.package.clustering_lines(checked))
+            self.assertIn(f"Reading: {reading}", text)
+            self.assertNotIn("random-baseline check turned on", text)
+            self.assertNotIn("no real groups", text)
+            self.assertNotIn("removes any pattern", text)
+            self.assertIn("scrambles its timing", text)
+
 
 class PackageResultsTest(unittest.TestCase):
     @classmethod

@@ -9,6 +9,7 @@ file in RESULTS_DIR into ZIP_PATH under the folder rnaseq_results_job<N>/.
 import argparse
 import csv
 import json
+import textwrap
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -106,13 +107,16 @@ def comparison_lines(manifest):
     return lines
 
 
-def silhouette_meaning(score):
-    if score >= 0.5:
-        return "the clusters are clearly separated"
-    if score >= 0.25:
-        return "the clusters are reasonably separated, with some genes between patterns"
-    return ("the patterns blend into each other, so treat the clusters as a convenient split "
-            "rather than distinct groups")
+def baseline_meaning(difference):
+    """How the actual silhouette compares with the shuffled baseline. A raw silhouette has no
+    fixed meaning here: with genes z-scored over only a few groups, random patterns score high
+    too (test/scripts/rnaseq_clustering_test.py), so only the difference is interpreted."""
+    if difference < 0.05:
+        return "no better separated than random patterns; treat the clusters as an arbitrary split"
+    if difference < 0.15:
+        return ("only slightly better separated than random patterns; a convenient split of a "
+                "continuum, not distinct groups")
+    return "clearly better separated than random patterns"
 
 
 def clustering_lines(clustering):
@@ -140,7 +144,8 @@ def clustering_lines(clustering):
         + (f" ({clustering['genes_excluded']} significant genes without a usable pattern were left out)"
            if clustering.get("genes_excluded") else ""),
         f"  Cluster sizes: {sizes}",
-        f"  Silhouette score: {clustering['silhouette']:.2f} (from -1 to 1; {silhouette_meaning(clustering['silhouette'])}).",
+        f"  Silhouette score: {clustering['silhouette']:.2f} (from -1 to 1; higher means genes sit closer to their own",
+        "    cluster than to the next one).",
     ]
     if clustering.get("silhouette_sampled_genes"):
         lines.append(f"    The score was computed on a fixed random sample of {clustering['silhouette_sampled_genes']} genes.")
@@ -151,10 +156,21 @@ def clustering_lines(clustering):
             f"    Actual silhouette: {baseline['actual']:.2f}",
             f"    Shuffled baseline (average of {baseline['shuffles']}): {baseline['shuffled_mean']:.2f}",
             f"    Difference: {baseline['difference']:+.2f}",
-            "    For the baseline, each gene's values were shuffled across its groups, which keeps the",
-            "    gene's z-scores but removes any pattern genes share, and the shuffled data was clustered",
-            "    with the same k. The shuffled copies have no real groups, so a difference near 0 means the",
-            "    clusters are no better separated than random patterns.",
+            *textwrap.wrap(f"Reading: {baseline_meaning(baseline['difference'])}.", width=92,
+                           initial_indent="    ", subsequent_indent="      "),
+            "    For the baseline, each gene's values were shuffled across its groups and the shuffled data",
+            "    was clustered with the same k. This keeps each gene's shape (for example, a single spike)",
+            "    but scrambles its timing, so genes no longer share when they change. Similar shapes still",
+            "    group together by chance, so shuffled data also gets a silhouette score; the difference",
+            "    shows how much the real timing adds.",
+        ]
+    else:
+        groups = len(clustering.get("groups") or [])
+        few = f"only {groups} groups" if groups else "only a few groups"
+        lines += [
+            "  A silhouette score alone cannot show the clusters are real: with " + few + " per gene,",
+            "  randomly timed patterns also score well. To compare with shuffled data, run again with the",
+            "  random-baseline check turned on.",
         ]
     return lines
 

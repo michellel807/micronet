@@ -13,10 +13,11 @@ from 2 to 10 with the highest mean silhouette.
 
 With --silhouette-baseline the silhouette is also compared with a random
 baseline: each gene's values are shuffled across its groups (which keeps the
-gene's z-scores but removes any pattern genes share), the shuffled data is
-clustered with the same k, and the silhouettes of several shuffles are
-averaged. A difference near 0 means the clusters are no better separated than
-random patterns.
+gene's z-scores, and so its shape, but scrambles its timing so genes no longer
+share when they change), the shuffled data is clustered with the same k, and
+the silhouettes of several shuffles are averaged. Similar shapes still group
+together by chance, so the baseline is not 0; a difference near 0 means the
+clusters are no better separated than randomly timed patterns.
 
 Writes gene_clusters.tsv, cluster_profiles.tsv and cluster_selection.tsv and
 adds a "clustering" section to manifest.json. Too few genes is not an error:

@@ -87,7 +87,7 @@
             <%= select_tag :clusters, options_for_select([["Automatic (recommended)", ""]] + RnaSeq::Configuration::CLUSTER_COUNTS.map { |count| [count, count.to_s] }, @form["clusters"]), class: "ds-select" %>
             <p class="rnaseq-hint">Automatic tries 2 to 10 groups and keeps the number that separates the patterns best (highest silhouette score).</p>
             <label class="rnaseq-checkbox" for="silhouette_baseline"><%= check_box_tag :silhouette_baseline, "1", @form["silhouette_baseline"] == "1" %> Check silhouette reliability against a random baseline</label>
-            <p class="rnaseq-hint">Also clusters 5 shuffled copies of your data, which have no real groups, and reports their average silhouette, your actual silhouette, and the difference. A difference near 0 means the clusters are no better separated than random patterns. Adds a little run time.</p>
+            <p class="rnaseq-hint">Also clusters 5 shuffled copies of your data, which keep each gene's shape but scramble its timing, and reports their average silhouette, your actual silhouette, and the difference. A difference near 0 means the clusters are no better separated than random patterns. Adds a little run time.</p>
           </div>
         </fieldset>
 
