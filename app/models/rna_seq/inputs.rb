@@ -56,6 +56,21 @@ module RnaSeq
       condition_columns.index_with { |column| levels(column) }
     end
 
+    # Whether some value of `within` (such as one time point) has samples with
+    # two or more different values of `column` (such as two conditions).
+    def varies_within?(column, within)
+      return false if column == within || !condition_columns.include?(column) || !condition_columns.include?(within)
+
+      group_counts([within, column]).keys.group_by(&:first).any? { |_value, pairs| pairs.length > 1 }
+    end
+
+    # { column => [other columns that vary within it] }, for the configure form.
+    def columns_varying_within
+      condition_columns.index_with do |within|
+        condition_columns.select { |column| varies_within?(column, within) }
+      end
+    end
+
     def self.delimiter_for(path)
       File.extname(path.to_s).downcase == ".csv" ? "," : "\t"
     end

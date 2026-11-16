@@ -84,6 +84,7 @@ class RnaSeqController < ApplicationController
         @inputs.group_counts([settings["time_column"]], filter).transform_keys { |(time)| "time #{time}" }
       end
     @advanced = RnaSeq::Configuration::ADVANCED_DEFAULTS.merge(settings.slice(*RnaSeq::Configuration::ADVANCED_DEFAULTS.keys))
+    @pooled_condition = pooled_condition(@configuration.deseq2)
   end
 
   def submit
@@ -114,6 +115,20 @@ class RnaSeqController < ApplicationController
   end
 
   private
+
+  # A time course of all samples whose condition column varies within time
+  # points but is not a covariate: the conditions' differences count as noise.
+  # Returns { "column", "levels" } for the review page's warning, or nil.
+  def pooled_condition(deseq2)
+    return unless deseq2["experiment_type"] == "time_course" && deseq2["subset_level"].blank?
+
+    column = deseq2["condition_column"]
+    time_column = deseq2["time_column"]
+    return if column.blank? || Array(deseq2["covariates"]).include?(column)
+    return unless @inputs.varies_within?(column, time_column)
+
+    { "column" => column, "levels" => @inputs.levels(column).keys }
+  end
 
   def rnaseq_steps
     [["Upload Files", rnaseq_upload_path], ["Choose Comparison", rnaseq_configure_path],
@@ -299,6 +314,7 @@ class RnaSeqController < ApplicationController
       used << time_column
     end
 
+
     error =
       case type
       when "two_condition" then two_condition_settings(form, settings)
@@ -306,6 +322,14 @@ class RnaSeqController < ApplicationController
       else time_course_settings(form, settings)
       end
     return [nil, error] if error
+
+    # A time course of all samples does not model the condition column, but
+    # keep it so the review page can warn when conditions are pooled. The R
+    # script ignores it without subset_level. Recorded only now, because
+    # time_course_settings reads a condition column as a chosen subset.
+    if !uses_condition && @inputs.condition_columns.include?(form["condition_column"]) && !used.include?(form["condition_column"])
+      settings["condition_column"] = form["condition_column"]
+    end
 
     advanced_settings(form, settings, used, time_type)
   end

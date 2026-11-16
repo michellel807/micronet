@@ -31,6 +31,21 @@ class RnaSeqInputsTest < ActiveSupport::TestCase
     assert_equal({}, result.levels("sample"))
   end
 
+  test "finds columns that vary within another column's values" do
+    examples = Rails.root.join("lib/examplefiles/rnaseq")
+    time_course = RnaSeq::Inputs.new(examples.join("timecourse_counts.tsv"), examples.join("timecourse_sample_metadata.tsv"))
+    assert time_course.varies_within?("condition", "time"), "control and treated share each time point"
+    assert time_course.varies_within?("time", "condition")
+    assert_not time_course.varies_within?("time", "time")
+    assert_not time_course.varies_within?("sample", "time"), "only sample sheet columns other than sample are compared"
+    assert_equal({ "condition" => ["time"], "time" => ["condition"] }, time_course.columns_varying_within)
+
+    # Each batch here holds one condition only, so condition does not vary within batch.
+    one_per_batch = "sample\tcondition\tbatch\na1\tctrl\tx\na2\tctrl\tx\nb1\ttrt\ty\nb2\ttrt\ty\n"
+    counts = "gene_id\ta1\ta2\tb1\tb2\ng1\t10\t0\t5\t7\n"
+    assert_not inputs(counts: counts, metadata: one_per_batch).varies_within?("condition", "batch")
+  end
+
   test "the example files are accepted" do
     examples = Rails.root.join("lib/examplefiles/rnaseq")
     result = RnaSeq::Inputs.new(examples.join("counts.tsv"), examples.join("sample_metadata.tsv"))

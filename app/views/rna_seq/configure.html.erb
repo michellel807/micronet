@@ -25,7 +25,7 @@
     <% end %>
 
     <%= form_with url: rnaseq_configure_path, method: :post, class: "rnaseq-form", id: "rnaseq-configure",
-                  data: { levels: levels_by_column.to_json } do %>
+                  data: { levels: levels_by_column.to_json, varies_within: @inputs.columns_varying_within.to_json } do %>
       <div class="general-white-block">
         <h2>Type of analysis</h2>
         <fieldset class="rnaseq-types">
@@ -57,7 +57,8 @@
           <label class="ds-label" for="subset_level">Samples to analyze</label>
           <%= select_tag :subset_level, options_for_select(level_options.call(@form["condition_column"]), @form["subset_level"]),
                 include_blank: "All samples", class: "ds-select", data: { level_select: true } %>
-          <p class="rnaseq-hint">Analyze one condition's samples, or all samples together.</p>
+          <p class="rnaseq-hint">Analyze one condition's samples, or all samples together. With all samples, samples from different conditions count as replicates of each other unless the condition is added as a covariate.</p>
+          <p class="ds-alert ds-alert--info" role="status" data-pooling-note hidden></p>
         </div>
 
         <div class="rnaseq-pair" data-show-for="two_condition condition_by_time">
@@ -155,6 +156,10 @@
     var form = document.getElementById("rnaseq-configure");
     if (!form) return;
     var levels = JSON.parse(form.dataset.levels || "{}");
+    var variesWithin = JSON.parse(form.dataset.variesWithin || "{}");
+    var poolingNote = form.querySelector("[data-pooling-note]");
+    var advanced = form.querySelector("details.rnaseq-advanced");
+    var pooling = null; // the condition column auto-added as a covariate, if any
     var column = document.getElementById("condition_column");
     var timeColumn = document.getElementById("time_column");
     var selects = form.querySelectorAll("[data-level-select]");
@@ -206,8 +211,44 @@
       });
     }
 
+    function covariateBox(name) {
+      var label = form.querySelector('[data-covariate="' + (window.CSS && CSS.escape ? CSS.escape(name) : name) + '"]');
+      return label ? label.querySelector("input") : null;
+    }
+
+    // A time course of all samples whose condition column varies within time
+    // points: add that column as a covariate so the conditions' differences are
+    // not counted as noise. Runs only on user changes, never on page load, so a
+    // saved or re-shown form keeps the user's own choice.
+    function adjustPooling(event) {
+      var subset = document.getElementById("subset_level");
+      var wanted = type() === "time_course" && subset && subset.value === "" && column.value !== timeColumn.value &&
+                   (variesWithin[timeColumn.value] || []).indexOf(column.value) !== -1 ? column.value : null;
+      var previous = pooling && covariateBox(pooling);
+      if (event && previous && event.target === previous) {
+        // The user ticked or unticked the auto-added box: it is theirs now.
+        delete previous.dataset.auto;
+        if (!previous.checked) { pooling = null; poolingNote.hidden = true; }
+        return;
+      }
+      if (wanted === pooling) return;
+      if (previous && previous.dataset.auto) { previous.checked = false; delete previous.dataset.auto; }
+      pooling = null;
+      poolingNote.hidden = true;
+      var box = wanted && covariateBox(wanted);
+      if (box && !box.disabled && !box.checked) {
+        box.checked = true;
+        box.dataset.auto = "1";
+        pooling = wanted;
+        poolingNote.textContent = "Your samples include more than one " + wanted + " at the same time points. " + wanted +
+          " has been added as a covariate under Advanced settings so that their differences are not counted as noise. Untick it there to pool them.";
+        poolingNote.hidden = false;
+        if (advanced) advanced.open = true;
+      }
+    }
+
     column.addEventListener("change", function () { fillLevels(); update(); });
-    form.addEventListener("change", update);
+    form.addEventListener("change", function (event) { update(); adjustPooling(event); });
     fillLevels();
     update();
   })();

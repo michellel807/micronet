@@ -35,6 +35,11 @@
         <%= link_to "Edit", rnaseq_upload_path, class: "edit-button" %>
 
         <h2>Analysis</h2>
+        <% if (pooled = @pooled_condition) %>
+          <div class="ds-alert ds-alert--warn" role="status" data-pooled-condition>
+            <p>Your samples include several values of <strong><%= pooled["column"] %></strong> (<%= pooled["levels"].join(", ") %>) at the same time points, but this analysis does not adjust for <%= pooled["column"] %>, so their differences will count as noise. Edit the comparison to add <%= pooled["column"] %> as a covariate, analyze one <%= pooled["column"] %>, or compare conditions over time.</p>
+          </div>
+        <% end %>
         <% time_course = @configuration.time_course? %>
         <p><strong>Method:</strong> <%= RnaSeq::Configuration::EXPERIMENT_TYPES[@configuration.experiment_type] %> with DESeq2<%= " (likelihood ratio test)" if time_course %></p>
         <p><strong>Question:</strong>

@@ -261,7 +261,41 @@ class RnaSeqFlowTest < ActionDispatch::IntegrationTest
 
     post rnaseq_configure_path, params: TIME_DEFAULTS.merge(experiment_type: "time_course", time_column: "time", subset_level: "")
     assert_redirected_to rnaseq_review_path
-    assert_equal({ "experiment_type" => "time_course", "time_column" => "time" }, session[:rnaseq_config]["deseq2"])
+    # The condition column is kept (R ignores it without a subset) so the review page can warn.
+    assert_equal({ "experiment_type" => "time_course", "time_column" => "time", "condition_column" => "condition" },
+                 session[:rnaseq_config]["deseq2"])
+  end
+
+  test "pooling conditions in an all-samples time course is explained and can be adjusted for" do
+    start
+    upload_time_course
+    get rnaseq_configure_path
+    assert_select "form#rnaseq-configure[data-varies-within*='\"time\":[\"condition\"]']"
+    assert_select "[data-pooling-note][hidden]"
+
+    base = TIME_DEFAULTS.merge(experiment_type: "time_course", condition_column: "condition", time_column: "time")
+    post rnaseq_configure_path, params: base.merge(subset_level: "")
+    follow_redirect!
+    assert_select "[data-pooled-condition]", 1
+    assert_includes response.body, "does not adjust for condition"
+
+    post rnaseq_configure_path, params: base.merge(subset_level: "", covariates: ["condition"])
+    assert_redirected_to rnaseq_review_path
+    assert_equal ["condition"], session[:rnaseq_config]["deseq2"]["covariates"]
+    follow_redirect!
+    assert_select "[data-pooled-condition]", 0
+    assert_includes response.body, "<strong>Covariates:</strong> condition"
+
+    post rnaseq_configure_path, params: base.merge(subset_level: "treated")
+    follow_redirect!
+    assert_select "[data-pooled-condition]", 0
+
+    post rnaseq_configure_path, params: TIME_DEFAULTS.merge(
+      experiment_type: "condition_by_time", condition_column: "condition", time_column: "time",
+      reference_level: "control", test_level: "treated"
+    )
+    follow_redirect!
+    assert_select "[data-pooled-condition]", 0
   end
 
   test "the number of gene clusters is automatic unless chosen under advanced settings" do
