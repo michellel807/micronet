@@ -4,8 +4,8 @@
 #   test(dds, model, config)  -> DESeqResults for every tested gene
 #   effects(dds, model)       -> genes x named log2 fold changes reported beside
 #                                the test, or NULL when results() already has one
-# model$group is the factor that defines replicate groups (used by the
-# prefilter and the group means); model$reduced, when present, makes DESeq()
+# model$group is the factor that defines replicate groups for the prefilter
+# (NA for samples outside the compared groups); model$reduced, when present, makes DESeq()
 # run a likelihood ratio test against that reduced formula.
 # The shared pipeline in deseq2_analysis.R handles normalization, VST, and
 # significant-gene selection identically for every design.
@@ -81,7 +81,12 @@ prepare_two_condition <- function(metadata, config) {
 
   model <- model_frame(metadata, config)
   model$groups <- as.list(stats::setNames(as.integer(groups), names(groups)))
-  model$group <- model$coldata$condition
+  # Only the compared groups set the prefilter's smallest group size. Samples of
+  # other levels stay in the model (samples_in_model = "all") but are NA here,
+  # so a one-sample extra level cannot loosen the filter to a single sample.
+  compared <- model$coldata$condition
+  compared[!compared %in% c(reference, test)] <- NA
+  model$group <- droplevels(compared)
   model$contrast <- c("condition", test, reference)
   model$question <- sprintf("Which genes differ between %s and %s (the reference)?", test, reference)
   model

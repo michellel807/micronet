@@ -43,7 +43,9 @@ DESCRIPTIONS = {
     "cluster_gp_curves.tsv": "Each cluster's Gaussian process curve: mean, standard deviation and 95% band at 100 times "
                              "across the measured range, per condition.",
     "cluster_gp_fits.tsv": "The fitted curve settings per cluster and condition: lengthscale (how quickly the curve can bend, "
-                           "in time units), signal and noise variance, and log-likelihood.",
+                           "in time units), signal and noise variance, and log-likelihood. lengthscale_at_limit is lower or "
+                           "upper when the lengthscale sits on its allowed limit, so the limit rather than the data set "
+                           "how smooth the curve is.",
     "cluster_gp_differences.tsv": "The difference between the two conditions' curves per cluster, with its 95% band.",
     "cluster_gp_curves.pdf": "One page per cluster, drawn like MicroNet's growth Gaussian Process Plot: the curve and 95% band "
                              "per condition, with each sample as a faint dot.",
@@ -180,6 +182,23 @@ def format_time(value):
     return f"{round(float(value), 1):g}"
 
 
+def limit_lines(limits, curves):
+    """How many curves had their smoothness set by a lengthscale limit (see cluster_gp_fits.tsv)."""
+    if not limits or not curves:
+        return []
+    lower, upper = limits.get("lower", 0), limits.get("upper", 0)
+    if not lower and not upper:
+        return ["  Every curve's smoothness was fitted from the data (no lengthscale at a limit)."]
+    parts = []
+    if lower:
+        parts.append(f"{lower} of {curves} curves are as bendy as allowed (the data would bend faster), so their shape"
+                     " between time points comes from that limit rather than the data")
+    if upper:
+        parts.append(f"{upper} of {curves} are as flat as allowed")
+    text = "  " + "; ".join(parts) + ". These are marked in the lengthscale_at_limit column of cluster_gp_fits.tsv."
+    return textwrap.wrap(text, width=94, subsequent_indent="  ")
+
+
 def gaussian_process_lines(gp, time_column):
     """The GAUSSIAN PROCESS CURVES section of the README, or nothing when the stage did not run."""
     if not gp:
@@ -196,6 +215,7 @@ def gaussian_process_lines(gp, time_column):
         "     fitted to those values at the actual times, by maximum likelihood. The curve may not",
         f"     bend faster than over {format_time(gp['min_lengthscale'])} {time_column} units (half the largest gap between",
         "     time points), so it does not sag back to zero inside a long gap.",
+        *limit_lines(gp.get("lengthscale_at_limits"), gp.get("curves")),
         "  The band is the 95% interval of the cluster's mean curve: narrow where replicates agree,",
         "  wide between time points. Between time points the curve is an interpolation, not a",
         "  measurement: a smooth curve can rise above the highest measured value (or dip below the",

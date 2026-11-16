@@ -153,6 +153,17 @@ class SilhouetteBaselineReadmeTest(unittest.TestCase):
         self.assertIn("Shuffled baseline (average of 5): 0.19", text)
         self.assertIn("Difference: +0.16", text)
 
+    def test_curves_at_a_lengthscale_limit_are_counted_in_the_readme(self):
+        self.assertEqual(self.package.limit_lines(None, 20), [])
+        none = "\n".join(self.package.limit_lines({"lower": 0, "upper": 0}, 20))
+        self.assertIn("no lengthscale at a limit", none)
+        both = " ".join(line.strip() for line in self.package.limit_lines({"lower": 11, "upper": 4}, 20))
+        self.assertIn("11 of 20 curves are as bendy as allowed", both)
+        self.assertIn("4 of 20 are as flat as allowed", both)
+        self.assertIn("lengthscale_at_limit column of cluster_gp_fits.tsv", both)
+        only_lower = " ".join(self.package.limit_lines({"lower": 2, "upper": 0}, 6))
+        self.assertNotIn("as flat as allowed", only_lower)
+
     def test_a_high_score_alone_is_not_called_separated(self):
         # Random patterns over a few groups score high (rnaseq_clustering_test.py), so without a
         # baseline the README must not read a verdict into the raw score.
@@ -354,6 +365,9 @@ class TimeCourseOutputsTest(unittest.TestCase):
                          "cluster_gp_curves.pdf", "cluster_gp_differences.pdf"} <= names)
         self.assertIn("GAUSSIAN PROCESS CURVES", self.readme)
         self.assertIn("treated minus control", self.readme)
+        self.assertIn("lengthscale_at_limit", self.readme)
+        limits = gp["lengthscale_at_limits"]
+        self.assertEqual(sum(limits.values()) > 0, "as bendy as allowed" in self.readme or "as flat as allowed" in self.readme)
         self.assertIn("Rasmussen CE", self.readme)
 
     def test_gp_plots_have_one_growth_style_page_per_cluster(self):

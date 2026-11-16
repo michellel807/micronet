@@ -194,7 +194,9 @@ align_metadata <- function(metadata, samples, sample_column) {
 
 # Low-count prefilter recommended in the DESeq2 vignette: keep genes with at
 # least min_count reads in at least min_samples samples (by default, the size
-# of the smallest group in the model).
+# of the smallest compared group; samples with an NA group, such as an extra
+# condition level kept only to estimate dispersion, are not counted as a group).
+# Every sample's counts still count toward the min_samples.
 prefilter_genes <- function(counts, condition, prefilter) {
   min_samples <- prefilter$min_samples
   if (identical(min_samples, "smallest_group")) min_samples <- min(table(condition))

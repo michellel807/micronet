@@ -321,6 +321,16 @@ class DesignOptionsTest(unittest.TestCase):
         self.assertEqual(contrast_only.manifest["samples"]["in_model"], 6)
         self.assertFalse(any(sample.startswith("other") for sample in contrast_only.size_factors.index))
 
+    def test_a_small_extra_condition_does_not_loosen_the_prefilter(self):
+        # "other" has one sample: it stays in the model, but the smallest group is
+        # the smaller compared group (3), not 1.
+        experiment = simulation.simulate(seed=65, replicates=(3, 4, 1), levels=("control", "treated", "other"))
+        run = analyze_successfully(experiment)
+        self.assertEqual(run.manifest["samples"]["in_model"], 8)
+        self.assertEqual(run.manifest["genes"]["prefilter_min_samples"], 3)
+        expected = experiment.counts[(experiment.counts >= 10).sum(axis=1) >= 3]
+        self.assertEqual(sorted(run.results.index), sorted(expected.index))
+
     def test_batch_covariate_is_modeled(self):
         experiment = simulation.simulate(seed=62, batch=True)
         run = analyze_successfully(experiment, {"covariates": ["batch"]})

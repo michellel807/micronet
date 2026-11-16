@@ -130,6 +130,16 @@ class Fit:
         variance = self.signal_variance - np.einsum("ij,ji->i", cross, cho_solve(factor, cross.T))
         return mean, np.sqrt(np.maximum(variance, 0.0))
 
+    def lengthscale_limit(self):
+        """"lower" or "upper" when the fitted lengthscale sits on that bound, else "".
+        At the lower bound the data would bend faster than allowed; at the upper
+        bound the curve is as flat as allowed. Either way the bound, not the data,
+        set how smooth the curve is between time points."""
+        for name, bound in zip(("lower", "upper"), self.bounds[0]):
+            if np.isclose(self.lengthscale, bound, rtol=1e-4):
+                return name
+        return ""
+
     def parameters(self):
         return {"lengthscale": self.lengthscale, "signal_variance": self.signal_variance,
                 "noise_variance": self.noise_variance,
@@ -210,7 +220,7 @@ def fit_all(manifest, clusters, vst, samples, means):
             by_condition[condition] = curve
             curves.append(curve)
             fits.append({"cluster": int(number), "condition": condition, "n_genes": len(used),
-                         "n_points": len(values), **fit.parameters()})
+                         "n_points": len(values), **fit.parameters(), "lengthscale_at_limit": fit.lengthscale_limit()})
         if comparison:
             reference, test = conditions
             delta = difference(by_condition[test], by_condition[reference])
@@ -226,6 +236,8 @@ def fit_all(manifest, clusters, vst, samples, means):
         "conditions": conditions,
         "curves": len(fits),
         "min_lengthscale": min_lengthscale(list(time_values.values())),
+        "lengthscale_at_limits": {"lower": int((fit_table["lengthscale_at_limit"] == "lower").sum()),
+                                  "upper": int((fit_table["lengthscale_at_limit"] == "upper").sum())},
     }
     if comparison:
         summary["difference"] = {"test_level": conditions[1], "reference_level": conditions[0], "intervals": intervals}

@@ -77,6 +77,19 @@ class CurveFitTest(unittest.TestCase):
         self.assertEqual(gp.min_lengthscale(x), 6.0)
         self.assertGreaterEqual(fit.lengthscale, 6.0 - 1e-9)
 
+    def test_fits_at_a_lengthscale_limit_are_marked(self):
+        # A spike at the middle of three time points wants a sharper bend than allowed.
+        x = np.repeat([0.0, 6.0, 24.0], 3)
+        spike = gp.fit_gp(x, np.array([-0.5, -0.5, -0.4, 2.2, 2.1, 2.1, -0.4, -0.4, -0.4]))
+        self.assertAlmostEqual(spike.lengthscale, 9.0, places=6)
+        self.assertEqual(spike.lengthscale_limit(), "lower")
+        # A gentle linear trend is fitted inside the limits.
+        x, y = replicate_points(noise=0.05, seed=0, function=lambda time: 0.05 * time)
+        trend = gp.fit_gp(x, y)
+        self.assertEqual(trend.lengthscale_limit(), "")
+        trend.lengthscale = trend.bounds[0][1]
+        self.assertEqual(trend.lengthscale_limit(), "upper")
+
     def test_fitting_is_deterministic(self):
         x, y = replicate_points(seed=4)
         first, second = gp.fit_gp(x, y), gp.fit_gp(x, y)
@@ -183,6 +196,11 @@ class GpScriptTest(unittest.TestCase):
         fits = pd.read_csv(self.directory / "cluster_gp_fits.tsv", sep="\t")
         self.assertEqual(fits["n_genes"].tolist(), [8, 8, 8])
         self.assertTrue((fits["lengthscale"] >= 9.0 - 1e-9).all())
+        flags = fits["lengthscale_at_limit"].fillna("")
+        self.assertTrue(flags.isin(["", "lower", "upper"]).all())
+        self.assertEqual(flags.eq("lower").tolist(), np.isclose(fits["lengthscale"], 9.0, rtol=1e-4).tolist())
+        limits = manifest["gaussian_process"]["lengthscale_at_limits"]
+        self.assertEqual((limits["lower"], limits["upper"]), (int(flags.eq("lower").sum()), int(flags.eq("upper").sum())))
         curves = pd.read_csv(self.directory / "cluster_gp_curves.tsv", sep="\t", keep_default_na=False)
         self.assertEqual(len(curves), 3 * gp.GRID_POINTS)
         # Cluster 1 peaks at the middle time point: its curve there is above both ends.
