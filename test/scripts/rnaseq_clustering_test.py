@@ -221,6 +221,195 @@ class ClusteringMethodTest(unittest.TestCase):
         self.assertEqual(cluster_genes.summary(result)["silhouette_sampled_genes"], 3000)
 
 
+GP_TIMES = ["0", "6", "24"]
+# Change from each gene's level per (condition, time point); "flat" genes only have noise.
+RESPONSES = {
+    "treated_up": {("treated", "24"): 3.0},
+    "treated_down": {("treated", "24"): -3.0},
+    "both_rise": {("control", "6"): 1.5, ("treated", "6"): 1.5, ("control", "24"): 3.0, ("treated", "24"): 3.0},
+    # Pooled over the two conditions this gene is flat at every time point.
+    "opposite": {("control", "24"): -3.0, ("treated", "24"): 3.0},
+    "flat": {},
+}
+
+
+def sample_level(per_kind=30, replicates=3, noise=0.3, seed=5, kinds=RESPONSES):
+    """VST values per sample (genes x samples), the sample table and the group means
+    computed from them, as deseq2_analysis.R writes them for condition_time_gp."""
+    rng = np.random.default_rng(seed)
+    samples = pd.DataFrame([{"sample": f"{condition}_t{time}_{replicate}", "condition": condition, "time": time,
+                             "size_factor": 1.0}
+                            for condition in ("control", "treated") for time in GP_TIMES
+                            for replicate in range(1, replicates + 1)]).set_index("sample")
+    rows, truth = {}, {}
+    for kind, response in kinds.items():
+        for index in range(per_kind):
+            gene = f"{kind}_{index:03d}"
+            truth[gene] = kind
+            level = rng.uniform(4, 12)
+            shift = np.array([response.get((condition, time), 0.0)
+                              for condition, time in zip(samples["condition"], samples["time"])])
+            rows[gene] = level + shift + rng.normal(0, noise, len(samples))
+    vst = pd.DataFrame.from_dict(rows, orient="index", columns=samples.index)
+    return vst, samples, group_means(vst, samples), truth
+
+
+def group_means(vst, samples):
+    rows = []
+    for (condition, time), members in samples.groupby(["condition", "time"]).groups.items():
+        values = vst[list(members)].mean(axis=1)
+        rows.append(pd.DataFrame({"gene_id": vst.index, "condition": condition, "time": time,
+                                  "time_value": float(time), "n_samples": len(members), "mean_vst": values.to_numpy()}))
+    means = pd.concat(rows, ignore_index=True)
+    order = {time: index for index, time in enumerate(GP_TIMES)}
+    return means.sort_values(["condition", "time"], key=lambda column: column.map(order) if column.name == "time" else column,
+                             kind="stable").reset_index(drop=True)
+
+
+def swapped_within_times(samples):
+    """Trade the labels of each time point's first control and first treated replicate."""
+    samples = samples.copy()
+    for time in GP_TIMES:
+        first = [f"control_t{time}_1", f"treated_t{time}_1"]
+        samples.loc[first, "condition"] = samples.loc[first[::-1], "condition"].to_numpy()
+    return samples
+
+
+class VariableGeneSelectionTest(unittest.TestCase):
+    """condition_time_gp: the most variable genes, chosen without the condition labels."""
+
+    def test_the_default_keeps_1000_genes_or_half_when_that_is_fewer(self):
+        count = cluster_genes.variable_gene_count
+        self.assertEqual(count(6000), 1000)
+        self.assertEqual(count(2000), 1000)
+        self.assertEqual(count(1200), 600)
+        self.assertEqual(count(1999), 1000)
+        self.assertEqual(count(3), 2)
+        self.assertEqual(count(1), 1)
+        self.assertEqual(count(0), 0)
+
+    def test_a_chosen_percent_is_used(self):
+        count = cluster_genes.variable_gene_count
+        self.assertEqual(count(4000, 10), 400)
+        self.assertEqual(count(4000, 100), 4000)
+        self.assertEqual(count(6000, 50), 3000)
+        self.assertEqual(count(10, 1), 1)
+
+    def test_the_most_variable_genes_are_kept_and_flat_ones_dropped(self):
+        vst, _, _, truth = sample_level()
+        changing = [gene for gene, kind in truth.items() if kind != "flat"]
+        genes, variance, summary = cluster_genes.select_variable(vst, 100 * len(changing) / len(vst))
+        self.assertEqual(sorted(genes), sorted(changing))
+        self.assertEqual(genes, list(variance.sort_values(ascending=False).index[:len(changing)]))
+        self.assertEqual(summary, {"method": "highest variance of VST values across all samples",
+                                   "genes_after_prefilter": 150, "kept": 120, "percent": 80.0,
+                                   "chosen_by": "user", "requested_percent": 80.0})
+
+    def test_genes_whose_conditions_cancel_out_are_kept(self):
+        vst, samples, means, truth = sample_level()
+        opposite = [gene for gene, kind in truth.items() if kind == "opposite"]
+        pooled = means[means["gene_id"].isin(opposite)].groupby(["gene_id", "time"])["mean_vst"].mean().unstack()
+        self.assertLess(float((pooled.max(axis=1) - pooled.min(axis=1)).max()), 1.0)  # flat when pooled
+        genes, _, _ = cluster_genes.select_variable(vst, 80)
+        self.assertTrue(set(opposite) <= set(genes))
+
+
+class SampleClusteringTest(unittest.TestCase):
+    """condition_time_gp: genes clustered by their values in every sample."""
+
+    @classmethod
+    def setUpClass(cls):
+        kinds = {kind: RESPONSES[kind] for kind in ("treated_up", "treated_down", "both_rise")}
+        cls.vst, cls.samples, cls.means, cls.truth = sample_level(kinds=kinds)
+        cls.result = cluster_genes.cluster_samples(cls.vst, cls.samples, cls.means, list(cls.truth), GP_TIMES)
+
+    def test_genes_up_and_down_in_the_test_condition_separate(self):
+        self.assertEqual(self.result["chosen"], 3)
+        self.assertEqual(adjusted_rand([self.truth[gene] for gene in self.result["genes"]], self.result["labels"]), 1.0)
+
+    def test_samples_are_the_clustered_columns_and_groups_the_profile(self):
+        self.assertEqual(self.result["columns"][:3], ["control_t0_1", "control_t0_2", "control_t0_3"])
+        self.assertEqual(len(self.result["columns"]), 18)
+        self.assertEqual(self.result["groups"], [(condition, time) for condition in ("control", "treated") for time in GP_TIMES])
+        self.assertEqual(self.result["profile"].shape, (90, 6))
+        self.assertEqual(cluster_genes.summary(self.result)["method"], cluster_genes.SAMPLE_METHOD)
+
+    def test_shuffling_labels_within_time_points_changes_neither_genes_nor_clusters(self):
+        vst, samples, _, truth = sample_level()
+        swapped = swapped_within_times(samples)
+        self.assertNotEqual(list(swapped["condition"]), list(samples["condition"]))
+        original = cluster_genes.cluster_samples(vst, samples, group_means(vst, samples),
+                                                 cluster_genes.select_variable(vst)[0], GP_TIMES)
+        shuffled = cluster_genes.cluster_samples(vst, swapped, group_means(vst, swapped),
+                                                 cluster_genes.select_variable(vst)[0], GP_TIMES)
+        self.assertEqual(original["genes"], shuffled["genes"])
+        np.testing.assert_array_equal(original["labels"], shuffled["labels"])
+        self.assertEqual(original["chosen"], shuffled["chosen"])
+
+    def test_too_few_selected_genes_is_skipped_with_a_reason(self):
+        genes = list(self.truth)[:10]
+        result = cluster_genes.cluster_samples(self.vst, self.samples, self.means, genes, GP_TIMES)
+        self.assertEqual(result["status"], "skipped")
+        self.assertIn("selected genes that vary across samples", result["reason"])
+
+
+class GaussianProcessClusterScriptTest(unittest.TestCase):
+    """The script on a condition_time_gp results folder (no significant genes)."""
+
+    def setUp(self):
+        self.directory = Path(tempfile.mkdtemp(prefix="micronet-gp-clustering-"))
+        vst, samples, means, self.truth = sample_level()
+        vst.rename_axis("gene_id").to_csv(self.directory / "vst_all.tsv", sep="\t")
+        samples.to_csv(self.directory / "size_factors.tsv", sep="\t")
+        means.to_csv(self.directory / "group_means_vst.tsv", sep="\t", index=False)
+        pd.DataFrame({"gene_id": vst.index, "baseMean": 100.0}).to_csv(self.directory / "deseq2_results.tsv", sep="\t", index=False)
+        self.manifest = {"status": "completed", "experiment_type": "condition_time_gp", "test": "none",
+                         "time": {"column": "time", "levels": GP_TIMES, "numeric_values": [0, 6, 24]},
+                         "outputs": {"results": "deseq2_results.tsv", "group_means": "group_means_vst.tsv",
+                                     "vst_all": "vst_all.tsv", "size_factors": "size_factors.tsv"}}
+        (self.directory / "manifest.json").write_text(json.dumps(self.manifest))
+
+    def tearDown(self):
+        shutil.rmtree(self.directory)
+
+    def run_script(self, *arguments):
+        return subprocess.run([sys.executable, str(SCRIPT), str(self.directory), *arguments], capture_output=True, text=True)
+
+    def test_a_chosen_percent_selects_and_clusters_the_genes(self):
+        result = self.run_script("--variable-percent", "80")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        manifest = json.loads((self.directory / "manifest.json").read_text())
+        self.assertEqual(manifest["gene_selection"]["kept"], 120)
+        self.assertEqual(manifest["gene_selection"]["chosen_by"], "user")
+        self.assertEqual(manifest["clustering"]["genes_clustered"], 120)
+        self.assertEqual(manifest["clustering"]["method"], cluster_genes.SAMPLE_METHOD)
+        self.assertEqual(len(manifest["clustering"]["groups"]), 6)
+        clusters = pd.read_csv(self.directory / "gene_clusters.tsv", sep="\t")
+        self.assertEqual(list(clusters.columns), ["gene_id", "cluster", "variance", "distance_to_center"])
+        self.assertFalse(any(self.truth[gene] == "flat" for gene in clusters["gene_id"]))
+        profiles = pd.read_csv(self.directory / "cluster_profiles.tsv", sep="\t", keep_default_na=False, na_values=["NA"])
+        self.assertEqual(len(profiles), manifest["clustering"]["clusters"] * 6)
+        self.assertEqual(sorted(profiles["condition"].unique()), ["control", "treated"])
+
+    def test_the_default_keeps_half_of_a_small_gene_set(self):
+        result = self.run_script()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        selection = json.loads((self.directory / "manifest.json").read_text())["gene_selection"]
+        self.assertEqual((selection["kept"], selection["percent"], selection["chosen_by"]), (75, 50.0, "automatic"))
+
+    def test_a_percent_outside_0_to_100_is_refused(self):
+        for value in ["0", "101", "-5"]:
+            result = self.run_script("--variable-percent", value)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("more than 0 and at most 100", result.stderr)
+
+    def test_a_percent_is_refused_for_other_analyses(self):
+        (self.directory / "manifest.json").write_text(json.dumps({**self.manifest, "experiment_type": "condition_by_time"}))
+        result = self.run_script("--variable-percent", "50")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("applies only to a Gaussian process comparison", result.stderr)
+
+
 class ClusterScriptTest(unittest.TestCase):
     """The command-line script on a minimal results folder."""
 

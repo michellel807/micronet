@@ -19,6 +19,15 @@ the silhouettes of several shuffles are averaged. Similar shapes still group
 together by chance, so the baseline is not 0; a difference near 0 means the
 clusters are no better separated than randomly timed patterns.
 
+A Gaussian process comparison (condition_time_gp) has no significant genes
+and must not use the condition labels before its test. It keeps the most
+variable genes across all samples (--variable-percent, or by default 1000
+genes, or half of them if that is fewer) and clusters each gene's z-scored
+values in every individual sample rather than its group means, so genes
+that move in opposite directions in the two conditions still differ.
+Its cluster_profiles.tsv still summarizes each cluster by condition and time
+point, and the manifest gains a "gene_selection" section.
+
 Writes gene_clusters.tsv, cluster_profiles.tsv and cluster_selection.tsv and
 adds a "clustering" section to manifest.json. Too few genes is not an error:
 the manifest records why clustering was skipped. A two-condition run is left
@@ -47,6 +56,13 @@ BASELINE_SHUFFLES = 5
 FLAT_SD = 1e-8
 OUTPUTS = {"gene_clusters": "gene_clusters.tsv", "cluster_profiles": "cluster_profiles.tsv",
            "cluster_selection": "cluster_selection.tsv"}
+# condition_time_gp: without a chosen percent, keep this many of the most
+# variable genes, or this share of them when that is fewer.
+GP_TYPE = "condition_time_gp"
+AUTO_VARIABLE_GENES = 1000
+AUTO_MAX_SHARE = 0.5
+GROUP_METHOD = "k-means on z-scored mean VST per group (condition and time point)"
+SAMPLE_METHOD = "k-means on z-scored VST values in every sample (condition labels not used)"
 
 
 def gene_matrix(means, genes, time_levels):
@@ -196,16 +212,21 @@ def relabel_by_size(labels):
 
 
 def cluster(means, genes, time_levels, requested=None, seed=SEED, baseline=False):
-    """Cluster genes; returns a dict describing the result (see write_outputs)."""
+    """Cluster genes by their group means; returns a dict describing the result (see write_outputs)."""
     matrix, columns = gene_matrix(means, genes, time_levels)
     if len(columns) < MIN_GROUPS:
         return {"status": "skipped",
                 "reason": f"Clustering needs at least {MIN_GROUPS} groups (condition and time point); this run has {len(columns)}."}
+    return cluster_rows(matrix, columns, genes, requested, seed, baseline, "significant genes that vary over time")
+
+
+def cluster_rows(matrix, columns, genes, requested, seed, baseline, kind, method=GROUP_METHOD):
+    """k-means on the z-scored rows of matrix (genes x columns)."""
     scaled, keep = zscore(matrix)
     excluded = int((~keep).sum()) + len([gene for gene in genes if gene not in matrix.index])
     if len(scaled) < MIN_GENES:
         return {"status": "skipped", "excluded": excluded,
-                "reason": f"Clustering needs at least {MIN_GENES} significant genes that vary over time; this run has {len(scaled)}."}
+                "reason": f"Clustering needs at least {MIN_GENES} {kind}; this run has {len(scaled)}."}
     chosen, fits, selection, sampled = choose_k(scaled, requested, seed)
     raw_labels, centers, _ = fits[chosen]
     labels, mapping = relabel_by_size(raw_labels)
@@ -214,15 +235,78 @@ def cluster(means, genes, time_levels, requested=None, seed=SEED, baseline=False
         ordered_centers[number - 1] = centers[raw]
     return {"status": "completed", "genes": list(matrix.index[keep]), "scaled": scaled, "labels": labels,
             "centers": ordered_centers, "columns": columns, "selection": selection, "chosen": chosen,
-            "requested": requested, "sampled": sampled, "excluded": excluded,
+            "requested": requested, "sampled": sampled, "excluded": excluded, "method": method,
+            # The (condition, time) groups the profiles and plots summarize the clusters by.
+            "groups": columns, "profile": scaled,
             "shuffled_silhouette": shuffled_silhouette(scaled, chosen, seed) if baseline else None}
+
+
+# ---- condition_time_gp: label-blind gene selection and clustering ----------
+# Nothing here reads the condition labels, so shuffling them within a time
+# point changes neither the genes nor the clusters. gp_condition_test.py relies
+# on that to calibrate its test by shuffling labels.
+
+def variable_gene_count(total, percent=None):
+    """How many of total genes to keep: percent of them, or by default
+    AUTO_VARIABLE_GENES unless that is more than AUTO_MAX_SHARE of them."""
+    if percent is not None:
+        share = percent / 100
+    else:
+        share = min(AUTO_VARIABLE_GENES / total, AUTO_MAX_SHARE) if total else 0
+    return min(total, max(1, int(np.floor(total * share + 0.5)))) if total else 0
+
+
+def select_variable(vst, percent=None):
+    """The most variable genes across all samples, as (genes, variances, summary).
+    Ties keep the input order."""
+    variance = vst.var(axis=1, ddof=1)
+    kept = variable_gene_count(len(variance), percent)
+    order = np.argsort(-variance.to_numpy(), kind="stable")[:kept]
+    genes = list(variance.index[order])
+    summary = {"method": "highest variance of VST values across all samples",
+               "genes_after_prefilter": int(len(variance)), "kept": int(kept),
+               "percent": round(100 * kept / len(variance), 2) if len(variance) else 0.0,
+               "chosen_by": "user" if percent is not None else "automatic"}
+    if percent is not None:
+        summary["requested_percent"] = percent
+    return genes, variance, summary
+
+
+def sample_matrix(vst, samples, genes, time_levels):
+    """Genes x samples VST values, samples ordered by time point then name."""
+    order = {time: index for index, time in enumerate(time_levels)}
+    chosen = sorted((sample for sample in samples.index if sample in vst.columns),
+                    key=lambda sample: (order.get(str(samples.loc[sample, "time"]), len(order)), sample))
+    return vst.loc[[gene for gene in genes if gene in vst.index], chosen]
+
+
+def group_profile(means, genes, time_levels):
+    """Each gene's mean VST per (condition, time) group, z-scored across the groups
+    (as plot_results.plot_clusters draws them); NaN rows for genes flat across groups."""
+    matrix, columns = gene_matrix(means, genes, time_levels)
+    values = matrix.reindex(genes).to_numpy(dtype=float)
+    sd = values.std(axis=1, keepdims=True)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        scaled = np.where(sd > FLAT_SD, (values - values.mean(axis=1, keepdims=True)) / sd, np.nan)
+    return scaled, columns
+
+
+def cluster_samples(vst, samples, means, genes, time_levels, requested=None, seed=SEED, baseline=False):
+    """Cluster genes by their z-scored values in every sample (not group means), so genes
+    that rise in the same samples group together even when their time-point averages are flat."""
+    matrix = sample_matrix(vst, samples, genes, time_levels)
+    result = cluster_rows(matrix, list(matrix.columns), genes, requested, seed, baseline,
+                          "selected genes that vary across samples", SAMPLE_METHOD)
+    if result["status"] == "completed":
+        result["profile"], result["groups"] = group_profile(means, result["genes"], time_levels)
+    return result
 
 
 def write_outputs(result, results, means, directory):
     genes, labels, scaled = result["genes"], result["labels"], result["scaled"]
     distance = np.sqrt(((scaled - result["centers"][labels - 1]) ** 2).sum(axis=1))
     table = pd.DataFrame({"gene_id": genes, "cluster": labels, "distance_to_center": distance})
-    extra = [column for column in ("padj", "max_abs_log2FC", "log2FoldChange") if column in results.columns]
+    extra = [column for column in ("padj", "max_abs_log2FC", "log2FoldChange", "variance") if column in results.columns]
     table = table.join(results[extra], on="gene_id")
     table = table[["gene_id", "cluster", *extra, "distance_to_center"]].sort_values(["cluster", "distance_to_center"], kind="stable")
     table.to_csv(directory / OUTPUTS["gene_clusters"], sep="\t", index=False, na_rep="NA")
@@ -230,13 +314,16 @@ def write_outputs(result, results, means, directory):
     time_values = (means.assign(time=means["time"].astype(str)).drop_duplicates("time")
                    .set_index("time")["time_value"].to_dict())
     rows = []
+    profile = result["profile"]
     for number in range(1, result["chosen"] + 1):
-        members = scaled[labels == number]
-        for index, (condition, time) in enumerate(result["columns"]):
+        members = profile[labels == number]
+        for index, (condition, time) in enumerate(result["groups"]):
+            column = members[:, index]
+            column = column[np.isfinite(column)]
             rows.append({"cluster": number, "condition": condition, "time": time,
-                         "time_value": time_values.get(time, np.nan), "n_genes": len(members),
-                         "mean_z": members[:, index].mean(),
-                         "sd_z": members[:, index].std(ddof=1) if len(members) > 1 else np.nan})
+                         "time_value": time_values.get(time, np.nan), "n_genes": int((labels == number).sum()),
+                         "mean_z": column.mean() if len(column) else np.nan,
+                         "sd_z": column.std(ddof=1) if len(column) > 1 else np.nan})
     pd.DataFrame(rows).to_csv(directory / OUTPUTS["cluster_profiles"], sep="\t", index=False, na_rep="NA")
     result["selection"].to_csv(directory / OUTPUTS["cluster_selection"], sep="\t", index=False, na_rep="NA")
 
@@ -255,8 +342,8 @@ def summary(result):
                                             "shuffles": BASELINE_SHUFFLES}}
     return {
         "status": "completed",
-        "method": "k-means on z-scored mean VST per group (condition and time point)",
-        "groups": [{"condition": condition, "time": time} for condition, time in result["columns"]],
+        "method": result["method"],
+        "groups": [{"condition": condition, "time": time} for condition, time in result["groups"]],
         "genes_clustered": len(result["genes"]),
         "genes_excluded": result["excluded"],
         "clusters": int(result["chosen"]),
@@ -275,7 +362,7 @@ def write_json_atomically(data, path):
     os.replace(partial, path)
 
 
-def main(results_dir, requested=None, baseline=False):
+def main(results_dir, requested=None, baseline=False, percent=None):
     directory = Path(results_dir)
     manifest_path = directory / "manifest.json"
     manifest = json.loads(manifest_path.read_text())
@@ -285,13 +372,27 @@ def main(results_dir, requested=None, baseline=False):
         return
     if requested is not None and not MIN_CLUSTERS <= requested <= MAX_CLUSTERS:
         raise SystemExit(f"The number of clusters must be from {MIN_CLUSTERS} to {MAX_CLUSTERS}.")
+    gp_type = manifest.get("experiment_type") == GP_TYPE
+    if percent is not None and not gp_type:
+        raise SystemExit("--variable-percent applies only to a Gaussian process comparison (condition_time_gp).")
+    if percent is not None and not 0 < percent <= 100:
+        raise SystemExit("The percent of most variable genes to keep must be more than 0 and at most 100.")
 
     results = pd.read_csv(directory / manifest["outputs"]["results"], sep="\t", index_col="gene_id")
     results.index = results.index.astype(str)
-    significant = results.index[results["significant"].astype(str).str.upper().eq("TRUE")]
     means = pd.read_csv(directory / manifest["outputs"]["group_means"], sep="\t", keep_default_na=False, na_values=["NA"])
-    result = cluster(means, list(significant), [str(level) for level in manifest["time"]["levels"]], requested,
-                     baseline=baseline)
+    levels = [str(level) for level in manifest["time"]["levels"]]
+    if gp_type:
+        vst = pd.read_csv(directory / manifest["outputs"]["vst_all"], sep="\t", index_col=0)
+        vst.index = vst.index.astype(str)
+        samples = pd.read_csv(directory / manifest["outputs"]["size_factors"], sep="\t", index_col=0, dtype={"time": str})
+        genes, variance, manifest["gene_selection"] = select_variable(vst, percent)
+        results = results.join(variance.rename("variance"))
+        result = cluster_samples(vst, samples, means, genes, levels, requested, baseline=baseline)
+    else:
+        manifest.pop("gene_selection", None)
+        significant = results.index[results["significant"].astype(str).str.upper().eq("TRUE")]
+        result = cluster(means, list(significant), levels, requested, baseline=baseline)
     if result["status"] == "completed":
         write_outputs(result, results, means, directory)
         manifest["outputs"].update(OUTPUTS)
@@ -310,5 +411,8 @@ if __name__ == "__main__":
     parser.add_argument("--clusters", type=int)
     parser.add_argument("--silhouette-baseline", action="store_true",
                         help="also compare the silhouette with that of shuffled copies of the data")
+    parser.add_argument("--variable-percent", type=float,
+                        help="condition_time_gp only: keep this percent of the most variable genes "
+                             f"(default: {AUTO_VARIABLE_GENES} genes, or {AUTO_MAX_SHARE:.0%} of them if that is fewer)")
     arguments = parser.parse_args()
-    main(arguments.results_dir, arguments.clusters, arguments.silhouette_baseline)
+    main(arguments.results_dir, arguments.clusters, arguments.silhouette_baseline, arguments.variable_percent)
