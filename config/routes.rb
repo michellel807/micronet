@@ -21,6 +21,7 @@ Rails.application.routes.draw do
   post '/rnaseq/upload', to: 'rna_seq#upload'
   get  '/rnaseq/configure', to: 'rna_seq#configure', as: :rnaseq_configure
   post '/rnaseq/configure', to: 'rna_seq#save_configuration'
+  get  '/rnaseq/gp_gene_count', to: 'rna_seq#gp_gene_count', as: :rnaseq_gp_gene_count
   get  '/rnaseq/review', to: 'rna_seq#review', as: :rnaseq_review
   post '/rnaseq/submit', to: 'rna_seq#submit', as: :rnaseq_submit
   get  '/rnaseq/example/:file_name', to: 'rna_seq#example', as: :rnaseq_example, format: false, constraints: { file_name: /[^\/]+/ }

@@ -310,6 +310,29 @@ class RnaSeqFlowTest < ActionDispatch::IntegrationTest
     assert_select "input[name=treatment_start][value='6']"
   end
 
+  test "the configure page can ask for the automatic gene percent without running a job" do
+    start
+    upload_time_course
+    get rnaseq_configure_path
+    assert_select "input[name=variable_percent][placeholder]", 0, "no \"Automatic\" placeholder; the page fills in the number"
+    assert_select "input[name=variable_percent][data-gene-count-url=?]", rnaseq_gp_gene_count_path
+
+    choice = { condition_column: "condition", time_column: "time", reference_level: "control", test_level: "treated" }
+    assert_no_difference -> { Job.count } do
+      get rnaseq_gp_gene_count_path, params: choice
+    end
+    assert_response :success
+    result = response.parsed_body
+    assert_operator result["genes"], :>, 0
+    assert_equal RnaSeq::Configuration.automatic_gene_count(result["genes"]), result["kept"]
+    assert_equal (100.0 * result["kept"] / result["genes"]).round(2), result["percent"]
+
+    get rnaseq_gp_gene_count_path, params: choice.merge(test_level: "control")
+    assert_response :unprocessable_content
+    get rnaseq_gp_gene_count_path, params: choice.merge(time_column: "condition")
+    assert_response :unprocessable_content
+  end
+
   test "a Gaussian process comparison needs to know how the samples were collected and when the treatment began" do
     start
     upload_time_course

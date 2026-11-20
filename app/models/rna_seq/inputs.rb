@@ -13,6 +13,8 @@ module RnaSeq
     # Matches DEFAULT_CONFIG$sample_column in lib/scripts/rnaseq/R/validate.R.
     SAMPLE_COLUMN = "sample".freeze
     COUNT_ROWS_CHECKED = 1000
+    # Matches DEFAULT_CONFIG$prefilter$min_count in lib/scripts/rnaseq/R/validate.R.
+    PREFILTER_MIN_COUNT = 10
     LIST_LIMIT = 5
 
     # Matches lib/scripts/rnaseq/enrichment.py: required and optional columns.
@@ -68,6 +70,20 @@ module RnaSeq
     def columns_varying_within
       condition_columns.index_with do |within|
         condition_columns.select { |column| varies_within?(column, within) }
+      end
+    end
+
+    # How many genes pass the low-count prefilter of deseq2_analysis.R
+    # (prefilter_genes in lib/scripts/rnaseq/R/validate.R, default settings):
+    # at least min_count reads in at least min_samples of the given samples.
+    # Reads the whole count matrix.
+    def genes_passing_prefilter(samples, min_samples, min_count: PREFILTER_MIN_COUNT)
+      columns = samples.filter_map { |sample| @sample_ids.index(sample) }.map { |index| index + 1 }
+      delimiter = self.class.delimiter_for(@counts_path)
+      rows = File.foreach(@counts_path, encoding: "bom|utf-8").lazy.reject { |line| line.strip.empty? }.drop(1)
+      rows.count do |line|
+        fields = line.chomp.delete_suffix("\r").split(delimiter, -1)
+        columns.count { |column| unquote(fields[column].to_s).to_i >= min_count } >= min_samples
       end
     end
 

@@ -171,6 +171,15 @@ class RnaSeqConfigurationTest < ActiveSupport::TestCase
     assert_raises(RnaSeq::Configuration::Invalid) { configuration(gp_test: { permutations: 199 }) }
   end
 
+  test "the automatic gene count matches cluster_genes.py: 1000 genes, or half when that is fewer" do
+    assert_equal 1000, RnaSeq::Configuration.automatic_gene_count(12_000)
+    assert_equal 1000, RnaSeq::Configuration.automatic_gene_count(2000)
+    assert_equal 750, RnaSeq::Configuration.automatic_gene_count(1500)
+    assert_equal 2, RnaSeq::Configuration.automatic_gene_count(3), "half of 3 rounds half up"
+    assert_equal 1, RnaSeq::Configuration.automatic_gene_count(1)
+    assert_equal 0, RnaSeq::Configuration.automatic_gene_count(0)
+  end
+
   test "the summary of a Gaussian process comparison describes its test" do
     summary = configuration(deseq2: GP, gp_test: { treatment_start: 6.0 }).summary
     assert_equal "RNA-seq: Compare conditions over time (Gaussian process test) (normalized with DESeq2; B-GREAT-style test of each gene cluster)",

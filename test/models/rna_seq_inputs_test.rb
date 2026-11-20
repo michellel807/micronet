@@ -46,6 +46,20 @@ class RnaSeqInputsTest < ActiveSupport::TestCase
     assert_not inputs(counts: counts, metadata: one_per_batch).varies_within?("condition", "batch")
   end
 
+  test "counts the genes that pass the low-count prefilter among chosen samples" do
+    counts = "gene_id\ta1\ta2\tb1\tb2\tb3\ng1\t10\t0\t5\t7\t3\ng2\t10\t12\t0\t0\t0\ng3\t0\t0\t10\t11\t0\n\ng4\t9\t9\t9\t9\t9\n"
+    result = inputs(counts: counts)
+    assert_equal 2, result.genes_passing_prefilter(%w[a1 a2 b1 b2 b3], 2), "g2 and g3; g4 is just under 10 reads"
+    assert_equal 3, result.genes_passing_prefilter(%w[a1 a2 b1 b2 b3], 1)
+    assert_equal 1, result.genes_passing_prefilter(%w[b1 b2 b3], 2), "only the chosen samples count"
+    assert_equal 0, result.genes_passing_prefilter(%w[a1 a2 b1 b2 b3], 2, min_count: 13)
+
+    r_style = "\"a1\",\"a2\",\"b1\",\"b2\"\n\"g1\",10,10,0,0\n\"g2\",0,0,0,10\n"
+    metadata = "sample,condition\na1,ctrl\na2,ctrl\nb1,trt\nb2,trt\n"
+    csv = inputs(counts: r_style, metadata: metadata, counts_name: "counts.csv", metadata_name: "metadata.csv")
+    assert_equal 1, csv.genes_passing_prefilter(%w[a1 a2 b1 b2], 2)
+  end
+
   test "the example files are accepted" do
     examples = Rails.root.join("lib/examplefiles/rnaseq")
     result = RnaSeq::Inputs.new(examples.join("counts.tsv"), examples.join("sample_metadata.tsv"))

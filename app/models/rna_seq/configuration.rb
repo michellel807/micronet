@@ -53,6 +53,17 @@ module RnaSeq
     DEFAULT_PERMUTATIONS = 999
     PERMUTATION_COUNTS = (99..9999).freeze
     AUTOMATIC_GENES = 1000
+    AUTOMATIC_MAX_SHARE = 0.5
+
+    # How many of total genes a blank percent keeps: AUTOMATIC_GENES, or
+    # AUTOMATIC_MAX_SHARE of them when that is fewer. Matches
+    # variable_gene_count in lib/scripts/rnaseq/cluster_genes.py.
+    def self.automatic_gene_count(total)
+      return 0 unless total.positive?
+
+      share = [AUTOMATIC_GENES.fdiv(total), AUTOMATIC_MAX_SHARE].min
+      (total * share + 0.5).floor.clamp(1, total)
+    end
 
     attr_reader :counts_file, :metadata_file, :annotation_file, :original_filenames, :deseq2, :clustering, :gp_test
 

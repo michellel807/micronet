@@ -9,7 +9,7 @@ class RnaSeqController < ApplicationController
 
   before_action :require_upload_workspace, except: :example
   before_action :require_rnaseq_session, except: :example
-  before_action :load_inputs, only: %i[configure save_configuration review]
+  before_action :load_inputs, only: %i[configure save_configuration review gp_gene_count]
   helper_method :rnaseq_steps
 
   def upload_form
@@ -36,6 +36,25 @@ class RnaSeqController < ApplicationController
   def configure
     saved = saved_configuration
     @form = form_values((saved&.deseq2 || {}).merge(saved&.clustering || {}).merge(saved&.gp_test || {}))
+  end
+
+  # For the configure page's Gaussian process option: how many genes would pass
+  # the low-count prefilter for the chosen conditions and time column, and what
+  # share of them a blank "most variable genes" percent would keep. No job is run.
+  def gp_gene_count
+    column, time_column = params.values_at(:condition_column, :time_column).map(&:to_s)
+    reference, test = params.values_at(:reference_level, :test_level).map(&:to_s)
+    valid = @inputs.condition_columns.include?(time_column) && column != time_column &&
+            comparison_error(@inputs.levels(column), reference, test).nil?
+    return head :unprocessable_content unless valid
+
+    chosen = { column => [reference, test] }
+    # As prepare_condition_time_gp: the prefilter's group is each condition-and-time cell.
+    smallest = @inputs.group_counts([column, time_column], chosen).values.min
+    samples = @inputs.group_counts([RnaSeq::Inputs::SAMPLE_COLUMN], chosen).keys.map(&:first)
+    total = @inputs.genes_passing_prefilter(samples, smallest)
+    kept = RnaSeq::Configuration.automatic_gene_count(total)
+    render json: { genes: total, kept: kept, percent: total.positive? ? (100.0 * kept / total).round(2) : nil }
   end
 
   def save_configuration

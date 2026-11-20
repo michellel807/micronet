@@ -114,8 +114,9 @@
           </div>
           <div class="ds-field" data-show-for="<%= gp %>">
             <label class="ds-label" for="variable_percent">Keep the top __% most variable genes</label>
-            <%= text_field_tag :variable_percent, @form["variable_percent"], class: "ds-input", inputmode: "decimal", placeholder: "Automatic" %>
-            <p class="rnaseq-hint">Genes are chosen by how much they vary across all samples, without looking at the conditions, and then clustered by their values in every sample. Leave blank to keep the <%= RnaSeq::Configuration::AUTOMATIC_GENES %> most variable genes, or half of the genes if that is fewer.</p>
+            <%= text_field_tag :variable_percent, @form["variable_percent"], class: "ds-input", inputmode: "decimal",
+                  data: { gene_count_url: rnaseq_gp_gene_count_path } %>
+            <p class="rnaseq-hint">Genes are chosen by how much they vary across all samples, without looking at the conditions, and then clustered by their values in every sample. Leave blank to keep the <%= RnaSeq::Configuration::AUTOMATIC_GENES %> most variable genes, or half of the genes if that is fewer.<span data-variable-default></span></p>
           </div>
           <div data-cluster-options>
             <label class="ds-label" for="clusters">Number of gene clusters</label>
@@ -271,6 +272,44 @@
       });
     }
 
+    // The Gaussian process option's automatic gene percent, worked out by the
+    // server from the count matrix for the chosen conditions and time column.
+    // Asked only while that option is selected, and once per choice of columns.
+    var percentInput = document.getElementById("variable_percent");
+    var percentNote = form.querySelector("[data-variable-default]");
+    var geneCounts = {};
+    var askedFor = null;
+
+    function showDefaultPercent(result) {
+      var known = result && result.percent !== null && result.percent !== undefined;
+      percentInput.placeholder = known ? String(result.percent) : "";
+      percentNote.textContent = known
+        ? " For your samples that is " + result.percent + "% (" + result.kept.toLocaleString() + " of the " +
+          result.genes.toLocaleString() + " genes that pass the low-count filter)."
+        : "";
+    }
+
+    function updateDefaultPercent() {
+      if (!percentInput || !percentNote || type() !== "condition_time_gp") return;
+      var reference = document.getElementById("reference_level");
+      var test = document.getElementById("test_level");
+      var query = new URLSearchParams({ condition_column: column.value, time_column: timeColumn.value,
+                                        reference_level: reference ? reference.value : "", test_level: test ? test.value : "" });
+      var key = query.toString();
+      if (key === askedFor) return;
+      askedFor = key;
+      if (key in geneCounts) { showDefaultPercent(geneCounts[key]); return; }
+      showDefaultPercent(null);
+      if (!query.get("reference_level") || !query.get("test_level")) return;
+      fetch(percentInput.dataset.geneCountUrl + "?" + key, { headers: { Accept: "application/json" }, credentials: "same-origin" })
+        .then(function (response) { return response.ok ? response.json() : null; })
+        .then(function (result) {
+          geneCounts[key] = result;
+          if (askedFor === key) showDefaultPercent(result);
+        })
+        .catch(function () { if (askedFor === key) askedFor = null; });
+    }
+
     function toggle(element, shown) {
       if (!element) return;
       element.hidden = !shown;
@@ -314,8 +353,9 @@
     }
 
     column.addEventListener("change", function () { fillLevels(); update(); });
-    form.addEventListener("change", function (event) { update(); adjustPooling(event); });
+    form.addEventListener("change", function (event) { update(); adjustPooling(event); updateDefaultPercent(); });
     fillLevels();
     update();
+    updateDefaultPercent();
   })();
 </script>
