@@ -4,12 +4,17 @@ Needs NumPy, SciPy and pandas only. Cluster values are simulated directly.
 """
 import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+# As in gp_condition_test.py: one thread for many tiny fits (must be set before NumPy loads).
+for variable in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+    os.environ.setdefault(variable, "1")
 
 import numpy as np
 import pandas as pd
@@ -152,7 +157,7 @@ class CalibrationTest(unittest.TestCase):
     def p_value(self, values, treatment_start, count=49):
         masks, exact, _ = gp_test.relabelings(self.IS_TEST4, self.TIMES4, np.full(24, "all"), treatment_start, count)
         grid = np.linspace(0, 24, 25)
-        return gp_test.test_cluster(values, self.TIMES4, self.IS_TEST4, None, treatment_start, masks, exact, grid)
+        return gp_test.test_cluster(values, self.TIMES4, self.IS_TEST4, treatment_start, masks, exact, grid)
 
     def test_no_difference_gives_spread_out_p_values(self):
         p = [self.p_value(simulate(times=self.TIMES4, is_test=self.IS_TEST4, seed=seed), 6.0)["p_value"]
@@ -171,6 +176,91 @@ class CalibrationTest(unittest.TestCase):
         self.assertEqual(self.p_value(values, None)["p_value"], 0.02)
 
 
+TIMES4 = np.repeat([0.0, 6.0, 12.0, 24.0], 8)
+IS_TEST4 = np.tile([False] * 4 + [True] * 4, 4)
+# Four cultures per condition, each sampled once at every time point.
+CULTURES4 = np.tile([f"{'treated' if index >= 4 else 'control'}_{index % 4 + 1}" for index in range(8)], 4)
+
+
+def full_matrix_log_likelihood(fit, parameters):
+    covariance, _ = fit.parts(fit.unpack(parameters))
+    return multivariate_normal(np.zeros(len(fit.x)), covariance).logpdf(fit.values)
+
+
+def with_culture_effects(seed, culture_sd=1.0, noise=0.3, times=TIMES4, cultures=CULTURES4):
+    """No treatment effect at all, but each culture has its own offset at every time point."""
+    rng = np.random.default_rng(seed)
+    names = np.unique(cultures)
+    offset = dict(zip(names, rng.normal(0, culture_sd, len(names))))
+    return np.sin(times / times.max() * np.pi) + np.array([offset[name] for name in cultures]) + rng.normal(0, noise, len(times))
+
+
+class RepeatedSamplingModelTest(unittest.TestCase):
+    """FullFit: the models with a per-culture offset, for repeated sampling."""
+
+    def test_the_likelihood_is_the_gaussian_likelihood_of_all_samples(self):
+        values = with_culture_effects(1)
+        for treatment_start in (None, 6.0):
+            labels = gp_test.effective_labels(IS_TEST4, TIMES4, treatment_start)
+            m1 = gp_test.FullFit(TIMES4, labels, values, treatment_start, 6.0, CULTURES4)
+            m0 = gp_test.FullFit(TIMES4, labels, values, None, 6.0, CULTURES4, effect=False)
+            for fit, parameters in ((m1, [8.0, 0.7, 12.0, 0.4, 0.5, 0.1]), (m0, [8.0, 0.7, 0.5, 0.1])):
+                with self.subTest(treatment_start=treatment_start, effect=fit.effect):
+                    self.assertAlmostEqual(-fit.negative_log_likelihood(*parameters),
+                                           full_matrix_log_likelihood(fit, parameters), places=6)
+                    point = np.log(parameters)
+                    numeric = approx_fprime(point, lambda log: fit.objective(log)[0], 1e-6)
+                    np.testing.assert_allclose(fit.objective(point)[1], numeric, atol=1e-4)
+
+    def test_the_culture_offsets_are_estimated(self):
+        fit = gp_test.FullFit(TIMES4, np.zeros(32), with_culture_effects(2), None, 6.0, CULTURES4, effect=False).optimize()
+        named = fit.unpack(fit.parameters_)
+        self.assertGreater(named["culture_variance"], 10 * named["noise_variance"])
+
+    def test_cultures_move_together_when_relabeled(self):
+        masks, exact, total = gp_test.culture_relabelings(IS_TEST4, CULTURES4, np.full(32, "all"), 999)
+        self.assertEqual((total, exact, len(masks)), (70, True, 70))
+        for mask in masks:
+            self.assertEqual(mask.sum(), 16)
+            for culture in np.unique(CULTURES4):
+                self.assertEqual(len(set(mask[CULTURES4 == culture])), 1)
+        self.assertTrue(any(np.array_equal(mask, IS_TEST4) for mask in masks))
+
+    def test_cultures_are_relabeled_only_within_their_block(self):
+        # Cultures 1 and 2 of each condition in batch A, 3 and 4 in batch B.
+        blocks = np.where(np.isin([culture[-1] for culture in CULTURES4], ["1", "2"]), "batch A", "batch B")
+        masks, exact, total = gp_test.culture_relabelings(IS_TEST4, CULTURES4, blocks, 999)
+        self.assertEqual((total, exact), (36, True))  # C(4, 2) ways in each of the two batches
+        for mask in masks:
+            for block in ("batch A", "batch B"):
+                self.assertEqual(mask[blocks == block].sum(), IS_TEST4[blocks == block].sum())
+
+
+class SamplingDesignCalibrationTest(unittest.TestCase):
+    """Why the sampling design must be given: with cultures sampled repeatedly and no treatment
+    effect, shuffling single samples finds differences that are not there; shuffling cultures does not."""
+    SEEDS = range(12)
+
+    @classmethod
+    def setUpClass(cls):
+        grid = np.linspace(0, 24, 13)
+        cls.single, cls.cultures = [], []
+        sample_masks, sample_exact, _ = gp_test.relabelings(IS_TEST4, TIMES4, np.full(32, "all"), None, 49)
+        culture_masks, culture_exact, _ = gp_test.culture_relabelings(IS_TEST4, CULTURES4, np.full(32, "all"), 999)
+        for seed in cls.SEEDS:
+            values = with_culture_effects(seed)
+            cls.single.append(gp_test.test_cluster(values, TIMES4, IS_TEST4, None, sample_masks, sample_exact, grid)["p_value"])
+            cls.cultures.append(gp_test.test_cluster(values, TIMES4, IS_TEST4, None, culture_masks, culture_exact, grid,
+                                                     CULTURES4)["p_value"])
+
+    def test_shuffling_single_samples_gives_too_many_small_p_values(self):
+        self.assertGreaterEqual(np.mean(np.array(self.single) <= 0.1), 0.5, self.single)
+
+    def test_shuffling_whole_cultures_gives_spread_out_p_values(self):
+        self.assertGreater(np.mean(self.cultures), 0.3, self.cultures)
+        self.assertLessEqual(np.mean(np.array(self.cultures) <= 0.1), 0.25, self.cultures)
+
+
 class ScriptTest(unittest.TestCase):
     """The command-line script on a small condition_time_gp results folder."""
 
@@ -181,6 +271,7 @@ class ScriptTest(unittest.TestCase):
                                            for index, (time, test) in enumerate(zip(TIMES, IS_TEST))],
                                 "condition": np.where(IS_TEST, "treated", "control"), "time": TIMES.astype(int),
                                 "size_factor": 1.0, "block": "all"}).set_index("sample")
+        samples["unit"] = samples.index
         rows, clusters = {}, []
         # Clusters 1 and 3 respond from 0 h on (by 24 h: +3 and -3); cluster 2 does not respond.
         for number, effect in ((1, 3.0), (2, 0.0), (3, -3.0)):
@@ -194,6 +285,7 @@ class ScriptTest(unittest.TestCase):
         samples.to_csv(self.directory / "size_factors.tsv", sep="\t")
         pd.DataFrame(clusters).to_csv(self.directory / "gene_clusters.tsv", sep="\t", index=False)
         self.manifest = {"status": "completed", "experiment_type": "condition_time_gp", "parameters": {"alpha": 0.05},
+                         "sampling": {"design": "independent", "units": 18},
                          "contrast": {"variable": "condition", "reference_level": "control", "test_level": "treated"},
                          "time": {"column": "time", "levels": ["0", "6", "24"], "numeric_values": [0, 6, 24]},
                          "clustering": {"status": "completed", "clusters": 3},
@@ -266,6 +358,34 @@ class ScriptTest(unittest.TestCase):
         result = self.run_script()
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("applies only to a Gaussian process comparison", result.stderr)
+
+    def test_repeated_sampling_shuffles_whole_cultures(self):
+        samples = pd.read_csv(self.directory / "size_factors.tsv", sep="\t", index_col=0)
+        samples["unit"] = samples["condition"] + "_" + samples.index.str.rsplit("_", n=1).str[1]
+        samples.to_csv(self.directory / "size_factors.tsv", sep="\t")
+        (self.directory / "manifest.json").write_text(json.dumps(
+            {**self.manifest, "sampling": {"design": "repeated", "replicate_column": "culture", "units": 6}}))
+        result = self.run_script()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        tests = pd.read_csv(self.directory / "cluster_gp_tests.tsv", sep="\t")
+        self.assertEqual(list(tests["permutations"]), [20, 20, 20])  # C(6, 3) ways to choose the treated cultures
+        test = self.manifest_now()["gaussian_process"]["test"]
+        self.assertEqual(test["sampling_design"], "repeated")
+        self.assertIn("whole cultures", test["shuffled_within"])
+        self.assertIn("relabel the cultures", test["warnings"][0])
+        self.assertIn("More cultures per condition", test["warnings"][0])
+        fits = pd.read_csv(self.directory / "cluster_gp_fits.tsv", sep="\t")
+        self.assertTrue(fits["culture_variance"].notna().all())
+
+    def test_without_a_sampling_design_nothing_is_tested(self):
+        manifest = {key: value for key, value in self.manifest.items() if key != "sampling"}
+        (self.directory / "manifest.json").write_text(json.dumps(manifest))
+        result = self.run_script()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        gp = self.manifest_now()["gaussian_process"]
+        self.assertEqual(gp["status"], "skipped")
+        self.assertIn("sampling design", gp["reason"])
+        self.assertFalse((self.directory / "cluster_gp_tests.tsv").exists())
 
 
 if __name__ == "__main__":

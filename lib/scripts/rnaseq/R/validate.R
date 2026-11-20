@@ -11,6 +11,11 @@ DEFAULT_CONFIG <- list(
   time_column = "time",
   # time_course only: analyze just the samples whose condition is this level.
   subset_level = NULL,
+  # condition_time_gp only, and required there (never assumed): "independent"
+  # when each sample is its own culture harvested once, "repeated" when each
+  # culture (named in replicate_column) is sampled at several time points.
+  sampling_design = NULL,
+  replicate_column = NULL,
   covariates = character(0),
   # "all" keeps every sample in the model so dispersion is estimated from all
   # groups; "contrast_only" drops samples outside the two compared levels.
@@ -48,6 +53,30 @@ choice <- function(value, name, choices) {
   value
 }
 
+# How the samples were collected decides which labels the Gaussian process test
+# may shuffle, and RNA-seq data cannot show it, so condition_time_gp requires it.
+normalize_sampling <- function(config) {
+  if (config$experiment_type != "condition_time_gp") {
+    if (!is.null(config$sampling_design) || !is.null(config$replicate_column)) {
+      stop_input("The sampling design applies only to the Gaussian process comparison (condition_time_gp).")
+    }
+    return(config)
+  }
+  if (is.null(config$sampling_design)) {
+    stop_input("Configuration value 'sampling_design' is required: 'independent' (each sample is its own culture, harvested once) or 'repeated' (each culture is sampled at several time points).")
+  }
+  config$sampling_design <- choice(config$sampling_design, "sampling_design", c("independent", "repeated"))
+  if (config$sampling_design == "repeated") {
+    if (is.null(config$replicate_column)) {
+      stop_input("Configuration value 'replicate_column' is required for repeated sampling: the column naming each culture.")
+    }
+    config$replicate_column <- scalar_string(config$replicate_column, "replicate_column")
+  } else if (!is.null(config$replicate_column)) {
+    stop_input("Configuration value 'replicate_column' applies only to repeated sampling.")
+  }
+  config
+}
+
 normalize_config <- function(raw) {
   if (!is.list(raw)) stop_input("The analysis configuration must be a JSON object.")
   unknown <- setdiff(names(raw), names(DEFAULT_CONFIG))
@@ -72,6 +101,7 @@ normalize_config <- function(raw) {
   if (!is.null(config$reference_level)) config$reference_level <- scalar_string(config$reference_level, "reference_level")
   if (!is.null(config$test_level)) config$test_level <- scalar_string(config$test_level, "test_level")
   if (!is.null(config$subset_level)) config$subset_level <- scalar_string(config$subset_level, "subset_level")
+  config <- normalize_sampling(config)
   config$covariates <- trimws(as.character(unlist(config$covariates)))
   config$samples_in_model <- choice(config$samples_in_model, "samples_in_model", c("all", "contrast_only"))
   config$min_replicates <- as.integer(scalar_number(config$min_replicates, "min_replicates", 2, integer = TRUE))

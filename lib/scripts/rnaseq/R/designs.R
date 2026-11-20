@@ -288,6 +288,8 @@ prepare_condition_time_gp <- function(metadata, config) {
   check_estimable(formula, coldata,
                   "The design cannot be estimated because time is confounded with a covariate (for example, each batch contains only one time point).")
 
+  units <- sampling_units(metadata, config, covariates = config$covariates)
+
   by_condition <- table(factor(metadata[[config$condition_column]], levels = c(reference, test)),
                         factor(metadata[[config$time_column]], levels = times$levels))
   labels <- outer(rownames(by_condition), colnames(by_condition), group_label)
@@ -305,8 +307,48 @@ prepare_condition_time_gp <- function(metadata, config) {
     # them, and shuffling labels within a time point keeps the cell sizes.
     group = interaction(coldata$condition, coldata$time, drop = TRUE),
     contrast = c("condition", test, reference),
-    time = time_summary(config, times)
+    time = time_summary(config, times),
+    units = units,
+    sampling = list(design = config$sampling_design, replicate_column = config$replicate_column,
+                    units = length(unique(units)))
   )
+}
+
+# The unit the Gaussian process test shuffles labels between: each sample when
+# samples are independent, or the culture named in replicate_column when one
+# culture was sampled repeatedly (its samples then move together).
+sampling_units <- function(metadata, config, covariates) {
+  if (config$sampling_design == "independent") return(rownames(metadata))
+  column <- config$replicate_column
+  if (column %in% c(config$sample_column, config$condition_column, config$time_column)) {
+    stop_input("The culture column must be different from the sample, condition and time columns.")
+  }
+  if (column %in% covariates) stop_input("The culture column '%s' cannot also be a covariate.", column)
+  culture <- require_column(metadata, column, "culture")
+  condition <- metadata[[config$condition_column]]
+  mixed <- names(which(tapply(condition, culture, function(values) length(unique(values))) > 1))
+  if (length(mixed) > 0) {
+    stop_input("Each culture in column '%s' must belong to one condition. These have samples of both: %s.", column, preview(mixed))
+  }
+  for (covariate in covariates) {
+    varied <- names(which(tapply(metadata[[covariate]], culture, function(values) length(unique(values))) > 1))
+    if (length(varied) > 0) {
+      stop_input("Each culture in column '%s' must have one value of the covariate '%s'. These have several: %s.",
+                 column, covariate, preview(varied))
+    }
+  }
+  repeats <- paste(culture, metadata[[config$time_column]], sep = " @ time ")
+  twice <- unique(repeats[duplicated(repeats)])
+  if (length(twice) > 0) {
+    stop_input("Each culture can have at most one sample per time point. Sampled more than once: %s.", preview(twice))
+  }
+  cultures <- table(factor(condition[!duplicated(culture)], levels = c(config$reference_level, config$test_level)))
+  small <- cultures[cultures < config$min_replicates]
+  if (length(small) > 0) {
+    stop_input("Each condition needs at least %d cultures. Too few in: %s.", config$min_replicates,
+               preview(sprintf("%s (%d)", names(small), as.integer(small))))
+  }
+  culture
 }
 
 test_lrt <- function(dds, model, config) {

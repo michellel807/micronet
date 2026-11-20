@@ -119,6 +119,7 @@ normalization_only <- function(options, config, metadata, counts, prefilter, mod
       reference_level = config$reference_level
     ),
     time = model$time,
+    sampling = model$sampling,
     subset = NULL,
     effect_columns = NULL,
     parameters = utils::modifyList(config, list(covariates = I(config$covariates))),
@@ -141,6 +142,8 @@ normalization_only <- function(options, config, metadata, counts, prefilter, mod
   covariates <- setdiff(colnames(model$coldata), c("condition", "time"))
   samples$block <- if (length(covariates) == 0) "all" else
     do.call(paste, c(lapply(model$coldata[covariates], as.character), sep = " / "))
+  # What the test shuffles: the sample itself, or its culture (see sampling_units).
+  samples$unit <- model$units[match(samples$sample, rownames(model$coldata))]
   write_tsv(samples, file.path(options$out, OUTPUT_FILES$size_factors))
   write_tsv(matrix_table(vst_all), file.path(options$out, OUTPUT_FILES$vst_all))
   write_tsv(means, file.path(options$out, GROUP_MEANS_FILE))

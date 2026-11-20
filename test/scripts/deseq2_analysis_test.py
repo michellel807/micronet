@@ -644,8 +644,15 @@ class TimeCourseValidationTest(unittest.TestCase):
 
 # ---- Gaussian process comparison: normalization only ------------------------
 
+# The simulated time courses draw every sample independently (no culture shared across time points).
 CONDITION_TIME_GP = {"schema_version": 1, "experiment_type": "condition_time_gp",
-                     "reference_level": "control", "test_level": "treated"}
+                     "reference_level": "control", "test_level": "treated", "sampling_design": "independent"}
+REPEATED = {**CONDITION_TIME_GP, "sampling_design": "repeated", "replicate_column": "culture"}
+
+
+def with_cultures(metadata):
+    """A culture column: replicate r of a condition is one culture sampled at every time point."""
+    metadata["culture"] = metadata["condition"] + "_" + metadata["sample"].str.rsplit("_", n=1).str[1]
 
 
 def swap_labels_within_times(metadata):
@@ -699,6 +706,9 @@ class GaussianProcessNormalizationTest(unittest.TestCase):
         self.assertEqual(sorted(samples["time"].unique()), [0, 6, 24])
         # Without covariates every sample is in one block for the test's label shuffles.
         self.assertEqual(set(samples["block"]), {"all"})
+        # Independent sampling: each sample is its own unit.
+        self.assertEqual(list(samples["unit"]), list(samples.index))
+        self.assertEqual(self.normalized.manifest["sampling"], {"design": "independent", "replicate_column": None, "units": 18})
 
     def test_a_gene_on_in_one_condition_at_one_time_passes_the_prefilter(self):
         self.assertEqual(self.normalized.manifest["genes"]["prefilter_min_samples"], 3)
@@ -707,10 +717,12 @@ class GaussianProcessNormalizationTest(unittest.TestCase):
     def test_shuffling_labels_within_time_points_changes_nothing(self):
         for name in ("size_factors.tsv", "vst_all.tsv", "normalized_counts.tsv", "deseq2_results.tsv"):
             original, swapped = self.normalized.table(name), self.swapped.table(name)
-            columns = [column for column in original.columns if column not in ("condition", "block")]
+            text = ("block", "unit")
+            columns = [column for column in original.columns if column != "condition" and column not in text]
             assert_close(swapped.loc[original.index, columns], original[columns])
-            if "block" in original.columns:
-                self.assertEqual(list(swapped.loc[original.index, "block"]), list(original["block"]))
+            for column in text:
+                if column in original.columns:
+                    self.assertEqual(list(swapped.loc[original.index, column]), list(original[column]))
         self.assertEqual(self.normalized.manifest["genes"], self.swapped.manifest["genes"])
 
 
@@ -744,6 +756,42 @@ class GaussianProcessValidationTest(unittest.TestCase):
     def test_reference_and_test_are_required(self):
         config = {key: value for key, value in CONDITION_TIME_GP.items() if key != "test_level"}
         self.assert_input_error(analyze(self.experiment, config=config), "'test_level' is required")
+
+    def test_the_sampling_design_is_required_and_never_assumed(self):
+        config = {key: value for key, value in CONDITION_TIME_GP.items() if key != "sampling_design"}
+        self.assert_input_error(analyze(self.experiment, config=config), "'sampling_design' is required")
+        self.assert_input_error(analyze(self.experiment, config={**CONDITION_TIME_GP, "sampling_design": "pooled"}),
+                                "must be one of: independent, repeated")
+
+    def test_repeated_sampling_needs_a_culture_column(self):
+        config = {key: value for key, value in REPEATED.items() if key != "replicate_column"}
+        self.assert_input_error(analyze(self.experiment, config=config), "'replicate_column' is required")
+        self.assert_input_error(analyze(self.experiment, config=REPEATED), "The culture column 'culture' was not found")
+        self.assert_input_error(analyze(self.experiment, config={**CONDITION_TIME_GP, "replicate_column": "culture"}),
+                                "applies only to repeated sampling")
+
+    def test_the_sampling_design_belongs_to_the_gaussian_process_comparison_only(self):
+        self.assert_input_error(analyze(self.experiment, config={**CONDITION_BY_TIME, "sampling_design": "independent"}),
+                                "applies only to the Gaussian process comparison")
+
+    def test_a_culture_in_two_conditions(self):
+        def mix(metadata):
+            with_cultures(metadata)
+            metadata.loc[metadata["sample"] == "treated_t24_1", "culture"] = "control_1"
+        self.assert_input_error(analyze(self.with_metadata(mix), config=REPEATED), "must belong to one condition")
+
+    def test_a_culture_sampled_twice_at_one_time(self):
+        def twice(metadata):
+            with_cultures(metadata)
+            metadata.loc[metadata["sample"] == "control_t6_2", "culture"] = "control_1"
+        self.assert_input_error(analyze(self.with_metadata(twice), config=REPEATED), "control_1 @ time 6")
+
+    def test_repeated_sampling_records_each_samples_culture(self):
+        run = analyze_successfully(self.with_metadata(with_cultures), config=REPEATED)
+        samples = run.table("size_factors.tsv")
+        self.assertEqual(samples.loc["treated_t24_2", "unit"], "treated_2")
+        self.assertEqual(samples.groupby("unit").size().to_dict(), {f"{c}_{r}": 3 for c in ("control", "treated") for r in (1, 2)})
+        self.assertEqual(run.manifest["sampling"], {"design": "repeated", "replicate_column": "culture", "units": 4})
 
 
 if __name__ == "__main__":

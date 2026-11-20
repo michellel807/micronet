@@ -27,9 +27,15 @@ Models.
 Both are fitted by maximum marginal likelihood; log_bf = log L(M1) - log L(M0).
 
 Calibration. M1 has more freedom, so log_bf is almost always above 0 and is
-not read on its own. Its null distribution comes from relabeling: within each
-time point (after T only) and block of covariate values, which samples are
-"test" is reassigned, keeping how many there are. All relabelings are used
+not read on its own. Its null distribution comes from relabeling, and what
+may be relabeled depends on how the samples were collected, which the user
+states (manifest "sampling"; never assumed):
+  - independent (each sample its own culture, harvested once): within each
+    time point (after T only) and block of covariate values, which samples
+    are "test" is reassigned, keeping how many there are;
+  - repeated (each culture sampled at several time points): whole cultures
+    are reassigned within each block, all of a culture's samples together,
+    and both models add a random offset per culture (full likelihood). All relabelings are used
 when there are at most B of them, otherwise B random ones. p is the share of
 relabelings scoring at least as high as the real labels, and clusters are
 adjusted together with Benjamini-Hochberg. This is valid because the genes
@@ -249,6 +255,151 @@ class ShiftFit:
         return names
 
 
+    def row(self):
+        lengthscale, signal_variance, effect_lengthscale, effect_variance, noise_variance = self.parameters_
+        shared_limit, effect_limit = self.lengthscale_limits()
+        return {"lengthscale": lengthscale, "signal_variance": signal_variance, "effect_lengthscale": effect_lengthscale,
+                "effect_variance": effect_variance, "culture_variance": np.nan, "noise_variance": noise_variance,
+                "log_likelihood": self.log_likelihood, "lengthscale_at_limit": shared_limit,
+                "effect_lengthscale_at_limit": effect_limit}
+
+
+class FullFit:
+    """For repeated sampling: the same models plus a random offset per culture.
+
+    Covariance of the samples: k_f(t, t') + c c' k_g(t, t') + culture_variance
+    [same culture] + noise_variance [same sample]. A culture's samples share
+    its offset across time points, so the samples are no longer independent
+    and the likelihood uses the full sample-by-sample matrix (a few dozen rows).
+    With effect=False this is M0 (no treatment effect g).
+    """
+
+    def __init__(self, times, labels, values, treatment_start, minimum_lengthscale, units, effect=True, start=None):
+        self.x = np.asarray(times, dtype=float)
+        self.c = np.asarray(labels, dtype=float)
+        self.values = np.asarray(values, dtype=float)
+        units = np.asarray(units, dtype=str)
+        self.same_culture = (units[:, None] == units[None, :]).astype(float)
+        self.treatment_start, self.effect, self.start = treatment_start, effect, start
+        self.span = float(np.ptp(self.x))
+        lengthscale_bounds = (minimum_lengthscale, 10.0 * self.span)
+        effect_bounds = [lengthscale_bounds, VARIANCE_BOUNDS] if effect else []
+        self.bounds = [lengthscale_bounds, VARIANCE_BOUNDS, *effect_bounds, VARIANCE_BOUNDS, VARIANCE_BOUNDS]
+        self.parameters_ = None
+
+    def unpack(self, parameters):
+        """{name: value}; the effect terms are absent without an effect."""
+        names = ["lengthscale", "signal_variance", *(["effect_lengthscale", "effect_variance"] if self.effect else []),
+                 "culture_variance", "noise_variance"]
+        return dict(zip(names, parameters))
+
+    def parts(self, named):
+        """(covariance without noise pieces, [derivatives with respect to each log parameter])."""
+        squared = np.subtract.outer(self.x, self.x) ** 2 / named["lengthscale"] ** 2
+        shared = named["signal_variance"] * np.exp(-0.5 * squared)
+        slopes = [shared * squared, shared]
+        covariance = shared.copy()
+        if self.effect:
+            labels = np.outer(self.c, self.c)
+            effect, effect_slope = effect_kernel_with_derivative(self.x, self.x, named["effect_lengthscale"],
+                                                                 named["effect_variance"], self.treatment_start)
+            covariance += labels * effect
+            slopes += [labels * effect_slope, labels * effect]
+        culture = named["culture_variance"] * self.same_culture
+        noise = named["noise_variance"] * np.eye(len(self.x))
+        return covariance + culture + noise, slopes + [culture, noise]
+
+    def objective(self, log_parameters):
+        covariance, slopes = self.parts(self.unpack(np.exp(log_parameters)))
+        try:
+            factor = cho_factor(covariance + 1e-10 * np.eye(len(self.x)), lower=True)
+        except np.linalg.LinAlgError:
+            return 1e12, np.zeros(len(log_parameters))
+        alpha = cho_solve(factor, self.values)
+        value = float(0.5 * self.values @ alpha + np.log(np.diag(factor[0])).sum() + 0.5 * len(self.x) * np.log(2 * np.pi))
+        weight = cho_solve(factor, np.eye(len(self.x))) - np.outer(alpha, alpha)
+        return value, np.array([0.5 * float((weight * slope).sum()) for slope in slopes])
+
+    def negative_log_likelihood(self, *parameters):
+        return self.objective(np.log(parameters))[0]
+
+    def starts(self):
+        """Fixed starting points that do not depend on the labels (as ShiftFit.starts)."""
+        low, _ = self.bounds[0]
+        middle = max(low, self.span / 2)
+        spread = float(np.clip(max(float(np.var(self.values)), 1e-3), *VARIANCE_BOUNDS))
+        points = []
+        for lengthscale in (low, middle):
+            effect = [lengthscale, spread / 2] if self.effect else []
+            points.append([lengthscale, spread / 2, *effect, spread / 4, spread / 4])
+        if self.start is not None:
+            points.append(list(self.start))
+        low_bounds, high_bounds = [bound[0] for bound in self.bounds], [bound[1] for bound in self.bounds]
+        return [np.log(np.clip(point, low_bounds, high_bounds)) for point in points]
+
+    def optimize(self):
+        best = None
+        for start in self.starts():
+            result = minimize(self.objective, start, jac=True, method="L-BFGS-B", bounds=np.log(self.bounds))
+            if best is None or result.fun < best.fun - 1e-9:
+                best = result
+        self.parameters_ = tuple(float(value) for value in np.exp(best.x))
+        return self
+
+    @property
+    def log_likelihood(self):
+        return -self.objective(np.log(self.parameters_))[0]
+
+    def predict(self, grid):
+        """Posterior of the mean curves (culture offsets and noise excluded), as ShiftFit.predict."""
+        named = self.unpack(self.parameters_)
+        grid = np.asarray(grid, dtype=float)
+        covariance, _ = self.parts(named)
+        factor = cho_factor(covariance + 1e-10 * np.eye(len(self.x)), lower=True)
+        shared = rbf(grid, self.x, named["lengthscale"], named["signal_variance"])
+        if self.effect:
+            effect = effect_kernel(grid, self.x, named["effect_lengthscale"], named["effect_variance"],
+                                   self.treatment_start) * self.c[None, :]
+            effect_prior = np.diag(effect_kernel(grid, grid, named["effect_lengthscale"], named["effect_variance"],
+                                                 self.treatment_start))
+        else:
+            effect, effect_prior = np.zeros((len(grid), len(self.x))), np.zeros(len(grid))
+        result = {}
+        for name, cross, prior in (("reference", shared, np.full(len(grid), named["signal_variance"])),
+                                   ("difference", effect, effect_prior),
+                                   ("test", shared + effect, named["signal_variance"] + effect_prior)):
+            mean = cross @ cho_solve(factor, self.values)
+            variance = prior - np.einsum("ij,ji->i", cross, cho_solve(factor, cross.T))
+            result[name] = (mean, np.sqrt(np.maximum(variance, 0.0)))
+        return result
+
+    def lengthscale_limits(self):
+        limits = []
+        for index in ((0, 2) if self.effect else (0,)):
+            value, bound = self.parameters_[index], self.bounds[index]
+            limits.append(next((name for name, limit in zip(("lower", "upper"), bound) if np.isclose(value, limit, rtol=1e-4)), ""))
+        return limits + ([] if self.effect else [""])
+
+    def row(self):
+        named = self.unpack(self.parameters_)
+        shared_limit, effect_limit = self.lengthscale_limits()
+        return {"lengthscale": named["lengthscale"], "signal_variance": named["signal_variance"],
+                "effect_lengthscale": named.get("effect_lengthscale", np.nan),
+                "effect_variance": named.get("effect_variance", np.nan), "culture_variance": named["culture_variance"],
+                "noise_variance": named["noise_variance"], "log_likelihood": self.log_likelihood,
+                "lengthscale_at_limit": shared_limit, "effect_lengthscale_at_limit": effect_limit}
+
+
+def parameter_row(fit):
+    """A cluster_gp_fits.tsv row's parameter columns for any of the fits."""
+    if isinstance(fit, Fit):
+        return {"lengthscale": fit.lengthscale, "signal_variance": fit.signal_variance, "effect_lengthscale": np.nan,
+                "effect_variance": np.nan, "culture_variance": np.nan, "noise_variance": fit.noise_variance,
+                "log_likelihood": fit.parameters()["log_likelihood"], "lengthscale_at_limit": fit.lengthscale_limit(),
+                "effect_lengthscale_at_limit": ""}
+    return fit.row()
+
+
 # ---- Relabelings --------------------------------------------------------------
 
 def relabelings(is_test, times, blocks, treatment_start, count, seed=SEED):
@@ -287,6 +438,18 @@ def relabelings(is_test, times, blocks, treatment_start, count, seed=SEED):
     return masks, False, total
 
 
+def culture_relabelings(is_test, units, blocks, count, seed=SEED):
+    """For repeated sampling: reassign which cultures are "test" within each block of
+    covariate values, keeping how many there are. All of a culture's samples move
+    together. Returns sample-level masks as relabelings does."""
+    is_test, units, blocks = np.asarray(is_test, dtype=bool), np.asarray(units, dtype=str), np.asarray(blocks, dtype=str)
+    cultures, first, index = np.unique(units, return_index=True, return_inverse=True)
+    index = index.ravel()
+    culture_test, culture_block = is_test[first], blocks[first]
+    culture_masks, exact, total = relabelings(culture_test, np.zeros(len(cultures)), culture_block, None, count, seed)
+    return [mask[index] for mask in culture_masks], exact, total
+
+
 def permutation_p(observed, null, exact):
     """Exact: the share of all relabelings (the real one among them) scoring >= observed.
     Sampled: (1 + number >= observed) / (1 + number drawn)."""
@@ -308,18 +471,26 @@ def pre_treatment_gap(values, is_test, times, treatment_start):
 
 # ---- One cluster ----------------------------------------------------------------
 
-def test_cluster(values, times, is_test, blocks, treatment_start, masks, exact, grid):
-    """Fit M0 and M1, score the real labels and every relabeling; returns a dict of results."""
+def test_cluster(values, times, is_test, treatment_start, masks, exact, grid, units=None):
+    """Fit M0 and M1, score the real labels and every relabeling; returns a dict of results.
+    units: each sample's culture for repeated sampling (adds a per-culture offset), or None."""
     minimum = min_lengthscale(times)
-    null_fit = Fit(times, values, minimum).optimize()
-    start = (null_fit.lengthscale, null_fit.signal_variance, minimum, 1e-3, null_fit.noise_variance)
+    if units is None:
+        null_fit = Fit(times, values, minimum).optimize()
+        shared_log_likelihood = null_fit.parameters()["log_likelihood"]
+        start = (null_fit.lengthscale, null_fit.signal_variance, minimum, 1e-3, null_fit.noise_variance)
+        model = lambda labels: ShiftFit(times, labels, values, treatment_start, minimum, start)
+    else:
+        null_fit = FullFit(times, np.zeros(len(values)), values, None, minimum, units, effect=False).optimize()
+        shared_log_likelihood = null_fit.log_likelihood
+        lengthscale, signal, culture, noise = null_fit.parameters_
+        start = (lengthscale, signal, minimum, 1e-3, culture, noise)
+        model = lambda labels: FullFit(times, labels, values, treatment_start, minimum, units, start=start)
 
     def fit(mask):
-        return ShiftFit(times, effective_labels(mask, times, treatment_start), values, treatment_start,
-                        minimum, start).optimize()
+        return model(effective_labels(mask, times, treatment_start)).optimize()
 
     # M0 does not use the labels, so its likelihood is the same for every relabeling.
-    shared_log_likelihood = null_fit.parameters()["log_likelihood"]
     alternative = fit(is_test)
     log_bf = alternative.log_likelihood - shared_log_likelihood
     null_scores = [log_bf if np.array_equal(mask, is_test) else fit(mask).log_likelihood - shared_log_likelihood
@@ -345,7 +516,20 @@ def test_all(manifest, clusters, vst, samples, treatment_start, permutations):
     check_timing(times, is_test, treatment_start)
     vst = vst[names]
 
-    masks, exact, total = relabelings(is_test, times, blocks, treatment_start, permutations)
+    # How the samples were collected decides what may be shuffled; it is the user's
+    # answer (recorded by deseq2_analysis.R), never assumed.
+    design = (manifest.get("sampling") or {}).get("design")
+    if design == "repeated":
+        if "unit" not in samples.columns:
+            raise ValueError("Repeated sampling was chosen, but the samples' cultures were not recorded.")
+        units = samples["unit"].astype(str).to_numpy()
+        masks, exact, total = culture_relabelings(is_test, units, blocks, permutations)
+    elif design == "independent":
+        units = None
+        masks, exact, total = relabelings(is_test, times, blocks, treatment_start, permutations)
+    else:
+        raise ValueError("The sampling design (independent samples or repeated sampling of cultures) was not given, "
+                         "so it is not known which labels can be shuffled.")
     grid = np.linspace(times.min(), times.max(), GRID_POINTS)
     if treatment_start is not None:
         grid = np.unique(np.concatenate([grid, [treatment_start]]))
@@ -355,7 +539,7 @@ def test_all(manifest, clusters, vst, samples, treatment_start, permutations):
     for number in sorted(clusters["cluster"].unique()):
         members = list(clusters.loc[clusters["cluster"] == number, "gene_id"].astype(str))
         values, used = cluster_values(vst, members)
-        result = test_cluster(values, times, is_test, blocks, treatment_start, masks, exact, grid)
+        result = test_cluster(values, times, is_test, treatment_start, masks, exact, grid, units)
         number = int(number)
         points.append(pd.DataFrame({"cluster": number, "condition": samples["condition"].astype(str).to_numpy(),
                                     "sample": names, "time": times, "mean_z": values}))
@@ -368,19 +552,9 @@ def test_all(manifest, clusters, vst, samples, treatment_start, permutations):
                               "lower": mean - Z95 * sd, "upper": mean + Z95 * sd})
         differences.append(delta)
         intervals[str(number)] = gp_trajectories.differing_intervals(delta)
-        null_fit, fit = result["null_fit"], result["fit"]
-        shared_limit, effect_limit = fit.lengthscale_limits()
-        fits.append({"cluster": number, "model": "M0 (one shared curve)", "n_genes": used, "n_points": len(values),
-                     "lengthscale": null_fit.lengthscale, "signal_variance": null_fit.signal_variance,
-                     "effect_lengthscale": np.nan, "effect_variance": np.nan, "noise_variance": null_fit.noise_variance,
-                     "log_likelihood": null_fit.parameters()["log_likelihood"],
-                     "lengthscale_at_limit": null_fit.lengthscale_limit(), "effect_lengthscale_at_limit": ""})
-        lengthscale, signal, effect_lengthscale, effect_variance, noise = fit.parameters_
-        fits.append({"cluster": number, "model": "M1 (shared curve + treatment effect)", "n_genes": used,
-                     "n_points": len(values), "lengthscale": lengthscale, "signal_variance": signal,
-                     "effect_lengthscale": effect_lengthscale, "effect_variance": effect_variance,
-                     "noise_variance": noise, "log_likelihood": fit.log_likelihood,
-                     "lengthscale_at_limit": shared_limit, "effect_lengthscale_at_limit": effect_limit})
+        for name, model in (("M0 (one shared curve)", result["null_fit"]),
+                            ("M1 (shared curve + treatment effect)", result["fit"])):
+            fits.append({"cluster": number, "model": name, "n_genes": used, "n_points": len(values), **parameter_row(model)})
         first = intervals[str(number)][0]["start"] if intervals[str(number)] else np.nan
         rows.append({"cluster": number, "n_genes": used, "log_bf": result["log_bf"], "permutations": len(masks),
                      "exact": exact, "p_value": result["p_value"], "diverges_at": first,
@@ -393,9 +567,11 @@ def test_all(manifest, clusters, vst, samples, treatment_start, permutations):
     minimum_p = (1 / total) if exact else 1 / (1 + len(masks))
     warnings = []
     if minimum_p >= alpha:
-        warnings.append(f"With these replicates there are only {total} distinct ways to relabel the samples, so the "
+        unit = "cultures" if design == "repeated" else "samples"
+        warnings.append(f"With these replicates there are only {total} distinct ways to relabel the {unit}, so the "
                         f"smallest possible p-value is {minimum_p:.3g}, which cannot fall below {alpha:g}. "
-                        "More replicates after the treatment are needed to find a significant difference.")
+                        f"More {'cultures per condition' if design == 'repeated' else 'replicates after the treatment'} "
+                        "are needed to find a significant difference.")
     summary = {
         "status": "completed",
         "method": "Gaussian process regression on each sample's mean z-score over the cluster's genes",
@@ -414,14 +590,24 @@ def test_all(manifest, clusters, vst, samples, treatment_start, permutations):
             "treatment_start": treatment_start,
             "relabelings": len(masks), "distinct_relabelings": total, "exact": exact,
             "min_possible_p": minimum_p, "alpha": alpha,
-            "shuffled_within": "time point" + ("" if (blocks == "all").all() else " and covariate values")
-                               + (f", after time {treatment_start:g} only" if treatment_start is not None else ""),
+            "sampling_design": design,
+            "shuffled_within": shuffle_description(design, blocks, treatment_start),
             "significant_clusters": int(tests["significant"].sum()),
             "warnings": warnings,
         },
     }
     return (pd.concat(points, ignore_index=True), pd.concat(curves, ignore_index=True), fit_table,
             pd.concat(differences, ignore_index=True), tests, summary)
+
+
+def shuffle_description(design, blocks, treatment_start):
+    covariates = "" if (np.asarray(blocks) == "all").all() else " with the same covariate values"
+    if design == "repeated":
+        timing = (f"; a culture's samples after time {treatment_start:g} count as treated"
+                  if treatment_start is not None else "")
+        return f"whole cultures (all of a culture's samples together){covariates}{timing}"
+    timing = f", after time {treatment_start:g} only" if treatment_start is not None else ""
+    return f"single samples within each time point{covariates}{timing}"
 
 
 def main(results_dir, treatment_start=None, permutations=DEFAULT_PERMUTATIONS):
