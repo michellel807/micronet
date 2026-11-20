@@ -642,5 +642,105 @@ class TimeCourseValidationTest(unittest.TestCase):
         self.assertIsNone(run.manifest["time"]["numeric_values"])
 
 
+# ---- Gaussian process comparison: normalization only ------------------------
+
+CONDITION_TIME_GP = {"schema_version": 1, "experiment_type": "condition_time_gp",
+                     "reference_level": "control", "test_level": "treated"}
+
+
+def swap_labels_within_times(metadata):
+    """Relabel samples within each time point, keeping each condition's count there:
+    the first replicate of each condition trades labels with the other's."""
+    for time in metadata["time"].unique():
+        first = metadata.index[(metadata["time"] == time) & metadata["sample"].str.endswith("_1")]
+        metadata.loc[first, "condition"] = metadata.loc[first[::-1], "condition"].to_numpy()
+
+
+@unittest.skipUnless(RSCRIPT, NO_R)
+class GaussianProcessNormalizationTest(unittest.TestCase):
+    """condition_time_gp runs no gene-level test, and nothing it writes depends on the condition labels."""
+
+    @classmethod
+    def setUpClass(cls):
+        experiment = simulation.simulate_time_course(seed=91, n_genes=600)
+        counts = experiment.counts.copy()
+        # Switched on only in the test condition at the last time point (3 of 18 samples).
+        counts.loc["gene00001"] = 0
+        counts.loc["gene00001", [sample for sample in counts.columns if sample.startswith("treated_t24")]] = 500
+        cls.experiment = dataclasses.replace(experiment, counts=counts)
+        cls.normalized = analyze_successfully(cls.experiment, config=CONDITION_TIME_GP)
+        metadata = cls.experiment.metadata.copy()
+        swap_labels_within_times(metadata)
+        cls.swapped = analyze_successfully(dataclasses.replace(cls.experiment, metadata=metadata), config=CONDITION_TIME_GP)
+
+    def test_only_normalized_data_is_written(self):
+        manifest = self.normalized.manifest
+        self.assertEqual(manifest["test"], "none")
+        self.assertEqual(list(self.normalized.table("deseq2_results.tsv").columns), ["baseMean"])
+        self.assertEqual(set(manifest["outputs"]), {"results", "normalized_counts", "size_factors", "vst_all", "group_means"})
+        self.assertFalse((self.normalized.out / "vst_significant.tsv").exists())
+        self.assertNotIn("significant", manifest["genes"])
+        self.assertEqual(manifest["contrast"], {"variable": "condition", "test_level": "treated", "reference_level": "control"})
+        self.assertEqual(manifest["time"]["numeric_values"], [0, 6, 24])
+        self.assertIn("normalization only", manifest["design"])
+
+    def test_base_mean_is_the_mean_normalized_count(self):
+        normalized = self.normalized.table("normalized_counts.tsv")
+        assert_close(self.normalized.table("deseq2_results.tsv")["baseMean"], normalized.mean(axis=1))
+
+    def test_size_factors_match_an_independent_median_of_ratios(self):
+        kept = self.normalized.table("normalized_counts.tsv").index
+        expected = median_of_ratios(self.experiment.counts.loc[kept])
+        assert_close(geometric_mean_one(self.normalized.size_factors), geometric_mean_one(expected), rtol=1e-6)
+
+    def test_samples_keep_their_labels_for_later_stages(self):
+        samples = self.normalized.table("size_factors.tsv")
+        self.assertEqual(sorted(samples["condition"].unique()), ["control", "treated"])
+        self.assertEqual(sorted(samples["time"].unique()), [0, 6, 24])
+
+    def test_a_gene_on_in_one_condition_at_one_time_passes_the_prefilter(self):
+        self.assertEqual(self.normalized.manifest["genes"]["prefilter_min_samples"], 3)
+        self.assertIn("gene00001", self.normalized.table("vst_all.tsv").index)
+
+    def test_shuffling_labels_within_time_points_changes_nothing(self):
+        for name in ("size_factors.tsv", "vst_all.tsv", "normalized_counts.tsv", "deseq2_results.tsv"):
+            original, swapped = self.normalized.table(name), self.swapped.table(name)
+            columns = [column for column in original.columns if column != "condition"]
+            assert_close(swapped.loc[original.index, columns], original[columns])
+        self.assertEqual(self.normalized.manifest["genes"], self.swapped.manifest["genes"])
+
+
+@unittest.skipUnless(RSCRIPT, NO_R)
+class GaussianProcessValidationTest(unittest.TestCase):
+    """D: inputs a Gaussian process comparison cannot use fail with a clear message."""
+
+    def setUp(self):
+        self.experiment = simulation.simulate_time_course(seed=82, n_genes=80, replicates=2)
+
+    def with_metadata(self, change):
+        metadata = self.experiment.metadata.copy()
+        change(metadata)
+        return dataclasses.replace(self.experiment, metadata=metadata)
+
+    def assert_input_error(self, run, fragment):
+        self.assertEqual(run.returncode, 1, run.manifest)
+        self.assertEqual(run.manifest["error_type"], "input_error", run.manifest["message"])
+        self.assertIn(fragment, run.manifest["message"])
+
+    def test_text_time_points(self):
+        def label(metadata):
+            metadata["time"] = metadata["time"].map({0: "early", 6: "middle", 24: "late"})
+        self.assert_input_error(analyze(self.with_metadata(label), config=CONDITION_TIME_GP), "must hold numbers")
+
+    def test_two_time_points(self):
+        def two(metadata):
+            metadata.loc[metadata["time"] == 24, "time"] = 6
+        self.assert_input_error(analyze(self.with_metadata(two), config=CONDITION_TIME_GP), "at least three different time points")
+
+    def test_reference_and_test_are_required(self):
+        config = {key: value for key, value in CONDITION_TIME_GP.items() if key != "test_level"}
+        self.assert_input_error(analyze(self.experiment, config=config), "'test_level' is required")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -11,6 +11,8 @@
 #      a likelihood ratio test against a reduced model for time courses.
 #   4. VST of the same filtered dataset (not of the significant genes).
 #   5. Only then select significant genes and subset the transformed matrix.
+# A design without a test (condition_time_gp) stops after step 4: size factors,
+# dispersions and the VST only, with no results() and no significant genes.
 #
 # Writes deseq2_results.tsv, normalized_counts.tsv, size_factors.tsv,
 # vst_all.tsv, vst_significant.tsv, and manifest.json to DIR; time-course
@@ -88,6 +90,56 @@ group_means <- function(vst_all, model) {
   do.call(rbind, pieces)
 }
 
+sample_table <- function(dds, model) {
+  size_factors <- data.frame(sample = colnames(dds), stringsAsFactors = FALSE)
+  if ("condition" %in% colnames(model$coldata)) size_factors$condition <- as.character(dds$condition)
+  if ("time" %in% colnames(model$coldata)) size_factors$time <- as.character(dds$time)
+  size_factors$size_factor <- DESeq2::sizeFactors(dds)
+  size_factors
+}
+
+# A design without a gene-level test (condition_time_gp): writes the normalized
+# data, the VST and the group means for the later stages, and a results table
+# with only each gene's mean normalized count. Returns the manifest.
+normalization_only <- function(options, config, metadata, counts, prefilter, model, dds,
+                               normalized, vst_all, vst_method, results_table) {
+  outputs <- OUTPUT_FILES[c("results", "normalized_counts", "size_factors", "vst_all")]
+  outputs$group_means <- GROUP_MEANS_FILE
+  means <- group_means(vst_all, model)
+  manifest <- list(
+    status = "completed",
+    schema_version = 1L,
+    experiment_type = config$experiment_type,
+    design = model$description,
+    test = "none",
+    question = model$question,
+    contrast = list(
+      variable = config$condition_column,
+      test_level = config$test_level,
+      reference_level = config$reference_level
+    ),
+    time = model$time,
+    subset = NULL,
+    effect_columns = NULL,
+    parameters = utils::modifyList(config, list(covariates = I(config$covariates))),
+    samples = list(in_input = nrow(metadata), in_model = ncol(dds), per_group = model$groups),
+    genes = list(
+      in_input = nrow(counts),
+      passed_prefilter = nrow(dds),
+      prefilter_min_samples = prefilter$min_samples
+    ),
+    vst_method = vst_method,
+    outputs = outputs,
+    versions = list(R = R.version.string, DESeq2 = as.character(utils::packageVersion("DESeq2")))
+  )
+  write_tsv(results_table, file.path(options$out, OUTPUT_FILES$results))
+  write_tsv(matrix_table(normalized), file.path(options$out, OUTPUT_FILES$normalized_counts))
+  write_tsv(sample_table(dds, model), file.path(options$out, OUTPUT_FILES$size_factors))
+  write_tsv(matrix_table(vst_all), file.path(options$out, OUTPUT_FILES$vst_all))
+  write_tsv(means, file.path(options$out, GROUP_MEANS_FILE))
+  manifest
+}
+
 run_analysis <- function(options) {
   config <- normalize_config(read_config(options$config))
   design <- design_for(config$experiment_type)
@@ -104,12 +156,17 @@ run_analysis <- function(options) {
     colData = model$coldata,
     design = model$formula
   )
-  dds <- if (is.null(model$reduced)) {
+  tests_genes <- !is.null(design$test)
+  dds <- if (!tests_genes) {
+    # Normalization only: size factors and dispersions (which the VST uses), no gene-level test.
+    DESeq2::estimateDispersions(DESeq2::estimateSizeFactors(dds), quiet = TRUE)
+  } else if (is.null(model$reduced)) {
     DESeq2::DESeq(dds, quiet = TRUE)
   } else {
     DESeq2::DESeq(dds, test = "LRT", reduced = model$reduced, quiet = TRUE)
   }
-  results <- design$test(dds, model, config)
+  results <- if (tests_genes) design$test(dds, model, config) else S4Vectors::mcols(dds)[, "baseMean", drop = FALSE]
+  rownames(results) <- rownames(dds)
   effects <- design$effects(dds, model)
 
   normalized <- DESeq2::counts(dds, normalized = TRUE)
@@ -122,15 +179,18 @@ run_analysis <- function(options) {
   vst_all <- SummarizedExperiment::assay(transformed)
   stopifnot(identical(rownames(results), rownames(vst_all)))
 
-  significant <- select_significant(results, config, effects)
-  vst_significant <- vst_all[significant, , drop = FALSE]
-
-  reasons <- na_reasons(results)
   results_table <- data.frame(
     gene_id = rownames(results),
     baseMean = results$baseMean,
     stringsAsFactors = FALSE
   )
+  if (!tests_genes) return(normalization_only(options, config, metadata, counts, prefilter, model, dds,
+                                              normalized, vst_all, vst_method, results_table))
+
+  significant <- select_significant(results, config, effects)
+  vst_significant <- vst_all[significant, , drop = FALSE]
+
+  reasons <- na_reasons(results)
   if (is.null(effects)) {
     results_table$log2FoldChange <- results$log2FoldChange
     results_table$lfcSE <- results$lfcSE
@@ -147,10 +207,7 @@ run_analysis <- function(options) {
   }
   results_table <- results_table[order(is.na(results_table$padj), results_table$padj, results_table$pvalue), , drop = FALSE]
 
-  size_factors <- data.frame(sample = colnames(dds), stringsAsFactors = FALSE)
-  if ("condition" %in% colnames(model$coldata)) size_factors$condition <- as.character(dds$condition)
-  if ("time" %in% colnames(model$coldata)) size_factors$time <- as.character(dds$time)
-  size_factors$size_factor <- DESeq2::sizeFactors(dds)
+  size_factors <- sample_table(dds, model)
 
   outputs <- OUTPUT_FILES
   means <- NULL

@@ -64,8 +64,8 @@ normalize_config <- function(raw) {
   config$sample_column <- scalar_string(config$sample_column, "sample_column")
   config$condition_column <- scalar_string(config$condition_column, "condition_column")
   config$time_column <- scalar_string(config$time_column, "time_column")
-  # Two-condition and condition-by-time designs compare a test level with a reference.
-  if (config$experiment_type %in% c("two_condition", "condition_by_time")) {
+  # Two-condition, condition-by-time and Gaussian process designs compare a test level with a reference.
+  if (config$experiment_type %in% c("two_condition", "condition_by_time", "condition_time_gp")) {
     if (is.null(config$reference_level)) stop_input("Configuration value 'reference_level' is required.")
     if (is.null(config$test_level)) stop_input("Configuration value 'test_level' is required.")
   }

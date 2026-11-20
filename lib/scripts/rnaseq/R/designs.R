@@ -1,7 +1,8 @@
 # Experiment designs. Each entry builds the DESeq2 model for one experiment type:
 #   prepare(metadata, config) -> list(coldata, formula, groups, group, description,
 #                                     question, [contrast], [reduced], [time])
-#   test(dds, model, config)  -> DESeqResults for every tested gene
+#   test(dds, model, config)  -> DESeqResults for every tested gene, or test = NULL
+#                                for a design that only normalizes
 #   effects(dds, model)       -> genes x named log2 fold changes reported beside
 #                                the test, or NULL when results() already has one
 # model$group is the factor that defines replicate groups for the prefilter
@@ -245,6 +246,69 @@ prepare_condition_by_time <- function(metadata, config) {
   )
 }
 
+# Gaussian process comparison (condition_time_gp): DESeq2 only normalizes.
+# The condition is kept in colData so later stages know each sample's label,
+# but it is left out of the formula: dispersions and the VST then do not
+# depend on the labels, so gp_condition_test.py can calibrate its test by
+# shuffling them. No gene-level test is run.
+prepare_condition_time_gp <- function(metadata, config) {
+  if (config$time_column %in% c(config$sample_column, config$condition_column)) {
+    stop_input("The time column must be different from the sample and condition columns.")
+  }
+  if (config$condition_column == config$sample_column) stop_input("The condition column must be different from the sample column.")
+  reference <- config$reference_level
+  test <- config$test_level
+  if (reference == test) stop_input("The reference and test conditions must be different.")
+
+  condition <- require_column(metadata, config$condition_column, "condition")
+  require_column(metadata, config$time_column, "time")
+  absent <- setdiff(c(reference, test), condition)
+  if (length(absent) > 0) {
+    stop_input("Condition levels not found in column '%s': %s. Available levels: %s.",
+               config$condition_column, preview(absent), preview(sort(unique(condition)), 20))
+  }
+  metadata <- metadata[condition %in% c(reference, test), , drop = FALSE]
+
+  times <- ordered_times(metadata[[config$time_column]], config$time_column)
+  if (is.null(times$numeric)) {
+    stop_input("The time column '%s' must hold numbers (such as 0, 6 and 24) so curves can be fitted over time.", config$time_column)
+  }
+  if (length(times$levels) < 3) {
+    stop_input("A Gaussian process comparison needs at least three different time points in column '%s'.", config$time_column)
+  }
+  cells <- table(factor(metadata[[config$time_column]], levels = times$levels))
+  names(cells) <- group_label(NULL, names(cells))
+  check_replicates(cells, config, "time point")
+
+  coldata <- covariate_frame(metadata, config, c(config$sample_column, config$condition_column, config$time_column))
+  covariates <- colnames(coldata)
+  coldata$condition <- factor(metadata[[config$condition_column]], levels = c(reference, test))
+  coldata$time <- factor(metadata[[config$time_column]], levels = times$levels)
+  formula <- stats::as.formula(paste("~", paste(c(covariates, "time"), collapse = " + ")))
+  check_estimable(formula, coldata,
+                  "The design cannot be estimated because time is confounded with a covariate (for example, each batch contains only one time point).")
+
+  by_condition <- table(factor(metadata[[config$condition_column]], levels = c(reference, test)),
+                        factor(metadata[[config$time_column]], levels = times$levels))
+  labels <- outer(rownames(by_condition), colnames(by_condition), group_label)
+  counts <- stats::setNames(as.vector(by_condition), as.vector(labels))
+  list(
+    coldata = coldata,
+    formula = formula,
+    description = sprintf("~ %s (normalization only; conditions are compared by the Gaussian process test)",
+                          paste(c(config$covariates, config$time_column), collapse = " + ")),
+    question = sprintf("Which gene clusters follow a different course over time in %s than in %s (the reference)?", test, reference),
+    groups = as.list(counts[order(rep(seq_len(nrow(by_condition)), ncol(by_condition)))]),
+    # The prefilter's group size is the smallest condition-and-time cell, so a
+    # gene switched on in one condition at one time point is kept. It still
+    # does not depend on the labels: the filter counts samples over all of
+    # them, and shuffling labels within a time point keeps the cell sizes.
+    group = interaction(coldata$condition, coldata$time, drop = TRUE),
+    contrast = c("condition", test, reference),
+    time = time_summary(config, times)
+  )
+}
+
 test_lrt <- function(dds, model, config) {
   if (config$lfc_threshold > 0 && config$lfc_test == "deseq2") {
     stop_input("A time-course analysis tests all time points at once, so the fold-change cutoff can only be applied after testing (lfc_test = 'posthoc').")
@@ -296,7 +360,9 @@ effects_condition_by_time <- function(dds, model) {
 DESIGNS <- list(
   two_condition = list(prepare = prepare_two_condition, test = test_two_condition, effects = function(dds, model) NULL),
   time_course = list(prepare = prepare_time_course, test = test_lrt, effects = effects_time_course),
-  condition_by_time = list(prepare = prepare_condition_by_time, test = test_lrt, effects = effects_condition_by_time)
+  condition_by_time = list(prepare = prepare_condition_by_time, test = test_lrt, effects = effects_condition_by_time),
+  # test = NULL: normalization only (see prepare_condition_time_gp).
+  condition_time_gp = list(prepare = prepare_condition_time_gp, test = NULL, effects = function(dds, model) NULL)
 )
 
 design_for <- function(experiment_type) {
