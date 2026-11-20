@@ -266,6 +266,88 @@ class RnaSeqFlowTest < ActionDispatch::IntegrationTest
                  session[:rnaseq_config]["deseq2"])
   end
 
+  GP_FORM = TIME_DEFAULTS.merge(experiment_type: "condition_time_gp", condition_column: "condition", time_column: "time",
+                                reference_level: "control", test_level: "treated", treatment_timing: "start").freeze
+
+  # A culture column for the example sheet: replicate r of a condition as one culture sampled at every time.
+  def upload_sheet_with_cultures
+    Dir.mktmpdir do |directory|
+      directory = Pathname.new(directory)
+      rows = EXAMPLES.join("timecourse_sample_metadata.tsv").read.lines.map(&:chomp)
+      sheet = ["#{rows.first}\tculture", *rows.drop(1).map { |row| "#{row}\t#{row.split("\t")[1]}_#{row.split("\t")[0][-1]}" }]
+      File.write(directory.join("samples.tsv"), "#{sheet.join("\n")}\n")
+      post rnaseq_upload_path, params: { metadata_file: upload_file("samples.tsv", directory) }
+    end
+    assert_redirected_to rnaseq_configure_path
+  end
+
+  test "a Gaussian process comparison is configured, reviewed and saved with its own settings" do
+    start
+    upload_time_course
+    get rnaseq_configure_path
+    assert_select "input[name=experiment_type][value=condition_time_gp]"
+    assert_select "input[name=sampling_design][checked]", 0, "how the samples were collected is never pre-selected"
+    assert_select "input[name=treatment_timing][value=start][checked]"
+
+    post rnaseq_configure_path, params: GP_FORM.merge(sampling_design: "independent", treatment_timing: "added",
+                                                      treatment_start: "6", variable_percent: "20", permutations: "199")
+    assert_redirected_to rnaseq_review_path
+    saved = session[:rnaseq_config]
+    assert_equal({ "experiment_type" => "condition_time_gp", "condition_column" => "condition", "time_column" => "time",
+                   "sampling_design" => "independent", "reference_level" => "control", "test_level" => "treated" },
+                 saved["deseq2"])
+    assert_equal({ "treatment_start" => 6.0, "variable_percent" => 20.0, "permutations" => 199 }, saved["gp_test"])
+    assert_nil saved["clustering"]
+    follow_redirect!
+    assert_includes response.body, "Added at time 6; samples up to then are a shared baseline"
+    assert_includes response.body, "Each sample is a separate culture, harvested once"
+    assert_includes response.body, "time 0 (before the treatment): 6"
+    assert_includes response.body, "treated at time 24: 3"
+    assert_includes response.body, "cluster q-value &lt; 0.05"
+
+    get rnaseq_configure_path
+    assert_select "input[name=sampling_design][value=independent][checked]"
+    assert_select "input[name=treatment_start][value='6']"
+  end
+
+  test "a Gaussian process comparison needs to know how the samples were collected and when the treatment began" do
+    start
+    upload_time_course
+    {
+      {} => "Please say how the samples were collected",
+      { sampling_design: "independent", treatment_timing: "added", treatment_start: "24" } => "before the last (24)",
+      { sampling_design: "independent", treatment_timing: "added", treatment_start: "" } => "Please enter the time the treatment was added",
+      { sampling_design: "independent", variable_percent: "0" } => "more than 0 and at most 100",
+      { sampling_design: "independent", permutations: "10" } => "from 99 to 9999",
+      { sampling_design: "repeated" } => "Please choose the sample sheet column that names each culture",
+      { sampling_design: "repeated", replicate_column: "time" } => "must be different from the condition and time columns"
+    }.each do |change, message|
+      post rnaseq_configure_path, params: GP_FORM.merge(change)
+      assert_response :unprocessable_content, change.inspect
+      assert_includes response.body, ERB::Util.html_escape(message), change.inspect
+    end
+  end
+
+  test "repeated sampling records the culture column, which must hold one condition and one sample per time" do
+    start
+    upload_time_course
+    upload_sheet_with_cultures
+    post rnaseq_configure_path, params: GP_FORM.merge(sampling_design: "repeated", replicate_column: "culture",
+                                                      covariates: ["culture"])
+    assert_response :unprocessable_content, "the culture column cannot also be a covariate"
+
+    post rnaseq_configure_path, params: GP_FORM.merge(sampling_design: "repeated", replicate_column: "culture")
+    assert_redirected_to rnaseq_review_path
+    assert_equal %w[repeated culture], session[:rnaseq_config]["deseq2"].values_at("sampling_design", "replicate_column")
+    follow_redirect!
+    assert_includes response.body, "Each culture was sampled at several time points (cultures in column culture)"
+
+    # Cultures named only by replicate number mix the conditions.
+    post rnaseq_configure_path, params: GP_FORM.merge(sampling_design: "repeated", replicate_column: "condition")
+    assert_response :unprocessable_content
+    assert_includes response.body, "must be different from the condition and time columns"
+  end
+
   test "pooling conditions in an all-samples time course is explained and can be adjusted for" do
     start
     upload_time_course

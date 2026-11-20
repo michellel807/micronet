@@ -126,6 +126,64 @@ class RnaSeqConfigurationTest < ActiveSupport::TestCase
     assert_raises(RnaSeq::Configuration::Invalid) { configuration(clustering: { silhouette_baseline: true }) }
   end
 
+  GP = { experiment_type: "condition_time_gp", reference_level: "control", test_level: "treated", time_column: "time",
+         sampling_design: "independent" }.freeze
+
+  test "the Gaussian process comparison is a time course whose clusters are always tested" do
+    gp = configuration(deseq2: GP)
+    assert gp.time_course?
+    assert gp.gp_test?
+    assert gp.cluster_genes?
+    assert_nil gp.treatment_start
+    assert_equal 999, gp.permutations
+    assert_raises(RnaSeq::Configuration::Invalid) { configuration(deseq2: GP, clustering: { cluster_genes: false }) }
+    assert_raises(RnaSeq::Configuration::Invalid) { configuration(deseq2: GP.except(:test_level)) }
+  end
+
+  test "how the samples were collected must be stated and is never assumed" do
+    error = assert_raises(RnaSeq::Configuration::Invalid) { configuration(deseq2: GP.except(:sampling_design)) }
+    assert_includes error.message, "how the samples were collected"
+    assert_raises(RnaSeq::Configuration::Invalid) { configuration(deseq2: GP.merge(sampling_design: "pooled")) }
+    assert_raises(RnaSeq::Configuration::Invalid) { configuration(deseq2: GP.merge(sampling_design: "repeated")) }
+    assert_raises(RnaSeq::Configuration::Invalid) { configuration(deseq2: GP.merge(replicate_column: "culture")) }
+    assert_raises(RnaSeq::Configuration::Invalid) do
+      configuration(deseq2: { reference_level: "control", test_level: "treated", sampling_design: "independent" })
+    end
+
+    repeated = configuration(deseq2: GP.merge(sampling_design: "repeated", replicate_column: "culture"))
+    assert_equal "Each culture was sampled at several time points (cultures in column culture)", repeated.summary["Sampling"]
+    assert_equal "Each sample is a separate culture, harvested once", configuration(deseq2: GP).summary["Sampling"]
+  end
+
+  test "the treatment time, gene selection and permutations are kept apart from the DESeq2 settings" do
+    chosen = configuration(deseq2: GP, gp_test: { treatment_start: 6.0, variable_percent: 20, permutations: 199 })
+    loaded = RnaSeq::Configuration.from_h(chosen.to_h.as_json)
+    assert_equal 6.0, loaded.treatment_start
+    assert_equal 20, loaded.variable_percent
+    assert_equal 199, loaded.permutations
+    assert_not loaded.deseq2.key?("treatment_start"), "the R script rejects settings it does not know"
+    assert_not configuration(deseq2: GP).to_h.key?("gp_test")
+
+    [{ treatment_start: "6" }, { variable_percent: 0 }, { variable_percent: 101 }, { permutations: 10 },
+     { permutations: 999.5 }, { seed: 1 }].each do |settings|
+      assert_raises(RnaSeq::Configuration::Invalid, settings.inspect) { configuration(deseq2: GP, gp_test: settings) }
+    end
+    assert_raises(RnaSeq::Configuration::Invalid) { configuration(gp_test: { permutations: 199 }) }
+  end
+
+  test "the summary of a Gaussian process comparison describes its test" do
+    summary = configuration(deseq2: GP, gp_test: { treatment_start: 6.0 }).summary
+    assert_equal "RNA-seq: Compare conditions over time (Gaussian process test) (normalized with DESeq2; B-GREAT-style test of each gene cluster)",
+                 summary["Analysis"]
+    assert_equal "Added at time 6; samples up to then are a shared baseline", summary["Treatment"]
+    assert_equal "cluster q-value < 0.05 (999 label permutations)", summary["Significance"]
+    assert_equal "The 1000 most variable genes (or half of the genes, if that is fewer)", summary["Genes clustered"]
+    assert_includes summary["Comparison"], "treated than in control (reference)"
+    assert_equal "Before the first sample (treated from the start)", configuration(deseq2: GP).summary["Treatment"]
+    assert_equal "The top 12.5% most variable genes",
+                 configuration(deseq2: GP, gp_test: { variable_percent: 12.5 }).summary["Genes clustered"]
+  end
+
   test "an optional annotation table is saved and summarized" do
     without = configuration
     assert_nil without.annotation_file

@@ -127,6 +127,46 @@ class RnaSeqPipelineTest < ActiveSupport::TestCase
                  RnaSeq::Pipeline.new(@job).stages.map(&:name)
   end
 
+  test "the Gaussian process comparison normalizes, clusters and tests, and each of these is required" do
+    use_gp
+    stages = RnaSeq::Pipeline.new(@job).stages
+    assert_equal ["Normalization", "Gene clustering", "Cluster difference test", "Plots", "Packaging"], stages.map(&:name)
+    assert_equal [true, true, true, false, true], stages.map(&:required)
+  end
+
+  test "the Gaussian process settings reach the clustering and test scripts" do
+    use_gp(gp_test: { treatment_start: 6.0, variable_percent: 25, permutations: 199 })
+    commands = []
+    record = ->(*command) { commands << command.map(&:to_s); true }
+    pipeline = RnaSeq::Pipeline.new(@job)
+    @job.stub(:run_cancellable_command, record) do
+      pipeline.send(:clustering)
+      pipeline.send(:gaussian_process_test)
+    end
+    clustering, test = commands
+    assert clustering.any? { |part| part.end_with?("cluster_genes.py") }
+    assert_equal "25", clustering[clustering.index("--variable-percent") + 1]
+    assert test.any? { |part| part.end_with?("gp_condition_test.py") }
+    assert_equal %w[6.0 199], [test[test.index("--treatment-start") + 1], test[test.index("--permutations") + 1]]
+
+    use_gp
+    commands.clear
+    @job.stub(:run_cancellable_command, record) { RnaSeq::Pipeline.new(@job.reload).send(:gaussian_process_test) }
+    assert_not_includes commands.sole, "--treatment-start", "treated from the start passes no treatment time"
+    assert_equal "999", commands.sole[commands.sole.index("--permutations") + 1]
+  end
+
+  test "a failed cluster test fails a Gaussian process comparison" do
+    use_gp
+    failing = ->(*_command) { false }
+    pipeline = RnaSeq::Pipeline.new(@job)
+    @job.stub(:run_cancellable_command, failing) do
+      error = assert_raises(RuntimeError) { pipeline.send(:gaussian_process_test) }
+      assert_equal "The gene clusters could not be tested.", error.message
+      assert_equal "The genes could not be clustered.", assert_raises(RuntimeError) { pipeline.send(:clustering) }.message
+    end
+  end
+
   test "failed clustering still delivers the results, with a warning" do
     require_rscript
     use_time_course
@@ -243,6 +283,19 @@ class RnaSeqPipelineTest < ActiveSupport::TestCase
     configuration = RnaSeq::Configuration.new(
       counts_file: "counts.tsv", metadata_file: "sample_metadata.tsv",
       deseq2: { experiment_type: "time_course", time_column: "time" }, clustering: clustering
+    )
+    @job.update!(analysis_config: configuration.to_h, submission_options: configuration.summary)
+    FileUtils.cp(EXAMPLES.join("timecourse_counts.tsv"), @job.rnaseq_input_dir.join("counts.tsv"))
+    FileUtils.cp(EXAMPLES.join("timecourse_sample_metadata.tsv"), @job.rnaseq_input_dir.join("sample_metadata.tsv"))
+  end
+
+  # The example time course, whose samples were simulated independently (see rnaseq_simulation.py).
+  def use_gp(gp_test: nil)
+    configuration = RnaSeq::Configuration.new(
+      counts_file: "counts.tsv", metadata_file: "sample_metadata.tsv",
+      deseq2: { experiment_type: "condition_time_gp", reference_level: "control", test_level: "treated",
+                time_column: "time", sampling_design: "independent" },
+      gp_test: gp_test
     )
     @job.update!(analysis_config: configuration.to_h, submission_options: configuration.summary)
     FileUtils.cp(EXAMPLES.join("timecourse_counts.tsv"), @job.rnaseq_input_dir.join("counts.tsv"))

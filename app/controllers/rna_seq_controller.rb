@@ -35,19 +35,20 @@ class RnaSeqController < ApplicationController
 
   def configure
     saved = saved_configuration
-    @form = form_values((saved&.deseq2 || {}).merge(saved&.clustering || {}))
+    @form = form_values((saved&.deseq2 || {}).merge(saved&.clustering || {}).merge(saved&.gp_test || {}))
   end
 
   def save_configuration
     @form = form_values(configuration_params.to_h)
     deseq2, error = build_settings(@form)
     clustering, error = clustering_settings(@form) unless error
+    gp_test, error = gp_test_settings(@form) unless error
     unless error
       begin
         configuration = RnaSeq::Configuration.new(
           counts_file: stored_files["counts_file"], metadata_file: stored_files["metadata_file"],
           annotation_file: stored_files["annotations_file"],
-          original_filenames: stored_files["original"], deseq2: deseq2, clustering: clustering
+          original_filenames: stored_files["original"], deseq2: deseq2, clustering: clustering, gp_test: gp_test
         )
         session[:rnaseq_config] = configuration.to_h
       rescue RnaSeq::Configuration::Invalid => e
@@ -74,6 +75,8 @@ class RnaSeqController < ApplicationController
       when "two_condition"
         @inputs.levels(settings["condition_column"]).slice(settings["reference_level"], settings["test_level"])
           .transform_keys { |level| level == settings["reference_level"] ? "#{level} (reference)" : level }
+      when RnaSeq::Configuration::GP_TYPE
+        gp_groups(settings, @configuration.treatment_start)
       when "condition_by_time"
         @inputs.group_counts([settings["condition_column"], settings["time_column"]],
                              settings["condition_column"] => [settings["reference_level"], settings["test_level"]])
@@ -252,7 +255,9 @@ class RnaSeqController < ApplicationController
 
   def configuration_params
     params.permit(:experiment_type, :condition_column, :reference_level, :test_level, :time_column, :subset_level,
-                  :alpha, :lfc_threshold, :lfc_test, :samples_in_model, :cluster_genes, :clusters, :silhouette_baseline, covariates: [])
+                  :alpha, :lfc_threshold, :lfc_test, :samples_in_model, :cluster_genes, :clusters, :silhouette_baseline,
+                  :treatment_timing, :treatment_start, :variable_percent, :permutations, :sampling_design, :replicate_column,
+                  covariates: [])
   end
 
   # Values to show on the form: the user's choices on top of the defaults.
@@ -281,8 +286,20 @@ class RnaSeqController < ApplicationController
       "cluster_genes" => values["cluster_genes"].to_s.in?(%w[0 false]) ? "0" : "1",
       "clusters" => values["clusters"].to_s,
       # "1" from the form, true from a saved configuration.
-      "silhouette_baseline" => values["silhouette_baseline"].to_s.in?(%w[1 true]) ? "1" : ""
+      "silhouette_baseline" => values["silhouette_baseline"].to_s.in?(%w[1 true]) ? "1" : "",
+      # Gaussian process comparison. A saved treatment time means it was added partway through.
+      "treatment_timing" => values["treatment_timing"].presence || (values["treatment_start"].present? ? "added" : "start"),
+      "treatment_start" => display_number(values["treatment_start"]),
+      "variable_percent" => display_number(values["variable_percent"]),
+      "permutations" => values["permutations"].to_s,
+      # Never pre-selected: only the user knows how the samples were collected.
+      "sampling_design" => values["sampling_design"].to_s,
+      "replicate_column" => values["replicate_column"].to_s
     }
+  end
+
+  def display_number(value)
+    value.is_a?(Float) && value == value.to_i ? value.to_i.to_s : value.to_s
   end
 
   # Returns [deseq2 settings, error message]. The R script repeats every check.
@@ -319,6 +336,7 @@ class RnaSeqController < ApplicationController
       case type
       when "two_condition" then two_condition_settings(form, settings)
       when "condition_by_time" then condition_by_time_settings(form, settings)
+      when RnaSeq::Configuration::GP_TYPE then condition_time_gp_settings(form, settings, used)
       else time_course_settings(form, settings)
       end
     return [nil, error] if error
@@ -367,6 +385,136 @@ class RnaSeqController < ApplicationController
 
     settings.merge!("reference_level" => reference, "test_level" => test)
     nil
+  end
+
+  # The Gaussian process comparison: two conditions, numeric times, the
+  # treatment timing and how the samples were collected. The R and Python
+  # scripts repeat these checks.
+  def condition_time_gp_settings(form, settings, used)
+    column, time_column = settings.values_at("condition_column", "time_column")
+    reference, test = form.values_at("reference_level", "test_level")
+    error = comparison_error(@inputs.levels(column), reference, test)
+    return error if error
+
+    filter = { column => [reference, test] }
+    times = numeric_times(time_column, filter)
+    return "The time column \"#{time_column}\" must hold numbers, such as 0, 6 and 24, so curves can be fitted over time." unless times
+    return "This comparison needs at least 3 different time points; \"#{time_column}\" has #{times.length}." if times.length < 3
+
+    start, error = treatment_start_value(form, times)
+    return error if error
+
+    error = replicate_error(gp_cells(column, time_column, reference, test, times, start), "group")
+    return error if error
+
+    error = sampling_settings(form, settings, used, column, time_column, reference, test)
+    return error if error
+
+    settings.merge!("reference_level" => reference, "test_level" => test)
+    nil
+  end
+
+  # [[number, label]] of the time points among the chosen samples, in order, or nil if any is not a number.
+  def numeric_times(time_column, filter)
+    labels = @inputs.group_counts([time_column], filter).keys.map(&:first)
+    values = labels.map { |label| number(label) }
+    return if values.any?(&:nil?)
+
+    values.zip(labels).sort_by(&:first)
+  end
+
+  # Returns [treatment time or nil (treated from the start), error message].
+  def treatment_start_value(form, times)
+    return [nil, nil] unless form["treatment_timing"] == "added"
+
+    start = number(form["treatment_start"])
+    first, last = times.first.first, times.last.first
+    return [nil, "Please enter the time the treatment was added, as a number."] unless start
+    unless start >= first && start < last
+      return [nil, "The treatment time must be at or after the first time point (#{display_number(first)}) " \
+                   "and before the last (#{display_number(last)}), so some samples were taken after it."]
+    end
+    [start, nil]
+  end
+
+  # { group name => samples }: each condition at each time after the treatment,
+  # and both conditions together at the shared times up to it.
+  def gp_cells(column, time_column, reference, test, times, start)
+    counts = @inputs.group_counts([column, time_column], column => [reference, test])
+    times.each_with_object({}) do |(value, label), cells|
+      if start && value <= start
+        cells["time #{label} (before the treatment)"] = counts.fetch([reference, label], 0) + counts.fetch([test, label], 0)
+      else
+        [reference, test].each { |level| cells["#{level} at time #{label}"] = counts.fetch([level, label], 0) }
+      end
+    end
+  end
+
+  def sampling_settings(form, settings, used, column, time_column, reference, test)
+    design = form["sampling_design"]
+    unless RnaSeq::Configuration::SAMPLING_DESIGNS.key?(design)
+      return "Please say how the samples were collected: as separate cultures, or by sampling each culture repeatedly."
+    end
+
+    settings["sampling_design"] = design
+    return if design == "independent"
+
+    culture = form["replicate_column"]
+    return "Please choose the sample sheet column that names each culture." unless @inputs.condition_columns.include?(culture)
+    return "The culture column must be different from the condition and time columns." if used.include?(culture)
+
+    filter = { column => [reference, test] }
+    pairs = @inputs.group_counts([culture, column], filter).keys
+    mixed = pairs.group_by(&:first).select { |_culture, levels| levels.length > 1 }.keys
+    return "Each culture must belong to one condition. These have samples of both: #{mixed.first(6).join(', ')}." if mixed.any?
+
+    twice = @inputs.group_counts([culture, time_column], filter).select { |_key, count| count > 1 }.keys
+    if twice.any?
+      return "Each culture can have at most one sample per time point. Sampled more than once: " \
+             "#{twice.first(6).map { |name, time| "#{name} at time #{time}" }.join(', ')}."
+    end
+
+    per_condition = pairs.map(&:last).tally
+    small = [reference, test].select { |level| per_condition.fetch(level, 0) < RnaSeq::Inputs::MIN_REPLICATES }
+    if small.any?
+      return "Each condition needs at least #{RnaSeq::Inputs::MIN_REPLICATES} cultures. " \
+             "#{small.map { |level| "\"#{level}\" has #{per_condition.fetch(level, 0)}" }.join(' and ')}."
+    end
+
+    settings["replicate_column"] = culture
+    used << culture
+    nil
+  end
+
+  # Samples per group for the review page.
+  def gp_groups(settings, start)
+    column, time_column = settings.values_at("condition_column", "time_column")
+    times = numeric_times(time_column, column => [settings["reference_level"], settings["test_level"]]) || []
+    gp_cells(column, time_column, settings["reference_level"], settings["test_level"], times, start)
+  end
+
+  # Returns [Gaussian process test settings, error message]; the timing was checked in build_settings.
+  def gp_test_settings(form)
+    return [nil, nil] unless form["experiment_type"] == RnaSeq::Configuration::GP_TYPE
+
+    settings = {}
+    settings["treatment_start"] = number(form["treatment_start"]) if form["treatment_timing"] == "added"
+    if form["variable_percent"].present?
+      percent = number(form["variable_percent"])
+      unless percent&.positive? && percent <= 100
+        return [nil, "The percent of most variable genes must be a number more than 0 and at most 100, or blank for automatic."]
+      end
+
+      settings["variable_percent"] = percent
+    end
+    if form["permutations"].present?
+      range = RnaSeq::Configuration::PERMUTATION_COUNTS
+      count = Integer(form["permutations"].strip, 10, exception: false)
+      return [nil, "The number of permutations must be a whole number from #{range.min} to #{range.max}."] unless count && range.cover?(count)
+
+      settings["permutations"] = count unless count == RnaSeq::Configuration::DEFAULT_PERMUTATIONS
+    end
+    [settings.presence, nil]
   end
 
   def time_course_settings(form, settings)
@@ -432,7 +580,9 @@ class RnaSeqController < ApplicationController
   # Returns [clustering settings, error message]. A blank cluster count means choose it from the data.
   def clustering_settings(form)
     return [nil, nil] unless RnaSeq::Configuration::TIME_TYPES.include?(form["experiment_type"])
-    return [{ "cluster_genes" => false }, nil] if form["cluster_genes"] == "0"
+    # The Gaussian process comparison tests the clusters, so clustering is always on there.
+    gp = form["experiment_type"] == RnaSeq::Configuration::GP_TYPE
+    return [{ "cluster_genes" => false }, nil] if form["cluster_genes"] == "0" && !gp
 
     settings = {}
     if form["clusters"].present?

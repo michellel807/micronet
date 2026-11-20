@@ -3,7 +3,9 @@ module RnaSeq
   # in Job#rnaseq_results_dir. A failed required stage fails the job; a failed
   # optional stage is reported as a warning beside the completed results.
   # Time courses add gene clustering and Gaussian process curves per cluster;
-  # an uploaded annotation table adds functional enrichment.
+  # an uploaded annotation table adds functional enrichment. The Gaussian
+  # process comparison (condition_time_gp) only normalizes with DESeq2, and its
+  # clustering and cluster test are required: they are its answer.
   class Pipeline
     SCRIPTS = Rails.root.join("lib", "scripts", "rnaseq")
     Stage = Struct.new(:name, :required, :action)
@@ -36,10 +38,23 @@ module RnaSeq
     end
 
     def stages
+      return gp_stages if configuration.gp_test?
+
       [
         Stage.new("Differential expression", true, :differential_expression),
         (Stage.new("Gene clustering", false, :clustering) if configuration.cluster_genes?),
         (Stage.new("Cluster curves", false, :gaussian_process) if configuration.cluster_genes?),
+        (Stage.new("Functional enrichment", false, :enrichment) if configuration.annotation_file),
+        Stage.new("Plots", false, :plots),
+        Stage.new("Packaging", true, :package)
+      ].compact
+    end
+
+    def gp_stages
+      [
+        Stage.new("Normalization", true, :differential_expression),
+        Stage.new("Gene clustering", true, :clustering),
+        Stage.new("Cluster difference test", true, :gaussian_process_test),
         (Stage.new("Functional enrichment", false, :enrichment) if configuration.annotation_file),
         Stage.new("Plots", false, :plots),
         Stage.new("Packaging", true, :package)
@@ -103,9 +118,22 @@ module RnaSeq
       count = configuration.cluster_count
       succeeded = Python.exec(
         SCRIPTS.join("cluster_genes.py"), job.rnaseq_results_dir, *(["--clusters", count] if count),
-        *(["--silhouette-baseline"] if configuration.silhouette_baseline?)
+        *(["--silhouette-baseline"] if configuration.silhouette_baseline?),
+        *(["--variable-percent", configuration.variable_percent] if configuration.variable_percent)
       ) { |*command| job.run_cancellable_command(*command) }
-      raise "The genes could not be clustered. The differential expression results are complete." unless succeeded
+      return if succeeded
+      raise "The genes could not be clustered." if configuration.gp_test?
+
+      raise "The genes could not be clustered. The differential expression results are complete."
+    end
+
+    def gaussian_process_test
+      succeeded = Python.exec(
+        SCRIPTS.join("gp_condition_test.py"), job.rnaseq_results_dir,
+        *(["--treatment-start", configuration.treatment_start] if configuration.treatment_start),
+        "--permutations", configuration.permutations
+      ) { |*command| job.run_cancellable_command(*command) }
+      raise "The gene clusters could not be tested." unless succeeded
     end
 
     def gaussian_process
@@ -153,7 +181,7 @@ module RnaSeq
                  "Contact schmidlabmodel@gmail.com for the complete files."
       }
       %w[README.txt significant_genes.tsv pca.pdf ma_plot.pdf volcano_plot.pdf top_gene_trajectories.pdf
-         gene_clusters.tsv cluster_trajectories.pdf cluster_gp_curves.pdf enrichment_significant.tsv enrichment.pdf]
+         gene_clusters.tsv cluster_gp_tests.tsv cluster_trajectories.pdf cluster_gp_curves.pdf enrichment_significant.tsv enrichment.pdf]
         .map { |name| job.rnaseq_results_dir.join(name) }.select(&:file?)
     end
 
