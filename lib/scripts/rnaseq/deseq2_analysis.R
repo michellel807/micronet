@@ -134,7 +134,14 @@ normalization_only <- function(options, config, metadata, counts, prefilter, mod
   )
   write_tsv(results_table, file.path(options$out, OUTPUT_FILES$results))
   write_tsv(matrix_table(normalized), file.path(options$out, OUTPUT_FILES$normalized_counts))
-  write_tsv(sample_table(dds, model), file.path(options$out, OUTPUT_FILES$size_factors))
+  # The covariate values of each sample ("all" without covariates): the
+  # Gaussian process test shuffles condition labels only among samples of the
+  # same time point and block.
+  samples <- sample_table(dds, model)
+  covariates <- setdiff(colnames(model$coldata), c("condition", "time"))
+  samples$block <- if (length(covariates) == 0) "all" else
+    do.call(paste, c(lapply(model$coldata[covariates], as.character), sep = " / "))
+  write_tsv(samples, file.path(options$out, OUTPUT_FILES$size_factors))
   write_tsv(matrix_table(vst_all), file.path(options$out, OUTPUT_FILES$vst_all))
   write_tsv(means, file.path(options$out, GROUP_MEANS_FILE))
   manifest

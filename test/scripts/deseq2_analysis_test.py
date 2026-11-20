@@ -697,6 +697,8 @@ class GaussianProcessNormalizationTest(unittest.TestCase):
         samples = self.normalized.table("size_factors.tsv")
         self.assertEqual(sorted(samples["condition"].unique()), ["control", "treated"])
         self.assertEqual(sorted(samples["time"].unique()), [0, 6, 24])
+        # Without covariates every sample is in one block for the test's label shuffles.
+        self.assertEqual(set(samples["block"]), {"all"})
 
     def test_a_gene_on_in_one_condition_at_one_time_passes_the_prefilter(self):
         self.assertEqual(self.normalized.manifest["genes"]["prefilter_min_samples"], 3)
@@ -705,8 +707,10 @@ class GaussianProcessNormalizationTest(unittest.TestCase):
     def test_shuffling_labels_within_time_points_changes_nothing(self):
         for name in ("size_factors.tsv", "vst_all.tsv", "normalized_counts.tsv", "deseq2_results.tsv"):
             original, swapped = self.normalized.table(name), self.swapped.table(name)
-            columns = [column for column in original.columns if column != "condition"]
+            columns = [column for column in original.columns if column not in ("condition", "block")]
             assert_close(swapped.loc[original.index, columns], original[columns])
+            if "block" in original.columns:
+                self.assertEqual(list(swapped.loc[original.index, "block"]), list(original["block"]))
         self.assertEqual(self.normalized.manifest["genes"], self.swapped.manifest["genes"])
 
 
